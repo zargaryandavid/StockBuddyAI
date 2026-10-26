@@ -1,0 +1,1 @@
+-- Intentionally empty. Local users and portfolios are created through Auth and the app.

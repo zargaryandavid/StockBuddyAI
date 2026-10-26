@@ -1,0 +1,2419 @@
+"use client";
+
+import {
+  type Dispatch,
+  type FormEvent,
+  type SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+import { AppHeader } from "@/components/app-header";
+import { PortfolioAnalyticsDashboard } from "@/components/analytics/portfolio-analytics-dashboard";
+import { FireDashboard } from "@/components/fire/fire-dashboard";
+import { IndustryIcon } from "@/components/industry-icon";
+import { EducationPage } from "@/components/education/education-page";
+import { AssetsPage } from "@/components/fire/assets-page";
+import { WishlistPage } from "@/components/wishlist/wishlist-page";
+import { ProfileDialog, type ProfileValues } from "@/components/profile-dialog";
+import { notEnoughData, RunTest } from "@/components/run-test";
+import { SupportPage } from "@/components/support-page";
+import { ReportReminderDialog } from "@/components/report-reminder-dialog";
+import { TransactionsView, type TransactionInput } from "@/components/transactions-view";
+import {
+  Bot,
+  Briefcase,
+  Building2,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  CircleAlert,
+  Ellipsis,
+  Eye,
+  EyeOff,
+  Flame,
+  Heart,
+  GripVertical,
+  History,
+  Info,
+  GraduationCap,
+  Settings,
+  Sparkles,
+  ShieldCheck,
+  ShoppingBag,
+} from "lucide-react";
+import {
+  AnalysisRun,
+  Portfolio,
+  PortfolioTransaction,
+  Recommendation,
+  Signal,
+  api,
+  apiUpload,
+} from "@/lib/api";
+import {
+  assetTypes,
+  combinePositions,
+  parsePortfolioCsvPreview,
+  sectors as canonicalSectors,
+  type ImportColumnMap,
+  type ImportPreview,
+  type Position,
+} from "@/lib/portfolio";
+import {
+  calculatePortfolioMetrics,
+  positionStatus,
+  signedMoney,
+  signedPercent,
+} from "@/lib/portfolio-metrics";
+import { createClient } from "@/lib/supabase/client";
+import { defaultBook, type BookSettings, type Role } from "@/lib/workspace";
+
+type MainTab = "test" | "portfolio" | "fire" | "assets" | "wishlist" | "education" | "support";
+type PortfolioView = "current" | "transactions" | "analytics";
+type ImportMode = "manual" | "csv" | "picture";
+type SortKey =
+  | "custom"
+  | "symbol"
+  | "value"
+  | "weight"
+  | "gain"
+  | "growth_1m"
+  | "growth_6m"
+  | "growth_1y"
+  | "day"
+  | "phase"
+  | "status";
+type SortDirection = "asc" | "desc";
+
+export function Dashboard({
+  email,
+  today,
+  role = "user",
+  book = defaultBook,
+  initialTab = "fire",
+}: {
+  email: string;
+  today: string;
+  role?: Role;
+  book?: BookSettings;
+  /** The page shown after sign-in; FIRE by default. */
+  initialTab?: MainTab;
+}) {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<MainTab>(initialTab);
+  const [portfolioView, setPortfolioView] = useState<PortfolioView>("current");
+  const [importMode, setImportMode] = useState<ImportMode | null>(null);
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+  const [selectedId, setSelectedId] = useState("");
+  const [editingId, setEditingId] = useState("");
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [draftPosition, setDraftPosition] = useState<Position>({
+    ticker: "",
+    shares: 0,
+  });
+  const [portfolioName, setPortfolioName] = useState("My portfolio");
+  const [cash, setCash] = useState(10000);
+  const [baseCurrency, setBaseCurrency] = useState("USD");
+  const [benchmark, setBenchmark] = useState("SPY");
+  const [maxPosition, setMaxPosition] = useState<number | null>(null);
+  const [maxSector, setMaxSector] = useState<number | null>(null);
+  const [minCash, setMinCash] = useState(0);
+  const [timeHorizon, setTimeHorizon] = useState<
+    "Short Term" | "Medium Term" | "Long Term"
+  >("Long Term");
+  const [rebalanceThreshold, setRebalanceThreshold] = useState(0.05);
+  const [resolvingRows, setResolvingRows] = useState<number[]>([]);
+  const [pendingDeleteId, setPendingDeleteId] = useState("");
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [saveConfirmation, setSaveConfirmation] = useState<
+    "saved" | "updated" | null
+  >(null);
+  const [extracting, setExtracting] = useState(false);
+  const [excludeEtfIndex, setExcludeEtfIndex] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>("custom");
+  const portfolioSection = activeTab === "portfolio" || activeTab === "test";
+  const [dateOfBirth, setDateOfBirth] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
+  const [showProfile, setShowProfile] = useState(false);
+  const needsProfile = activeTab === "fire" || showProfile;
+  const [profileLoaded, setProfileLoaded] = useState(false);
+
+  // Loaded the first time the FIRE page or the profile needs it.
+  useEffect(() => {
+    if (!needsProfile || profileLoaded) return;
+    let active = true;
+    api<ProfileValues>("/api/profile")
+      .then((profile) => {
+        if (!active) return;
+        setDateOfBirth(profile?.date_of_birth ?? null);
+        setDisplayName(profile?.display_name ?? null);
+        setProfileLoaded(true);
+      })
+      // Without a profile the FIRE page simply hides ages.
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [needsProfile, profileLoaded]);
+
+  async function saveProfile(next: ProfileValues) {
+    const saved = await api<ProfileValues>("/api/profile", {
+      method: "PUT",
+      body: JSON.stringify(next),
+    });
+    setDateOfBirth(saved?.date_of_birth ?? null);
+    setDisplayName(saved?.display_name ?? null);
+  }
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
+  const [reminderFor, setReminderFor] = useState<{
+    ticker: string;
+    companyName: string | null;
+    lastReportDate: string;
+  } | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [loadingPortfolios, setLoadingPortfolios] = useState(true);
+  const [dirty, setDirty] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [actionRow, setActionRow] = useState<number | null>(null);
+  const [removeRow, setRemoveRow] = useState<number | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showReturns, setShowReturns] = useState(true);
+  const [showLifecycle, setShowLifecycle] = useState(false);
+  const [showStockBuddyStatus, setShowStockBuddyStatus] = useState(false);
+  const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
+  const [csvText, setCsvText] = useState("");
+  const [columnMap, setColumnMap] = useState<ImportColumnMap>({
+    ticker: "ticker",
+    quantity: "shares",
+    averageCost: "purchase_price",
+  });
+  const [transactionRow, setTransactionRow] = useState<number | null>(null);
+  const [transactionKind, setTransactionKind] = useState<"buy" | "sell">("buy");
+  const [transactionQuantity, setTransactionQuantity] = useState(1);
+  const [transactionPrice, setTransactionPrice] = useState(0);
+  const [transactions, setTransactions] = useState<PortfolioTransaction[]>([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
+
+  useEffect(() => {
+    if (actionRow === null) return;
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (
+        !(event.target instanceof Element) ||
+        !event.target.closest(".position-actions")
+      ) {
+        setActionRow(null);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setActionRow(null);
+    };
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [actionRow]);
+
+  const sectors: readonly string[] = canonicalSectors;
+  const iconForIndustry = (name: string) =>
+    book.industries.find((industry) => industry.name === name)?.icon ?? "shapes";
+  const selected = useMemo(
+    () => portfolios.find((portfolio) => portfolio.id === selectedId),
+    [portfolios, selectedId],
+  );
+  const metrics = useMemo(
+    () => calculatePortfolioMetrics(positions, cash),
+    [positions, cash],
+  );
+  const marketValue = metrics.holdingsValue;
+  const costBasis = metrics.totalCostBasis;
+  const allocationPositions = useMemo(
+    () =>
+      excludeEtfIndex
+        ? positions.filter((position) => !position.is_etf_index)
+        : positions,
+    [excludeEtfIndex, positions],
+  );
+  const allocationPortfolioValue = useMemo(
+    () =>
+      allocationPositions.reduce(
+        (total, position) =>
+          total + Number(position.shares) * Number(position.price ?? 0),
+        Number(cash),
+      ),
+    [allocationPositions, cash],
+  );
+  const industryAllocations = useMemo(() => {
+    const totals = new Map<string, { value: number; holdings: string[] }>();
+    for (const position of allocationPositions) {
+      const industry = position.sector || "Other";
+      const value = Number(position.shares) * Number(position.price ?? 0);
+      const current = totals.get(industry) ?? { value: 0, holdings: [] };
+      current.value += value;
+      current.holdings.push(position.ticker);
+      totals.set(industry, current);
+    }
+    return [...totals.entries()]
+      .filter(([, summary]) => summary.value > 0)
+      .map(([industry, summary]) => ({
+        industry,
+        value: summary.value,
+        holdings: summary.holdings,
+        allocation: allocationPortfolioValue
+          ? summary.value / allocationPortfolioValue
+          : 0,
+      }))
+      .sort((left, right) => right.value - left.value);
+  }, [allocationPortfolioValue, allocationPositions]);
+  const gainSummary = useMemo(
+    () =>
+      positions.reduce(
+        (summary, position) => {
+          const result = gainLoss(position);
+          if (!result || result.amount === 0) return summary;
+          if (result.amount > 0) {
+            summary.winners += 1;
+            summary.positive += result.amount;
+          } else {
+            summary.losers += 1;
+            summary.negative += result.amount;
+          }
+          summary.total += result.amount;
+          return summary;
+        },
+        { winners: 0, losers: 0, positive: 0, negative: 0, total: 0 },
+      ),
+    [positions],
+  );
+  const gainRows = useMemo(
+    () =>
+      positions
+        .map((position) => ({ position, result: gainLoss(position) }))
+        .filter(
+          (
+            row,
+          ): row is {
+            position: Position;
+            result: NonNullable<ReturnType<typeof gainLoss>>;
+          } => Boolean(row.result && row.result.amount > 0),
+        )
+        .sort((left, right) => right.result.amount - left.result.amount),
+    [positions],
+  );
+  const lossRows = useMemo(
+    () =>
+      positions
+        .map((position) => ({ position, result: gainLoss(position) }))
+        .filter(
+          (
+            row,
+          ): row is {
+            position: Position;
+            result: NonNullable<ReturnType<typeof gainLoss>>;
+          } => Boolean(row.result && row.result.amount < 0),
+        )
+        .sort((left, right) => left.result.amount - right.result.amount),
+    [positions],
+  );
+  const positionLimit = maxPosition ?? book.max_position_pct;
+  const sectorLimit = maxSector ?? book.max_industry_pct;
+  const displayRows = useMemo(() => {
+    const statusOrder = {
+      "High Risk": 0,
+      Review: 1,
+      "Insufficient Data": 2,
+      "Not Analyzed": 3,
+      Healthy: 4,
+    };
+    const rows = positions.map((position, originalIndex) => {
+      const metric = metrics.byTicker.get(position.ticker) ?? {
+        marketValue: null,
+        costBasis: null,
+        unrealizedAmount: null,
+        unrealizedPercent: null,
+        dayAmount: null,
+        dayPercent: null,
+        weight: null,
+      };
+      const sectorAllocation = industryAllocations.find(
+        (item) => item.industry === position.sector,
+      )?.allocation;
+      const sectorWarning =
+        sectorAllocation != null && sectorAllocation > sectorLimit
+          ? `Sector concentration exceeded: ${position.sector} represents ${(sectorAllocation * 100).toFixed(1)}% of the portfolio. Your configured limit is ${(sectorLimit * 100).toFixed(1)}%.`
+          : undefined;
+      const status = positionStatus(position, metric, {
+        positionLimit,
+        sectorWarning,
+        today,
+      });
+      return { position, originalIndex, metric, status };
+    });
+    return rows.sort((left, right) => {
+      const values: Record<
+        SortKey,
+        [string | number | null, string | number | null]
+      > = {
+        custom: [left.originalIndex, right.originalIndex],
+        symbol: [left.position.ticker, right.position.ticker],
+        value: [left.metric.marketValue, right.metric.marketValue],
+        weight: [left.metric.weight, right.metric.weight],
+        gain: [left.metric.unrealizedAmount, right.metric.unrealizedAmount],
+        growth_1m: [left.position.growth_1m ?? null, right.position.growth_1m ?? null],
+        growth_6m: [left.position.growth_6m ?? null, right.position.growth_6m ?? null],
+        growth_1y: [
+          left.position.growth_1y ?? left.position.growth ?? null,
+          right.position.growth_1y ?? right.position.growth ?? null,
+        ],
+        day: [left.metric.dayAmount, right.metric.dayAmount],
+        phase: [
+          left.position.lifecycle_phase ?? "Not Analyzed",
+          right.position.lifecycle_phase ?? "Not Analyzed",
+        ],
+        status: [statusOrder[left.status.status], statusOrder[right.status.status]],
+      };
+      const [a, b] = values[sortKey];
+      if (a == null && b == null) return left.originalIndex - right.originalIndex;
+      if (a == null) return 1;
+      if (b == null) return -1;
+      const comparison =
+        typeof a === "string" && typeof b === "string"
+          ? a.localeCompare(b)
+          : Number(a) - Number(b);
+      return (sortDirection === "asc" ? comparison : -comparison) ||
+        left.originalIndex - right.originalIndex;
+    });
+  }, [
+    industryAllocations,
+    metrics.byTicker,
+    positionLimit,
+    positions,
+    sectorLimit,
+    sortDirection,
+    sortKey,
+    today,
+  ]);
+
+  const resolvePosition = useCallback(
+    async (position: Position): Promise<Position> => {
+      const query = position.ticker.trim();
+      if (!query) return position;
+      const overview = await api<Omit<Position, "shares">>(
+        `/api/securities/resolve?query=${encodeURIComponent(query)}&base_currency=${encodeURIComponent(baseCurrency)}`,
+      );
+      const manual = position.classification_source === "manual";
+      return {
+        ...position,
+        ...overview,
+        name: overview.name,
+        company_name: overview.name,
+        sector: manual
+          ? position.sector
+          : normalizeSector(
+              overview.sector,
+              overview.industry,
+              overview.asset_type,
+            ),
+        industry: manual ? position.industry : overview.industry,
+        asset_type: manual ? position.asset_type : overview.asset_type,
+        investment_category: manual
+          ? position.investment_category
+          : overview.investment_category,
+        classification_source: manual ? "manual" : "automatic",
+        resolve_error: null,
+      };
+    },
+    [baseCurrency],
+  );
+
+  const enrichPositions = useCallback(
+    async (rows: Position[]) => {
+      setSortKey("custom");
+      setSaveConfirmation(null);
+      setPositions(rows);
+      const settled = await Promise.allSettled(rows.map(resolvePosition));
+      setPositions(
+        settled.map((result, index) =>
+          result.status === "fulfilled"
+            ? result.value
+            : {
+                ...rows[index],
+                resolve_error:
+                  result.reason instanceof Error
+                    ? `Could not update ${rows[index].ticker}: ${result.reason.message}`
+                    : `Could not update ${rows[index].ticker}.`,
+              },
+        ),
+      );
+      setLoadingPortfolios(false);
+    },
+    [resolvePosition],
+  );
+
+  const openPortfolio = useCallback(
+    (portfolio: Portfolio) => {
+      setSelectedId(portfolio.id);
+      setEditingId(portfolio.id);
+      setPortfolioName(portfolio.name);
+      setCash(Number(portfolio.cash));
+      setBaseCurrency(portfolio.base_currency ?? "USD");
+      setBenchmark(portfolio.benchmark ?? "SPY");
+      setMaxPosition(portfolio.max_position_pct ?? null);
+      setMaxSector(portfolio.max_sector_pct ?? null);
+      setMinCash(portfolio.min_cash_pct ?? 0);
+      setTimeHorizon(portfolio.time_horizon ?? "Long Term");
+      setRebalanceThreshold(portfolio.rebalancing_threshold_pct ?? 0.05);
+      setSortKey("custom");
+      setSaveConfirmation(null);
+      setDirty(false);
+      const ordered = [...portfolio.portfolio_positions].sort(
+        (left, right) => (left.display_order ?? 0) - (right.display_order ?? 0),
+      );
+      void enrichPositions(ordered);
+    },
+    [enrichPositions],
+  );
+
+  function startNewPortfolio() {
+    setEditingId("");
+    setSelectedId("");
+    setPortfolioName("My portfolio");
+    setCash(10000);
+    setBaseCurrency("USD");
+    setBenchmark("SPY");
+    setMaxPosition(null);
+    setMaxSector(null);
+    setMinCash(0);
+    setTimeHorizon("Long Term");
+    setRebalanceThreshold(0.05);
+    setPositions([]);
+    setPendingDeleteId("");
+    setSortKey("custom");
+    setError("");
+    setNotice("");
+    setSaveConfirmation(null);
+    setDirty(false);
+  }
+
+  async function loadPortfolios() {
+    const rows = await api<Portfolio[]>("/api/portfolios");
+    setPortfolios(rows);
+    setSelectedId((current) =>
+      rows.some((portfolio) => portfolio.id === current)
+        ? current
+        : rows[0]?.id || "",
+    );
+    return rows;
+  }
+
+  function openAnalytics() {
+    setActiveTab("portfolio");
+    setPortfolioView("analytics");
+    if (book.use_transaction_history_analytics) {
+      void loadTransactionHistory(selectedId);
+    }
+  }
+
+  async function loadTransactionHistory(portfolioId: string) {
+    if (!portfolioId) {
+      setTransactions([]);
+      return;
+    }
+    setLoadingTransactions(true);
+    try {
+      setTransactions(
+        await api<PortfolioTransaction[]>(
+          `/api/portfolios/${portfolioId}/transactions`,
+        ),
+      );
+    } catch (cause) {
+      setError(
+        friendlyError(
+          cause instanceof Error
+            ? cause
+            : new Error("Could not load transaction history"),
+        ),
+      );
+    } finally {
+      setLoadingTransactions(false);
+    }
+  }
+
+  useEffect(() => {
+    let active = true;
+    api<Portfolio[]>("/api/portfolios")
+      .then((rows) => {
+        if (!active) return;
+        setPortfolios(rows);
+        if (rows[0]) {
+          openPortfolio(rows[0]);
+        } else {
+          setSelectedId("");
+        }
+      })
+      .catch((cause: Error) => {
+        if (active) setError(friendlyError(cause));
+      })
+      .finally(() => {
+        if (active) setLoadingPortfolios(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [openPortfolio]);
+
+  function chooseImportMode(mode: ImportMode) {
+    setImportMode(mode);
+    setImportPreview(null);
+    if (mode === "manual") {
+      setDraftPosition({ ticker: "", shares: 0 });
+    }
+    setError("");
+    setNotice("");
+  }
+
+  async function addDraftPosition() {
+    if (!draftPosition.ticker.trim()) {
+      setError("Enter a ticker or company name.");
+      return;
+    }
+    try {
+      const resolved = await resolvePosition(draftPosition);
+      setSortKey("custom");
+      setPositions((current) => [...current, resolved]);
+      setDirty(true);
+      setDraftPosition({ ticker: "", shares: 0 });
+      setImportMode(null);
+      setError("");
+    } catch (cause) {
+      setError(
+        friendlyError(
+          cause instanceof Error ? cause : new Error("Could not identify this company"),
+        ),
+      );
+    }
+  }
+
+  function updatePosition(index: number, patch: Partial<Position>) {
+    setSaveConfirmation(null);
+    setDirty(true);
+    setPositions((current) =>
+      current.map((position, row) =>
+        row === index ? { ...position, ...patch } : position,
+      ),
+    );
+  }
+
+  function moveRow(from: number, to: number) {
+    if (from === to || to < 0 || to >= positions.length) return;
+    setPositions((current) => {
+      const next = [...current];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+    setExpandedRows(new Set());
+    setActionRow(null);
+    setSortKey("custom");
+    setSaveConfirmation(null);
+    setDirty(true);
+  }
+
+  function sortPositions(key: SortKey) {
+    const direction: SortDirection =
+      sortKey === key
+        ? sortDirection === "asc"
+          ? "desc"
+          : "asc"
+        : key === "symbol"
+          ? "asc"
+          : "desc";
+    setSortKey(key);
+    setSortDirection(direction);
+  }
+
+  async function resolveRow(index: number) {
+    const position = positions[index];
+    if (!position?.ticker.trim()) return;
+    setResolvingRows((current) => [...current, index]);
+    try {
+      const resolved = await resolvePosition(position);
+      updatePosition(index, resolved);
+      setError("");
+    } catch (cause) {
+      setError(
+        friendlyError(
+          cause instanceof Error ? cause : new Error("Could not identify this company"),
+        ),
+      );
+    } finally {
+      setResolvingRows((current) => current.filter((row) => row !== index));
+    }
+  }
+
+  async function extractPicture(file: File) {
+    setExtracting(true);
+    setError("");
+    setNotice("");
+    const body = new FormData();
+    body.append("image", file);
+    try {
+      const result = await apiUpload<{ positions: Position[] }>(
+        "/api/portfolios/extract-image",
+        body,
+      );
+      if (!result.positions.length) {
+        throw new Error("No clear ticker and share rows were found in this picture.");
+      }
+      setImportPreview({
+        positions: result.positions,
+        errors: [],
+        headers: ["ticker", "shares"],
+        duplicateTickers: duplicateTickers(result.positions),
+      });
+      setNotice("Picture read successfully. Confirm the preview before importing.");
+    } catch (cause) {
+      setError(
+        friendlyError(cause instanceof Error ? cause : new Error("Could not read picture")),
+      );
+    } finally {
+      setExtracting(false);
+    }
+  }
+
+  async function commitImport(combine: boolean) {
+    if (!importPreview) return;
+    const next = [...positions];
+    for (const incoming of importPreview.positions) {
+      const index = next.findIndex(
+        (position) => position.ticker.toUpperCase() === incoming.ticker.toUpperCase(),
+      );
+      if (index < 0) {
+        next.push(incoming);
+      } else if (combine) {
+        next[index] = combinePositions(next[index], incoming);
+      }
+    }
+    await enrichPositions(next);
+    setImportPreview(null);
+    setImportMode(null);
+    setDirty(true);
+    setError("");
+    setNotice(
+      combine
+        ? "Import added. Duplicate positions were combined using weighted average cost."
+        : "Import added. Existing duplicate positions were kept unchanged.",
+    );
+  }
+
+  async function recordTransaction(transaction: TransactionInput) {
+    if (!editingId) throw new Error("Save this portfolio before recording a transaction.");
+    const recorded = await api<PortfolioTransaction>(
+      `/api/portfolios/${editingId}/transactions`,
+      { method: "POST", body: JSON.stringify(transaction) },
+    );
+    const rows = await loadPortfolios();
+    const refreshed = rows.find((portfolio) => portfolio.id === editingId);
+    if (refreshed) openPortfolio(refreshed);
+    setTransactions((current) =>
+      [recorded, ...current.filter((item) => item.id !== recorded.id)].sort((a, b) =>
+        b.transacted_at.localeCompare(a.transacted_at),
+      ),
+    );
+    setNotice(
+      `${transaction.kind === "buy" ? "Buy" : "Sell"} of ${transaction.quantity} ${transaction.ticker} recorded; holdings updated.`,
+    );
+  }
+
+  async function applyTransaction(index: number) {
+    const position = positions[index];
+    if (!position || transactionQuantity <= 0 || transactionPrice < 0) return;
+    if (!editingId) {
+      setError("Save this portfolio before recording a transaction.");
+      return;
+    }
+    if (dirty) {
+      setError("Save your portfolio changes before recording a transaction.");
+      return;
+    }
+    if (transactionKind === "sell") {
+      if (transactionQuantity > Number(position.shares)) {
+        setError("Sale quantity cannot exceed the held quantity.");
+        return;
+      }
+    }
+    setError("");
+    try {
+      const recorded = await api<PortfolioTransaction>(
+        `/api/portfolios/${editingId}/transactions`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            ticker: position.ticker,
+            kind: transactionKind,
+            quantity: transactionQuantity,
+            price: transactionPrice,
+          }),
+        },
+      );
+      const rows = await loadPortfolios();
+      const refreshed = rows.find((portfolio) => portfolio.id === editingId);
+      if (refreshed) openPortfolio(refreshed);
+      setTransactions((current) => [
+        recorded,
+        ...current.filter((transaction) => transaction.id !== recorded.id),
+      ]);
+      setTransactionRow(null);
+      setNotice("Transaction recorded and portfolio position updated.");
+    } catch (cause) {
+      setError(
+        friendlyError(
+          cause instanceof Error
+            ? cause
+            : new Error("Could not record the transaction"),
+        ),
+      );
+    }
+  }
+
+  async function createPortfolio(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const wasUpdating = Boolean(editingId);
+    setError("");
+    setNotice("");
+    const pendingPositions = positions.filter((position) => position.ticker.trim());
+    if (!pendingPositions.length) {
+      setError("Add at least one ticker and share amount.");
+      return;
+    }
+    try {
+      const resolvedPositions = await Promise.all(pendingPositions.map(resolvePosition));
+      const cleanPositions = resolvedPositions.map((position, index) => ({
+        ticker: position.ticker,
+        shares: Number(position.shares),
+        purchase_price:
+          position.purchase_price == null ? null : Number(position.purchase_price),
+        sector: position.sector || "Unknown",
+        display_order: index,
+        company_name: position.name || position.company_name || null,
+        asset_type: position.asset_type || "Other",
+        industry: position.industry || null,
+        investment_category: position.investment_category || null,
+        classification_source: position.classification_source || "automatic",
+        quote_currency: position.quote_currency || null,
+        lifecycle_phase: position.lifecycle_phase || "Not Analyzed",
+        lifecycle_evidence: position.lifecycle_evidence || {},
+        lifecycle_updated_at: position.lifecycle_updated_at || null,
+        report_date: position.report_date || null,
+        report_source: position.report_source || null,
+        notes: position.notes || null,
+      }));
+      if (new Set(cleanPositions.map((position) => position.ticker)).size !== cleanPositions.length) {
+        throw new Error("The portfolio contains the same company more than once.");
+      }
+      setPositions(resolvedPositions);
+      const saved = await api<Portfolio>(
+        editingId ? `/api/portfolios/${editingId}` : "/api/portfolios",
+        {
+        method: editingId ? "PUT" : "POST",
+        body: JSON.stringify({
+          name: portfolioName,
+          cash,
+          base_currency: baseCurrency,
+          benchmark,
+          max_position_pct: maxPosition,
+          max_sector_pct: maxSector,
+          min_cash_pct: minCash,
+          time_horizon: timeHorizon,
+          rebalancing_threshold_pct: rebalanceThreshold,
+          positions: cleanPositions,
+        }),
+        },
+      );
+      await loadPortfolios();
+      setSelectedId(saved.id);
+      setEditingId(saved.id);
+      setSaveConfirmation(wasUpdating ? "updated" : "saved");
+      setDirty(false);
+      setNotice(wasUpdating ? "Portfolio updated." : "Portfolio saved.");
+    } catch (cause) {
+      setError(
+        friendlyError(cause instanceof Error ? cause : new Error("Could not save portfolio")),
+      );
+    }
+  }
+
+  async function deletePortfolio(portfolio: Portfolio) {
+    setError("");
+    setNotice("");
+    try {
+      await api<void>(`/api/portfolios/${portfolio.id}`, { method: "DELETE" });
+      if (editingId === portfolio.id) {
+        setEditingId("");
+        setPortfolioName("My portfolio");
+        setCash(0);
+        setPositions([]);
+        setSortKey("custom");
+      }
+      await loadPortfolios();
+      setPendingDeleteId("");
+      setNotice("Portfolio deleted.");
+    } catch (cause) {
+      setError(
+        friendlyError(
+          cause instanceof Error ? cause : new Error("Could not delete portfolio"),
+        ),
+      );
+    }
+  }
+
+  async function signOut() {
+    await createClient().auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
+  return (
+    <main className="app-shell simple-shell">
+      <AppHeader email={email} onSignOut={signOut} onOpenProfile={() => setShowProfile(true)}>
+        <button
+          type="button"
+          className={activeTab === "fire" ? "active" : ""}
+          aria-current={activeTab === "fire" ? "page" : undefined}
+          onClick={() => setActiveTab("fire")}
+        >
+          <Flame size={16} aria-hidden="true" />
+          FIRE
+        </button>
+        <button
+          type="button"
+          className={`nav-parent${activeTab === "portfolio" && portfolioView === "current" ? " active" : ""}${portfolioSection ? " open" : ""}`}
+          aria-current={activeTab === "portfolio" && portfolioView === "current" ? "page" : undefined}
+          onClick={() => {
+            setActiveTab("portfolio");
+            setPortfolioView("current");
+          }}
+        >
+          <Briefcase size={16} aria-hidden="true" />
+          Portfolio
+        </button>
+        <div className="sidebar-subnav" role="group" aria-label="Portfolio tools">
+          <button
+            type="button"
+            className={activeTab === "portfolio" && portfolioView === "analytics" ? "active" : ""}
+            aria-current={activeTab === "portfolio" && portfolioView === "analytics" ? "page" : undefined}
+            onClick={openAnalytics}
+          >
+            <IndustryIcon icon="chart-line" size={15} />
+            Analytics
+          </button>
+          <button
+            type="button"
+            className={activeTab === "portfolio" && portfolioView === "transactions" ? "active" : ""}
+            aria-current={activeTab === "portfolio" && portfolioView === "transactions" ? "page" : undefined}
+            onClick={() => {
+              setActiveTab("portfolio");
+              setPortfolioView("transactions");
+              void loadTransactionHistory(selectedId);
+            }}
+          >
+            <History size={15} aria-hidden="true" />
+            Transactions
+          </button>
+          <button
+            type="button"
+            className={activeTab === "test" ? "active" : ""}
+            aria-current={activeTab === "test" ? "page" : undefined}
+            onClick={() => setActiveTab("test")}
+          >
+            <Bot size={15} aria-hidden="true" />
+            Ask Buddy
+          </button>
+        </div>
+        <button
+          type="button"
+          className={activeTab === "assets" ? "active" : ""}
+          aria-current={activeTab === "assets" ? "page" : undefined}
+          onClick={() => setActiveTab("assets")}
+        >
+          <Building2 size={16} aria-hidden="true" />
+          Assets
+        </button>
+        <button
+          type="button"
+          className={activeTab === "wishlist" ? "active" : ""}
+          aria-current={activeTab === "wishlist" ? "page" : undefined}
+          onClick={() => setActiveTab("wishlist")}
+        >
+          <Sparkles size={16} aria-hidden="true" />
+          Wishlist
+        </button>
+        <button
+          type="button"
+          className={activeTab === "education" ? "active" : ""}
+          aria-current={activeTab === "education" ? "page" : undefined}
+          onClick={() => setActiveTab("education")}
+        >
+          <GraduationCap size={16} aria-hidden="true" />
+          Education
+        </button>
+        <button
+          type="button"
+          className={activeTab === "support" ? "active" : ""}
+          aria-current={activeTab === "support" ? "page" : undefined}
+          onClick={() => setActiveTab("support")}
+        >
+          <Heart size={16} aria-hidden="true" />
+          Support us
+        </button>
+        <button
+          type="button"
+          className="nav-soon"
+          aria-disabled="true"
+          title="Shop is coming soon"
+          onClick={(event) => event.preventDefault()}
+        >
+          <ShoppingBag size={16} aria-hidden="true" />
+          Shop
+          <span className="nav-badge">Soon</span>
+        </button>
+        <button
+          type="button"
+          className="nav-soon"
+          aria-disabled="true"
+          title="Settings are coming soon"
+          onClick={(event) => event.preventDefault()}
+        >
+          <Settings size={16} aria-hidden="true" />
+          Settings
+          <span className="nav-badge">Soon</span>
+        </button>
+        {role === "admin" && (
+          <Link href="/admin">
+            <ShieldCheck size={16} aria-hidden="true" />
+            Admin
+          </Link>
+        )}
+      </AppHeader>
+
+      {showProfile && (
+        <ProfileDialog
+          dateOfBirth={dateOfBirth}
+          displayName={displayName}
+          portfolios={portfolios.map((portfolio) => ({ id: portfolio.id, name: portfolio.name }))}
+          currentPortfolioId={selectedId || null}
+          today={today}
+          onSave={saveProfile}
+          onClose={() => setShowProfile(false)}
+        />
+      )}
+
+      {error && <div className="alert page-message" role="alert">{error}</div>}
+      {notice && <div className="notice page-message">{notice}</div>}
+
+      {activeTab === "wishlist" ? (
+        <section className="simple-page wishlist-shell">
+          <WishlistPage />
+        </section>
+      ) : activeTab === "assets" ? (
+        <section className="simple-page assets-shell">
+          <AssetsPage today={today} currency={baseCurrency} />
+        </section>
+      ) : activeTab === "support" ? (
+        <section className="simple-page support-shell">
+          <SupportPage />
+        </section>
+      ) : activeTab === "education" ? (
+        <section className="simple-page education-shell">
+          <EducationPage />
+        </section>
+      ) : activeTab === "fire" ? (
+        <section className="simple-page fire-shell">
+          <FireDashboard
+            portfolioValue={metrics.totalValue}
+            cash={Number(cash || 0)}
+            reports={positions
+              .filter((position) => !position.is_etf_index && position.report_date)
+              .map((position) => ({
+                ticker: position.ticker,
+                report_date: position.report_date as string,
+              }))}
+            today={today}
+            currency={baseCurrency}
+            dateOfBirth={dateOfBirth}
+            onEditProfile={() => setShowProfile(true)}
+          />
+        </section>
+      ) : activeTab === "portfolio" ? (
+        <section className="simple-page portfolio-page">
+          {portfolioView === "current" && (
+            <header className="portfolio-page-head">
+              <h1>Portfolio</h1>
+              <button type="button" className="button portfolio-analytics-link" onClick={openAnalytics}>
+                <IndustryIcon icon="chart-line" size={16} />
+                See analytics
+              </button>
+            </header>
+          )}
+          <div className={`portfolio-workspace ${portfolioView}-view`}>
+            {portfolioView === "current" && (
+              <aside className="panel portfolio-sidebar">
+              <form onSubmit={createPortfolio} className="stack">
+                <div className="field-row portfolio-details-row">
+                  <label>
+                    Portfolio name
+                    <input
+                      value={portfolioName}
+                      onChange={(event) => {
+                        setPortfolioName(event.target.value);
+                        setSaveConfirmation(null);
+                        setDirty(true);
+                      }}
+                      placeholder="My portfolio"
+                      required
+                    />
+                  </label>
+                  <label>
+                    Cash
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={cash}
+                      onChange={(event) => {
+                        setCash(Number(event.target.value));
+                        setSaveConfirmation(null);
+                        setDirty(true);
+                      }}
+                      required
+                    />
+                  </label>
+                </div>
+
+                {loadingPortfolios ? (
+                  <div className="portfolio-summary-grid" aria-label="Loading portfolio summary">
+                    {Array.from({ length: 9 }).map((_, index) => (
+                      <div className="summary-card skeleton" key={index} />
+                    ))}
+                  </div>
+                ) : (
+                  <section className="portfolio-summary-grid" aria-label="Portfolio summary">
+                    <SummaryCard
+                      label="Total portfolio value"
+                      value={money(metrics.totalValue, baseCurrency)}
+                    />
+                    <SummaryCard
+                      label="Total cost basis"
+                      value={money(metrics.totalCostBasis, baseCurrency)}
+                      note={metrics.hasPartialCostBasis ? "Partial cost data" : undefined}
+                    />
+                    <SummaryCard
+                      label="Unrealized gain/loss"
+                      value={signedMoney(metrics.unrealizedAmount, baseCurrency)}
+                      note={signedPercent(metrics.unrealizedPercent)}
+                      tone={metrics.unrealizedAmount >= 0 ? "positive" : "negative"}
+                      emphasis
+                    />
+                    <SummaryCard
+                      label="Today’s gain/loss"
+                      value={signedMoney(metrics.dayAmount, baseCurrency)}
+                      note={signedPercent(metrics.dayPercent)}
+                      tone={metrics.dayAmount >= 0 ? "positive" : "negative"}
+                    />
+                    <SummaryCard
+                      label="Cash balance"
+                      value={money(cash, baseCurrency)}
+                      note={`${((metrics.cashPercentage ?? 0) * 100).toFixed(1)}% cash`}
+                    />
+                    <SummaryCard
+                      label="Number of holdings"
+                      value={String(positions.length)}
+                    />
+                    <SummaryCard
+                      label="Largest position"
+                      value={
+                        metrics.largestPosition
+                          ? `${metrics.largestPosition.ticker} · ${(
+                              (metrics.byTicker.get(metrics.largestPosition.ticker)
+                                ?.weight ?? 0) * 100
+                            ).toFixed(1)}%`
+                          : "—"
+                      }
+                    />
+                    <SummaryCard label="Benchmark" value={benchmarkLabel(benchmark)} />
+                    <SummaryCard
+                      label="Last price update"
+                      value={latestPriceDate(positions) ?? "No prices"}
+                    />
+                  </section>
+                )}
+
+                <button
+                  type="button"
+                  className="portfolio-settings-toggle"
+                  aria-expanded={settingsOpen}
+                  onClick={() => setSettingsOpen((current) => !current)}
+                >
+                  Portfolio settings
+                  {settingsOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                </button>
+                {settingsOpen && (
+                  <div className="portfolio-settings-grid">
+                    <label>
+                      Base currency
+                      <select
+                        value={baseCurrency}
+                        onChange={(event) => {
+                          setBaseCurrency(event.target.value);
+                          setDirty(true);
+                        }}
+                      >
+                        {["USD", "EUR", "GBP", "CAD", "AUD", "JPY"].map((currency) => (
+                          <option key={currency}>{currency}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Benchmark
+                      <select
+                        value={benchmark}
+                        onChange={(event) => {
+                          setBenchmark(event.target.value);
+                          setDirty(true);
+                        }}
+                      >
+                        <option value="SPY">S&amp;P 500</option>
+                        <option value="QQQ">Nasdaq-100</option>
+                        <option value="DIA">Dow Jones</option>
+                        <option value="IWM">Russell 2000</option>
+                      </select>
+                    </label>
+                    <PercentSetting label="Max position (%)" value={maxPosition} fallback={book.max_position_pct} onChange={(value) => { setMaxPosition(value); setDirty(true); }} />
+                    <PercentSetting label="Max sector (%)" value={maxSector} fallback={book.max_industry_pct} onChange={(value) => { setMaxSector(value); setDirty(true); }} />
+                    <PercentSetting label="Min cash (%)" value={minCash} onChange={(value) => { setMinCash(value ?? 0); setDirty(true); }} />
+                    <label>
+                      Time horizon
+                      <select value={timeHorizon} onChange={(event) => { setTimeHorizon(event.target.value as typeof timeHorizon); setDirty(true); }}>
+                        <option>Short Term</option>
+                        <option>Medium Term</option>
+                        <option>Long Term</option>
+                      </select>
+                    </label>
+                    <PercentSetting label="Rebalance at (%)" value={rebalanceThreshold} onChange={(value) => { setRebalanceThreshold(value ?? 0); setDirty(true); }} />
+                  </div>
+                )}
+
+                {!loadingPortfolios && positions.length === 0 && (
+                  <div className="portfolio-empty">
+                    <IndustryIcon icon="briefcase" size={26} />
+                    <h2>No positions yet</h2>
+                    <p>Add a position or import a portfolio to begin.</p>
+                  </div>
+                )}
+
+                {positions.length > 0 && (
+                  <>
+                  <div className="column-visibility-controls" aria-label="Visible portfolio columns">
+                    <span>Columns</span>
+                    <button
+                      type="button"
+                      aria-pressed={showReturns}
+                      onClick={() => setShowReturns((visible) => !visible)}
+                    >
+                      {showReturns ? <Eye size={15} /> : <EyeOff size={15} />}
+                      Returns
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={showLifecycle}
+                      onClick={() => setShowLifecycle((visible) => !visible)}
+                    >
+                      {showLifecycle ? <Eye size={15} /> : <EyeOff size={15} />}
+                      Lifecycle phase
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={showStockBuddyStatus}
+                      onClick={() => setShowStockBuddyStatus((visible) => !visible)}
+                    >
+                      {showStockBuddyStatus ? <Eye size={15} /> : <EyeOff size={15} />}
+                      StockBuddy status
+                    </button>
+                  </div>
+                  <div
+                    className={`holdings-table${showReturns ? "" : " hide-returns"}${showLifecycle ? "" : " hide-lifecycle"}${showStockBuddyStatus ? "" : " hide-stockbuddy-status"}`}
+                    role="table"
+                    aria-label="Current portfolio holdings"
+                    style={{
+                      ["--holding-columns" as string]: holdingColumns({
+                        returns: showReturns,
+                        lifecycle: showLifecycle,
+                        status: showStockBuddyStatus,
+                      }),
+                    }}
+                  >
+                    <div className="holdings-primary-row holdings-header" role="row">
+                      <SortButton label="Symbol and company" active={sortKey === "symbol"} direction={sortDirection} defaultDirection="asc" onClick={() => sortPositions("symbol")} />
+                      <span role="columnheader">Quantity</span>
+                      <span role="columnheader" title="Weighted average purchase price when transactions are combined">Purchase price</span>
+                      <span role="columnheader">Current price</span>
+                      <span role="columnheader" title="Price divided by trailing 12-month earnings per share from SEC filings">P/E</span>
+                      <span className="report-date-col" role="columnheader">Report date</span>
+                      <SortButton label="Market value" active={sortKey === "value"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("value")} />
+                      <SortButton label="Portfolio weight" active={sortKey === "weight"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("weight")} />
+                      <SortButton label="Unrealized gain/loss" active={sortKey === "gain"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("gain")} />
+                      <SortButton className="return-col" label="1M" active={sortKey === "growth_1m"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("growth_1m")} />
+                      <SortButton className="return-col" label="6M" active={sortKey === "growth_6m"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("growth_6m")} />
+                      <SortButton className="return-col" label="1Y" active={sortKey === "growth_1y"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("growth_1y")} />
+                      <SortButton className="return-col" label="Day" active={sortKey === "day"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("day")} />
+                      <SortButton className="lifecycle-col" label="Lifecycle phase" active={sortKey === "phase"} direction={sortDirection} defaultDirection="asc" onClick={() => sortPositions("phase")} />
+                      <SortButton className="status-col" label="StockBuddy status" active={sortKey === "status"} direction={sortDirection} defaultDirection="asc" onClick={() => sortPositions("status")} />
+                      <span role="columnheader">Actions</span>
+                    </div>
+                    {displayRows.map(({ position, originalIndex: index, metric, status }) => {
+                      const expanded = expandedRows.has(index);
+                      return (
+                        <div
+                          className={`holding-record${dragFrom === index ? " dragging" : ""}${dragOver === index && dragFrom !== index ? " drop-target" : ""}`}
+                          key={`${position.ticker}-${index}`}
+                          onDragOver={(event) => {
+                            if (dragFrom == null) return;
+                            event.preventDefault();
+                            event.dataTransfer.dropEffect = "move";
+                            setDragOver(index);
+                          }}
+                          onDrop={(event) => {
+                            event.preventDefault();
+                            if (dragFrom != null) moveRow(dragFrom, index);
+                            setDragFrom(null);
+                            setDragOver(null);
+                          }}
+                        >
+                          <div className={`holdings-primary-row ${metric.unrealizedAmount == null || metric.unrealizedAmount === 0 ? "" : metric.unrealizedAmount > 0 ? "gain-up" : "gain-down"}`} role="row">
+                            <div className="holding-identity" role="cell">
+                              <button
+                                type="button"
+                                className="drag-handle"
+                                draggable
+                                aria-label={`Move ${position.ticker || `row ${index + 1}`}. Drag, or use the up and down arrow keys.`}
+                                title="Drag to reorder"
+                                onDragStart={(event) => {
+                                  setSortKey("custom");
+                                  setDragFrom(index);
+                                  event.dataTransfer.effectAllowed = "move";
+                                  event.dataTransfer.setData("text/plain", position.ticker);
+                                  const row = event.currentTarget.closest(".holding-record");
+                                  if (row instanceof HTMLElement) event.dataTransfer.setDragImage(row, 24, 20);
+                                }}
+                                onDragEnd={() => {
+                                  setDragFrom(null);
+                                  setDragOver(null);
+                                }}
+                                onKeyDown={(event) => {
+                                  if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+                                  event.preventDefault();
+                                  moveRow(index, index + (event.key === "ArrowUp" ? -1 : 1));
+                                }}
+                              >
+                                <GripVertical size={15} aria-hidden="true" />
+                              </button>
+                              <button type="button" className="expand-position" aria-label={`${expanded ? "Collapse" : "Expand"} ${position.ticker}`} aria-expanded={expanded} onClick={() => toggleExpanded(setExpandedRows, index)}>
+                                {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                              </button>
+                              <div>
+                                <input
+                                  aria-label={`Ticker ${index + 1}`}
+                                  value={position.ticker}
+                                  onBlur={() => void resolveRow(index)}
+                                  onChange={(event) => updatePosition(index, { ticker: event.target.value, price: undefined, resolve_error: null })}
+                                />
+                                <span>{resolvingRows.includes(index) ? "Finding…" : position.name || position.company_name || "Company unavailable"}</span>
+                              </div>
+                            </div>
+                            <input aria-label={`Quantity ${index + 1}`} type="number" min="0" step="1" value={position.shares} onChange={(event) => updatePosition(index, { shares: Number(event.target.value.replace(/^0+(?=\d)/, "")) })} />
+                            <input aria-label={`Purchase price ${index + 1}`} type="number" min="0" step="0.01" placeholder="—" value={position.purchase_price ?? ""} onChange={(event) => updatePosition(index, { purchase_price: event.target.value === "" ? null : Number(event.target.value) })} />
+                            <span className="financial-cell" role="cell">{position.price == null ? <span className="data-state"><CircleAlert size={14} /> Missing price</span> : money(position.price, baseCurrency)}</span>
+                            <span className="financial-cell" role="cell" title="Price ÷ trailing 12-month EPS (SEC filings)">{position.is_etf_index ? "N/A" : position.pe_ratio == null ? "—" : position.pe_ratio.toFixed(1)}</span>
+                            <span className="financial-cell report-date-col" role="cell" title={position.report_source || "Report source unavailable"}>
+                              {position.is_etf_index ? "N/A" : position.report_date ? (
+                                <button
+                                  type="button"
+                                  className="report-date-button"
+                                  aria-label={`Set a report reminder for ${position.ticker}, last report ${position.report_date}`}
+                                  onClick={() => setReminderFor({ ticker: position.ticker, companyName: position.name || position.company_name || null, lastReportDate: position.report_date as string })}
+                                >
+                                  {position.report_date}
+                                </button>
+                              ) : "Unavailable"}
+                            </span>
+                            <strong className="financial-cell" role="cell">{metric.marketValue == null ? "—" : money(metric.marketValue, baseCurrency)}</strong>
+                            <span className="financial-cell" role="cell">{metric.weight == null ? "—" : `${(metric.weight * 100).toFixed(1)}%`}</span>
+                            <strong className={`financial-cell gain-cell ${(metric.unrealizedAmount ?? 0) >= 0 ? "positive" : "negative"}`} role="cell">
+                              {metric.unrealizedAmount == null ? "—" : <StackedChange amount={signedMoney(metric.unrealizedAmount, baseCurrency)} percent={signedPercent(metric.unrealizedPercent)} />}
+                            </strong>
+                            <span className="financial-cell return-col" role="cell" title="1-month return"><GrowthValue value={position.growth_1m} /></span>
+                            <span className="financial-cell return-col" role="cell" title="6-month return"><GrowthValue value={position.growth_6m} /></span>
+                            <span className="financial-cell return-col" role="cell" title="1-year return"><GrowthValue value={position.growth_1y ?? position.growth} /></span>
+                            <span className={`financial-cell return-col ${(metric.dayAmount ?? 0) >= 0 ? "positive" : "negative"}`} role="cell" title="Day change">
+                              {metric.dayAmount == null ? "—" : <StackedChange amount={signedMoney(metric.dayAmount, baseCurrency)} percent={signedPercent(metric.dayPercent)} />}
+                            </span>
+                            <button type="button" className="phase-badge lifecycle-col" title="Open lifecycle evidence" onClick={() => toggleExpanded(setExpandedRows, index)}>{position.lifecycle_phase || "Not Analyzed"}</button>
+                            <button type="button" className={`status-badge status-col status-${status.status.toLowerCase().replaceAll(" ", "-")}`} title={status.warnings.join(" ") || "No active warnings"} onClick={() => toggleExpanded(setExpandedRows, index)}>
+                              {status.warnings.length > 0 && <Info size={13} />}
+                              {status.status}
+                            </button>
+                            <div className="position-actions">
+                              <button type="button" aria-label={`Actions for ${position.ticker}`} aria-expanded={actionRow === index} onClick={() => setActionRow(actionRow === index ? null : index)}><Ellipsis size={18} /></button>
+                              {actionRow === index && (
+                                <div className="actions-menu">
+                                  <button type="button" onClick={() => { setSelectedId(editingId); setActiveTab("test"); }}>Analyze position</button>
+                                  <button type="button" onClick={() => { setTransactionRow(index); setTransactionPrice(Math.round(Number(position.price ?? position.purchase_price ?? 0) * 100) / 100); setActionRow(null); toggleExpanded(setExpandedRows, index, true); }}>Add transaction</button>
+                                  <button type="button" onClick={() => { setRemoveRow(index); setActionRow(null); }}>Remove position</button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          {removeRow === index && (
+                            <div className="position-confirm" role="alert">
+                              Remove {position.ticker} from this portfolio?
+                              <button type="button" onClick={() => setRemoveRow(null)}>Cancel</button>
+                              <button type="button" onClick={() => { setPositions((current) => current.filter((_, row) => row !== index)); setRemoveRow(null); setDirty(true); }}>Confirm removal</button>
+                            </div>
+                          )}
+                          {expanded && (
+                            <div className="position-detail-row">
+                              <label>
+                                Asset type
+                                <select aria-label={`Asset type for ${position.ticker}`} value={position.asset_type || "Other"} onChange={(event) => updatePosition(index, { asset_type: event.target.value as Position["asset_type"], classification_source: "manual" })}>{assetTypes.map((value) => <option key={value}>{value}</option>)}</select>
+                              </label>
+                              <label>
+                                Sector
+                                <select aria-label={`Sector for ${position.ticker}`} value={position.sector || "Unknown"} onChange={(event) => updatePosition(index, { sector: event.target.value, classification_source: "manual" })}>{sectors.map((value) => <option key={value}>{value}</option>)}</select>
+                              </label>
+                              <span className="detail-industry">
+                                Industry <strong>{position.industry || "Unknown"}</strong>
+                              </span>
+                              {transactionRow === index && (
+                                <div className="transaction-editor" role="group" aria-label={`Transaction for ${position.ticker}`}>
+                                  <label>Transaction<select value={transactionKind} onChange={(event) => setTransactionKind(event.target.value as "buy" | "sell")}><option value="buy">Buy</option><option value="sell">Sell</option></select></label>
+                                  <label>Quantity<input type="number" min="1" step="1" value={transactionQuantity} onChange={(event) => setTransactionQuantity(Number(event.target.value))} /></label>
+                                  <label>Price<input type="number" min="0" step="0.01" value={transactionPrice} onChange={(event) => setTransactionPrice(Number(event.target.value))} /></label>
+                                  <div className="transaction-actions">
+                                    <button type="button" className="button" onClick={() => setTransactionRow(null)}>Cancel</button>
+                                    <button type="button" className="button primary" onClick={() => void applyTransaction(index)}>Apply</button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  </>
+                )}
+
+                <div className="portfolio-add-actions" aria-label="Add holdings">
+                  <button
+                    type="button"
+                    onClick={() => chooseImportMode("manual")}
+                  >
+                    + Add position
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => chooseImportMode("csv")}
+                  >
+                    + Import CSV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => chooseImportMode("picture")}
+                  >
+                    + Import screenshot
+                  </button>
+                </div>
+
+                <button
+                  className="button primary"
+                  type="submit"
+                  disabled={extracting || !positions.length}
+                >
+                  {saveConfirmation === "updated"
+                    ? "Updated ✓"
+                    : saveConfirmation === "saved"
+                      ? "Saved ✓"
+                      : "Save changes"}
+                </button>
+                {dirty && <p className="unsaved-state">Unsaved changes</p>}
+              </form>
+
+              {portfolios.length > 0 && (
+                <section className="saved-portfolios">
+                  <h2>My portfolios</h2>
+                  <div className="portfolio-list">
+                    {portfolios.map((portfolio) => (
+                      <div className="portfolio-list-item" key={portfolio.id}>
+                        <button
+                          type="button"
+                          className={portfolio.id === selectedId ? "selected" : ""}
+                          onClick={() => openPortfolio(portfolio)}
+                        >
+                          <strong>{portfolio.name}</strong>
+                          <span>{portfolio.portfolio_positions.length} {portfolio.portfolio_positions.length === 1 ? "holding" : "holdings"}</span>
+                        </button>
+                        <div className="portfolio-delete-actions">
+                          {pendingDeleteId === portfolio.id ? (
+                            <>
+                              <button
+                                type="button"
+                                className="cancel-delete"
+                                onClick={() => setPendingDeleteId("")}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                className="delete-portfolio confirm"
+                                aria-label={`Confirm delete ${portfolio.name}`}
+                                onClick={() => void deletePortfolio(portfolio)}
+                              >
+                                Confirm delete
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              className="delete-portfolio"
+                              aria-label={`Delete ${portfolio.name}`}
+                              onClick={() => setPendingDeleteId(portfolio.id)}
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="button new-portfolio"
+                    onClick={startNewPortfolio}
+                  >
+                    + Create new portfolio
+                  </button>
+                </section>
+              )}
+              </aside>
+            )}
+
+            {portfolioView === "transactions" && (
+              <TransactionsView
+                portfolios={portfolios}
+                selectedId={selectedId}
+                onSelectPortfolio={(portfolioId) => {
+                  const portfolio = portfolios.find((item) => item.id === portfolioId);
+                  if (portfolio) {
+                    openPortfolio(portfolio);
+                    void loadTransactionHistory(portfolio.id);
+                  }
+                }}
+                transactions={transactions}
+                loading={loadingTransactions}
+                holdings={positions
+                  .filter((position) => position.ticker.trim() && Number(position.shares) > 0)
+                  .map((position) => ({
+                    ticker: position.ticker,
+                    shares: Number(position.shares),
+                    price: position.price,
+                    name: position.name || position.company_name,
+                  }))}
+                currency={selected?.base_currency ?? baseCurrency}
+                today={today}
+                blockedReason={
+                  !editingId
+                    ? "Save this portfolio first, then record its transactions."
+                    : dirty
+                      ? "Save your portfolio changes before recording a transaction."
+                      : null
+                }
+                onRecord={recordTransaction}
+              />
+            )}
+
+            {portfolioView === "analytics" && (
+              <PortfolioAnalyticsDashboard
+                portfolios={portfolios}
+                selectedId={selectedId}
+                positions={positions}
+                cash={cash}
+                transactions={transactions}
+                useTransactionHistory={book.use_transaction_history_analytics}
+                loading={loadingPortfolios}
+                asOfDate={today}
+                limits={{
+                  maxPositionPct:
+                    selected?.max_position_pct ?? book.max_position_pct,
+                  maxSectorPct:
+                    selected?.max_sector_pct ?? book.max_industry_pct,
+                  minCashPct: selected?.min_cash_pct,
+                  rebalancingThresholdPct:
+                    selected?.rebalancing_threshold_pct,
+                }}
+                onSelectPortfolio={(portfolioId) => {
+                  const portfolio = portfolios.find(
+                    (item) => item.id === portfolioId,
+                  );
+                  if (portfolio) openPortfolio(portfolio);
+                  if (book.use_transaction_history_analytics) {
+                    void loadTransactionHistory(portfolioId);
+                  }
+                }}
+                onRefresh={() => enrichPositions(positions)}
+              />
+            )}
+
+            {false && (
+              <section className="portfolio-analysis">
+              <div className="portfolio-summary">
+                <Metric label="Cash" value={money(cash)} />
+                <Metric label="My spent" value={money(costBasis)} />
+                <Metric
+                  label="Current portfolio"
+                  value={money(marketValue + cash)}
+                />
+                <div
+                  className={`metric ${
+                    gainSummary.total >= 0 ? "positive" : "negative"
+                  }`}
+                >
+                  <span>Net gain / loss</span>
+                  <strong>
+                    {gainSummary.total >= 0 ? "+" : ""}
+                    {money(gainSummary.total)}
+                  </strong>
+                </div>
+              </div>
+
+              <section className="gain-loss-cards" aria-label="Gain and loss summary">
+                <article className="panel performance-card gains">
+                  <p className="step">Gains</p>
+                  <h2>Winning stocks</h2>
+                  <strong className="performance-total">
+                    +{money(gainSummary.positive)}
+                  </strong>
+                  <span>
+                    {gainSummary.winners}{" "}
+                    {gainSummary.winners === 1 ? "stock" : "stocks"} with positive gains
+                  </span>
+                  <div className="performance-stock-list">
+                    {gainRows.map(({ position, result }) => (
+                      <PerformanceStockRow
+                        key={position.ticker}
+                        position={position}
+                        result={result}
+                      />
+                    ))}
+                    {!gainRows.length && (
+                      <p className="muted">No stocks with positive gains.</p>
+                    )}
+                  </div>
+                </article>
+                <article className="panel performance-card losses">
+                  <p className="step">Losses</p>
+                  <h2>Losing stocks</h2>
+                  <strong className="performance-total">
+                    {money(gainSummary.negative)}
+                  </strong>
+                  <span>
+                    {gainSummary.losers}{" "}
+                    {gainSummary.losers === 1 ? "stock" : "stocks"} with negative gains
+                  </span>
+                  <div className="performance-stock-list">
+                    {lossRows.map(({ position, result }) => (
+                      <PerformanceStockRow
+                        key={position.ticker}
+                        position={position}
+                        result={result}
+                      />
+                    ))}
+                    {!lossRows.length && (
+                      <p className="muted">No stocks with negative gains.</p>
+                    )}
+                  </div>
+                </article>
+              </section>
+
+              <label className="allocation-filter">
+                <input
+                  type="checkbox"
+                  checked={excludeEtfIndex}
+                  onChange={(event) => setExcludeEtfIndex(event.target.checked)}
+                />
+                <span>
+                  <strong>Exclude ETF / Index</strong>
+                  <small>Remove funds from position % and industry allocation</small>
+                </span>
+              </label>
+
+              <section className="allocation-grid" aria-label="Portfolio allocations">
+                <article className="panel allocation-panel">
+                <div className="panel-heading">
+                  <div>
+                    <p className="step">Allocation</p>
+                    <h2>Position sizes</h2>
+                  </div>
+                  <small>Based on latest completed daily close</small>
+                </div>
+                <div className="allocation-bars">
+                  {allocationPositions.filter((position) => position.price && position.shares).map((position) => {
+                    const value = Number(position.price) * Number(position.shares);
+                    const allocation = allocationPortfolioValue
+                      ? value / allocationPortfolioValue
+                      : 0;
+                    const breached = allocation > book.max_position_pct;
+                    return (
+                      <div
+                        className={`allocation-row ${breached ? "allocation-breach" : ""}`}
+                        key={position.ticker}
+                      >
+                        <div>
+                          <strong>{position.ticker}</strong>
+                          <span>
+                            {(allocation * 100).toFixed(1)}%
+                            {breached &&
+                              ` · over ${(book.max_position_pct * 100).toFixed(1)}% limit`}
+                          </span>
+                        </div>
+                        <div className="allocation-track">
+                          <span style={{ width: `${Math.min(allocation * 100, 100)}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {!allocationPositions.some(
+                    (position) => position.price && position.shares,
+                  ) && (
+                    <p className="muted">
+                      Resolve a stock to build the allocation chart.
+                    </p>
+                  )}
+                </div>
+                </article>
+
+                <article className="panel allocation-panel">
+                <div className="panel-heading">
+                  <div>
+                    <p className="step">Industries</p>
+                    <h2>Industry allocation</h2>
+                  </div>
+                  <small>Compared with Admin limits</small>
+                </div>
+                <div className="allocation-bars">
+                  {industryAllocations.map(({ industry, allocation, holdings }) => {
+                    const limit = book.max_industry_pct;
+                    const breached = allocation > limit;
+                    return (
+                      <div
+                        className={`allocation-row ${breached ? "allocation-breach" : ""}`}
+                        key={industry}
+                      >
+                        <div>
+                          <strong>
+                            <IndustryIcon icon={iconForIndustry(industry)} size={16} />
+                            {industry}
+                          </strong>
+                          <span>
+                            {(allocation * 100).toFixed(1)}%
+                            {breached && ` · over ${(limit * 100).toFixed(1)}% limit`}
+                          </span>
+                        </div>
+                        <p className="industry-holdings">{holdings.join(", ")}</p>
+                        <div className="allocation-track">
+                          <span style={{ width: `${Math.min(allocation * 100, 100)}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {!industryAllocations.length && (
+                    <p className="muted">Assign sectors to build industry allocation.</p>
+                  )}
+                </div>
+                </article>
+              </section>
+              </section>
+            )}
+          </div>
+
+          {reminderFor && (
+            <ReportReminderDialog
+              ticker={reminderFor.ticker}
+              companyName={reminderFor.companyName}
+              lastReportDate={reminderFor.lastReportDate}
+              portfolioId={selectedId || null}
+              email={email}
+              today={today}
+              emailEnabled={Boolean(book.email_reminders_enabled)}
+              onClose={() => setReminderFor(null)}
+            />
+          )}
+
+          {importMode && (
+            <div
+              className="modal-backdrop"
+              role="presentation"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget && !extracting) {
+                  setImportMode(null);
+                }
+              }}
+            >
+              <section
+                className="add-holding-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="add-holding-title"
+              >
+                <div className="modal-heading">
+                  <h2 id="add-holding-title">
+                    {importMode === "manual"
+                      ? "Add position"
+                      : importMode === "csv"
+                        ? "Import CSV"
+                        : "Import screenshot"}
+                  </h2>
+                  <button
+                    type="button"
+                    aria-label="Close"
+                    disabled={extracting}
+                    onClick={() => setImportMode(null)}
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {importMode === "manual" && (
+                  <div className="modal-fields">
+                    <label>
+                      Ticker or company
+                      <input
+                        autoFocus
+                        value={draftPosition.ticker}
+                        placeholder="AAPL or Apple"
+                        onChange={(event) =>
+                          setDraftPosition((current) => ({
+                            ...current,
+                            ticker: event.target.value,
+                          }))
+                        }
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") void addDraftPosition();
+                        }}
+                      />
+                    </label>
+                    <label>
+                      Shares
+                      <input
+                        aria-label="New stock shares"
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={draftPosition.shares}
+                        onChange={(event) => {
+                          const normalized = event.currentTarget.value.replace(
+                            /^0+(?=\d)/,
+                            "",
+                          );
+                          event.currentTarget.value = normalized;
+                          setDraftPosition((current) => ({
+                            ...current,
+                            shares: Number(normalized),
+                          }));
+                        }}
+                      />
+                    </label>
+                    <label>
+                      Purchase price
+                      <input
+                        aria-label="New stock purchase price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="Optional"
+                        value={draftPosition.purchase_price ?? ""}
+                        onChange={(event) =>
+                          setDraftPosition((current) => ({
+                            ...current,
+                            purchase_price:
+                              event.target.value === "" ? null : Number(event.target.value),
+                          }))
+                        }
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="button primary"
+                      onClick={() => void addDraftPosition()}
+                    >
+                      Add position
+                    </button>
+                  </div>
+                )}
+
+                {importMode === "csv" && (
+                  <label className="file-drop compact-drop">
+                    <span>Choose portfolio.csv</span>
+                    <small>Required headers: ticker,shares</small>
+                    <input
+                      type="file"
+                      accept=".csv,text/csv"
+                      onChange={async (event) => {
+                        const file = event.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          const text = await file.text();
+                          const firstPass = parsePortfolioCsvPreview(text);
+                          const mapping = defaultColumnMap(firstPass.headers);
+                          const preview = parsePortfolioCsvPreview(text, mapping);
+                          setCsvText(text);
+                          setColumnMap(mapping);
+                          setImportPreview(preview);
+                          setError(preview.errors.join(" "));
+                          setNotice("CSV parsed. Confirm the preview before importing.");
+                        } catch (cause) {
+                          setError(cause instanceof Error ? cause.message : "Invalid CSV");
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+
+                {importMode === "picture" && (
+                  <>
+                    <label className="file-drop compact-drop">
+                      <span>
+                        {extracting ? "Reading picture…" : "Choose a portfolio printscreen"}
+                      </span>
+                      <small>PNG, JPEG, or WebP · maximum 8 MB</small>
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        disabled={extracting}
+                        onChange={async (event) => {
+                          const file = event.target.files?.[0];
+                          if (!file) return;
+                          await extractPicture(file);
+                        }}
+                      />
+                    </label>
+                    <p className="privacy-note">
+                      Sent to OpenAI for extraction and not stored by StockBuddyAI.
+                    </p>
+                  </>
+                )}
+
+                {importPreview && (
+                  <section className="import-preview" aria-label="Import preview">
+                    <h3>Import preview</h3>
+                    {importMode === "csv" && importPreview.headers.length > 0 && (
+                      <div className="column-mapping">
+                        {(
+                          [
+                            ["ticker", "Ticker / Symbol"],
+                            ["quantity", "Quantity"],
+                            ["averageCost", "Purchase price"],
+                          ] as const
+                        ).map(([field, label]) => (
+                          <label key={field}>
+                            {label}
+                            <select
+                              aria-label={`Map ${label}`}
+                              value={columnMap[field] ?? ""}
+                              onChange={(event) => {
+                                const mapping = {
+                                  ...columnMap,
+                                  [field]: event.target.value,
+                                };
+                                setColumnMap(mapping);
+                                setImportPreview(
+                                  parsePortfolioCsvPreview(csvText, mapping),
+                                );
+                              }}
+                            >
+                              {field === "averageCost" && (
+                                <option value="">Not provided</option>
+                              )}
+                              {importPreview.headers.map((header) => (
+                                <option key={header} value={header}>
+                                  {header}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                    <p>
+                      {importPreview.positions.length} recognized rows
+                      {importPreview.errors.length
+                        ? ` · ${importPreview.errors.length} rows need attention`
+                        : ""}
+                    </p>
+                    {importPreview.errors.length > 0 && (
+                      <ul className="import-errors">
+                        {importPreview.errors.map((message) => (
+                          <li key={message}>{message}</li>
+                        ))}
+                      </ul>
+                    )}
+                    <div className="import-preview-rows">
+                      {importPreview.positions.map((position, index) => (
+                        <div key={`${position.ticker}-${index}`}>
+                          <strong>{position.ticker}</strong>
+                          <span>{position.shares} quantity</span>
+                          <span>
+                            {position.purchase_price == null
+                              ? "No purchase price"
+                              : money(position.purchase_price, baseCurrency)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    {(importPreview.duplicateTickers.length > 0 ||
+                      importPreview.positions.some((incoming) =>
+                        positions.some(
+                          (current) =>
+                            current.ticker.toUpperCase() ===
+                            incoming.ticker.toUpperCase(),
+                        ),
+                      )) && (
+                      <p className="import-warning">
+                        Duplicate positions detected. Choose whether to combine them
+                        using weighted average cost or keep existing rows unchanged.
+                      </p>
+                    )}
+                    <div className="import-preview-actions">
+                      <button type="button" onClick={() => setImportPreview(null)}>
+                        Cancel
+                      </button>
+                      <button type="button" onClick={() => void commitImport(false)}>
+                        Import and skip duplicates
+                      </button>
+                      <button
+                        type="button"
+                        className="button primary"
+                        onClick={() => void commitImport(true)}
+                        disabled={importPreview.errors.length > 0}
+                      >
+                        Import and combine duplicates
+                      </button>
+                    </div>
+                  </section>
+                )}
+              </section>
+            </div>
+          )}
+        </section>
+      ) : (
+        <RunTest
+          portfolios={portfolios}
+          dailyLimit={book.daily_ai_reviews ?? null}
+          subtitle={
+            <>
+              Pick the holdings you want a second opinion on. Five investor personas review each one and Buddy sums it up: keep, add, trim, or sell. Study output, not financial advice. Position cap{" "}
+              {Math.round(book.max_position_pct * 100)}% · industry cap{" "}
+              {Math.round(book.max_industry_pct * 100)}%.
+            </>
+          }
+          friendlyError={friendlyError}
+          renderReport={(run) => <Report run={run} />}
+        />
+      )}
+    </main>
+  );
+}
+
+function StackedChange({ amount, percent }: { amount: string; percent: string }) {
+  return (
+    <span className="stacked-change">
+      <span>{amount}</span>
+      <small>{percent}</small>
+    </span>
+  );
+}
+
+function holdingColumns({
+  returns,
+  lifecycle,
+  status,
+}: {
+  returns: boolean;
+  lifecycle: boolean;
+  status: boolean;
+}) {
+  const tracks = [
+    "minmax(136px, 1.7fr)",
+    "minmax(42px, 0.5fr)",
+    "minmax(64px, 0.75fr)",
+    "minmax(64px, 0.75fr)",
+    "minmax(40px, 0.45fr)",
+    "minmax(70px, 0.8fr)",
+    "minmax(72px, 0.9fr)",
+    "minmax(48px, 0.55fr)",
+    "minmax(92px, 1.15fr)",
+  ];
+  if (returns) {
+    tracks.push(
+      "minmax(44px, 0.5fr)",
+      "minmax(44px, 0.5fr)",
+      "minmax(44px, 0.5fr)",
+      "minmax(78px, 0.9fr)",
+    );
+  }
+  if (lifecycle) tracks.push("minmax(84px, 0.8fr)");
+  if (status) tracks.push("minmax(88px, 0.85fr)");
+  tracks.push("48px");
+  return tracks.join(" ");
+}
+
+function SortButton({
+  label,
+  active,
+  direction,
+  defaultDirection,
+  onClick,
+  className = "",
+}: {
+  label: string;
+  active: boolean;
+  direction: SortDirection;
+  defaultDirection: SortDirection;
+  onClick: () => void;
+  className?: string;
+}) {
+  const nextDirection =
+    active && direction === "asc"
+      ? "desc"
+      : active
+        ? "asc"
+        : defaultDirection;
+  const alphabetic = label.startsWith("Symbol");
+  const directionLabel = alphabetic
+    ? nextDirection === "asc"
+      ? "A to Z"
+      : "Z to A"
+    : nextDirection === "asc"
+      ? "smallest to largest"
+      : "largest to smallest";
+  return (
+    <button
+      type="button"
+      className={`sort-button ${className} ${active ? "active" : ""}`}
+      aria-label={`Sort ${label} ${directionLabel}`}
+      aria-pressed={active}
+      onClick={onClick}
+    >
+      <span>{label}</span>
+      <span aria-hidden="true">{active ? (direction === "asc" ? "↑" : "↓") : "↕"}</span>
+    </button>
+  );
+}
+
+function PerformanceStockRow({
+  position,
+  result,
+}: {
+  position: Position;
+  result: NonNullable<ReturnType<typeof gainLoss>>;
+}) {
+  const sign = result.amount >= 0 ? "+" : "";
+  return (
+    <div className="performance-stock-row">
+      <div>
+        <strong>{position.ticker}</strong>
+        <span>{position.name || "Company name unavailable"}</span>
+      </div>
+      <div>
+        <strong>
+          {sign}
+          {money(result.amount)}
+        </strong>
+        <span>
+          {result.percent == null
+            ? "—"
+            : `${result.percent >= 0 ? "+" : ""}${result.percent.toFixed(1)}%`}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function GrowthValue({ value }: { value?: number | null }) {
+  return (
+    <span className={value == null ? "" : value >= 0 ? "positive" : "negative"}>
+      {value == null ? "—" : `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`}
+    </span>
+  );
+}
+
+function Report({ run }: { run: AnalysisRun }) {
+  if (run.status === "pending" || run.status === "running") {
+    return (
+      <section className="report loading-card">
+        <span className="pulse" />
+        <div><p className="step">Analysis in progress</p><h2>Reading {run.ticker}’s filed history</h2></div>
+      </section>
+    );
+  }
+  if (run.status === "failed") {
+    return <section className="report alert">Analysis failed: {run.error}</section>;
+  }
+  const recommendation = run.recommendations?.[0];
+  const signals = run.analysis_signals ?? [];
+  if (notEnoughData(run)) {
+    return (
+      <section className="report report-short">
+        <p>
+          <strong>Not enough company data to review {run.ticker} on {run.as_of}.</strong> The personas need
+          4 quarters of financials filed with the SEC, and {run.ticker} doesn&apos;t have them yet (common for
+          new listings, ETFs, and funds).
+        </p>
+      </section>
+    );
+  }
+  return (
+    <section className="report">
+      <div className="report-header">
+        <div>
+          <p className="step">03 / Recorded decision</p>
+          <h2>{run.ticker} · {run.as_of}</h2>
+        </div>
+        {recommendation && <RecommendationBadge recommendation={recommendation} />}
+      </div>
+      {recommendation && (
+        <div className="weight-grid">
+          <Metric label="Current weight" value={percent(recommendation.current_weight)} />
+          <Metric label="Target weight" value={percent(recommendation.target_weight)} />
+          <Metric label="Reference close" value={`$${Number(recommendation.mark).toFixed(2)}`} />
+          <Metric
+            label="Share change"
+            value={`${recommendation.delta_shares > 0 ? "+" : ""}${recommendation.delta_shares}`}
+          />
+        </div>
+      )}
+      <div className="signal-grid">
+        {signals.map((signal) => <SignalCard key={`${signal.strategy}-${signal.persona}`} signal={signal} />)}
+      </div>
+      <p className="disclaimer">Study output only. No order was sent to a broker.</p>
+    </section>
+  );
+}
+
+function RecommendationBadge({ recommendation }: { recommendation: Recommendation }) {
+  return <span className={`recommendation ${recommendation.label}`}>{recommendation.label}</span>;
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return <div className="metric"><span>{label}</span><strong>{value}</strong></div>;
+}
+
+function SummaryCard({
+  label,
+  value,
+  note,
+  tone,
+  emphasis = false,
+}: {
+  label: string;
+  value: string;
+  note?: string;
+  tone?: "positive" | "negative";
+  emphasis?: boolean;
+}) {
+  return (
+    <article className={`summary-card ${tone ?? ""}`}>
+      <span>{label}</span>
+      <strong className={emphasis ? "emphasis" : undefined}>{value}</strong>
+      {note && <small>{note}</small>}
+    </article>
+  );
+}
+
+function PercentSetting({
+  label,
+  value,
+  fallback,
+  onChange,
+}: {
+  label: string;
+  value: number | null;
+  fallback?: number;
+  onChange: (value: number | null) => void;
+}) {
+  return (
+    <label>
+      {label}
+      <input
+        type="number"
+        min="0"
+        max="100"
+        step="0.1"
+        placeholder={
+          fallback == null ? "0" : `Default ${(fallback * 100).toFixed(1)}`
+        }
+        value={value == null ? "" : value * 100}
+        onChange={(event) =>
+          onChange(
+            event.target.value === "" ? null : Number(event.target.value) / 100,
+          )
+        }
+      />
+    </label>
+  );
+}
+
+function benchmarkLabel(ticker: string) {
+  return (
+    {
+      SPY: "S&P 500",
+      QQQ: "Nasdaq-100",
+      DIA: "Dow Jones",
+      IWM: "Russell 2000",
+      VTI: "Total US Market",
+    }[ticker] ?? ticker
+  );
+}
+
+function latestPriceDate(positions: Position[]) {
+  return positions
+    .map((position) => position.price_timestamp ?? position.price_date)
+    .filter((value): value is string => Boolean(value))
+    .sort()
+    .at(-1);
+}
+
+function duplicateTickers(positions: Position[]) {
+  const counts = new Map<string, number>();
+  for (const position of positions) {
+    const ticker = position.ticker.trim().toUpperCase();
+    counts.set(ticker, (counts.get(ticker) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .filter(([, count]) => count > 1)
+    .map(([ticker]) => ticker);
+}
+
+function defaultColumnMap(headers: string[]): ImportColumnMap {
+  return {
+    ticker: headers.includes("ticker")
+      ? "ticker"
+      : headers.includes("symbol")
+        ? "symbol"
+        : headers[0] ?? "",
+    quantity: headers.includes("quantity")
+      ? "quantity"
+      : headers.includes("shares")
+        ? "shares"
+        : headers[1] ?? "",
+    averageCost: headers.includes("average cost")
+      ? "average cost"
+      : headers.includes("purchase_price")
+        ? "purchase_price"
+        : headers.includes("purchase price")
+          ? "purchase price"
+          : "",
+  };
+}
+
+function toggleExpanded(
+  setter: Dispatch<SetStateAction<Set<number>>>,
+  index: number,
+  force?: boolean,
+) {
+  setter((current) => {
+    const next = new Set(current);
+    const expanded = force ?? !next.has(index);
+    if (expanded) next.add(index);
+    else next.delete(index);
+    return next;
+  });
+}
+
+function normalizeSector(
+  sector: string | null | undefined,
+  industry: string | null | undefined,
+  assetType: Position["asset_type"],
+) {
+  if (assetType === "ETF" || assetType === "Index" || assetType === "Mutual Fund") {
+    return "Not Applicable";
+  }
+  if (sector && canonicalSectors.includes(sector as (typeof canonicalSectors)[number])) {
+    return sector;
+  }
+  const value = `${sector ?? ""} ${industry ?? ""}`.toLowerCase();
+  if (/(technology|software|semiconductor|computer|electronic)/.test(value)) {
+    return "Information Technology";
+  }
+  if (/(bank|financial|insurance|capital market)/.test(value)) return "Financials";
+  if (/(health|medical|biotech|pharma)/.test(value)) return "Health Care";
+  if (/(energy|oil|gas)/.test(value)) return "Energy";
+  if (/(utility|utilities)/.test(value)) return "Utilities";
+  if (/(real estate|reit)/.test(value)) return "Real Estate";
+  if (/(industrial|aerospace|transport)/.test(value)) return "Industrials";
+  if (/(consumer defensive|consumer staples)/.test(value)) return "Consumer Staples";
+  if (/(consumer|retail|auto)/.test(value)) return "Consumer Discretionary";
+  if (/(communication|telecom|media)/.test(value)) return "Communication Services";
+  if (/(material|chemical|mining)/.test(value)) return "Materials";
+  return "Unknown";
+}
+
+function SignalCard({ signal }: { signal: Signal }) {
+  return (
+    <article className="signal-card">
+      <div className="signal-title">
+        <div><span>{signal.strategy}</span><h3>{signal.persona}</h3></div>
+        <strong className={signal.signal}>{signal.abstained ? "ABSTAIN" : `${signal.signal} ${signal.confidence}%`}</strong>
+      </div>
+      <p>{signal.reasoning}</p>
+    </article>
+  );
+}
+
+function percent(value: number) {
+  return `${(Number(value) * 100).toFixed(1)}%`;
+}
+
+function money(value: number, currency = "USD") {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 2,
+  }).format(Number(value));
+}
+
+
+function gainLoss(position: Position) {
+  if (position.price == null || position.purchase_price == null) return null;
+  const cost = Number(position.purchase_price) * Number(position.shares);
+  const amount =
+    (Number(position.price) - Number(position.purchase_price)) *
+    Number(position.shares);
+  return {
+    amount,
+    percent: cost ? (amount / cost) * 100 : null,
+  };
+}
+
+function friendlyError(error: Error) {
+  return ["Failed to fetch", "Load failed"].includes(error.message)
+    ? "Portfolio data is temporarily unavailable. Your unsaved changes are still here."
+    : error.message;
+}

@@ -1,0 +1,31 @@
+schema_version: 2
+name: stockbuddy-long-book
+strategies:
+  - name: deep-value
+    display_name: Deep Value
+    weight: 0.7
+    models:
+      - name: graham
+        weight: 2.0
+      - name: buffett
+      - name: munger
+    blend:
+      mode: long_only
+      method: conviction_weighted
+      gross_target: 1.0
+  - name: trajectory
+    display_name: Trajectory
+    weight: 0.3
+    models:
+      - name: lynch
+      - name: druckenmiller
+    blend:
+      mode: long_only
+      method: conviction_weighted
+      gross_target: 1.0
+risk:
+  max_position_pct: 0.25
+  max_gross_exposure: 1.0
+capital: 100000
+rebalance: weekly
+benchmark: SPY

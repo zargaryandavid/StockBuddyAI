@@ -1,0 +1,16 @@
+---
+description: Require durable project documentation and verified changes
+alwaysApply: true
+---
+
+# Development Process
+
+For every implementation:
+
+1. Keep `docs/ARCHITECTURE.md` current with the code structure, component responsibilities, data flow, database design, and important technical decisions.
+2. Record user-visible functionality and every completed change in `CHANGELOG.md` under `Unreleased`.
+3. Update documentation in the same change as the code; never leave documentation for later.
+4. Test the completed work in proportion to its risk. Run relevant automated tests, type checks, linting, builds, and database checks when available.
+5. Do not tell the user that work is complete unless the relevant verification passed.
+6. If verification cannot run or fails, state that clearly, report the exact blocker or failure, and do not call the work complete.
+7. Never commit secrets. Keep Supabase service-role/secret keys server-side and use environment examples with placeholders.

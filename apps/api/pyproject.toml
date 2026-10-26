@@ -1,0 +1,42 @@
+[project]
+name = "stockbuddy-api"
+version = "0.1.0"
+description = "StockBuddyAI analysis API"
+requires-python = ">=3.11"
+dependencies = [
+  "aihf @ git+https://github.com/virattt/ai-hedge-fund.git@4e1657ddc689e3939c481a8f0955444b10f02dc9",
+  "anthropic>=0.125,<1",
+  "fastapi>=0.115,<1",
+  "httpx>=0.28,<1",
+  "pydantic-settings>=2.7,<3",
+  "python-multipart>=0.0.20,<1",
+  "uvicorn[standard]>=0.34,<1",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3,<9",
+  "pytest-cov>=6,<7",
+  "ruff>=0.9,<1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/stockbuddy"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
