@@ -121,21 +121,31 @@ migration histories after pushing.
 - The next-report date is an estimate (last SEC filing plus 91 days). Companies set
   the real date; the popup and the email both say so.
 
-## Hosting
+## Hosting (Vercel + Supabase)
 
-- **Web** (`apps/web`) runs on Vercel as a single Next.js project with Root Directory
-  `apps/web`. It needs `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
-  `NEXT_PUBLIC_API_URL`, and `NEXT_PUBLIC_CONTACT_EMAIL`. These are baked in at build time, so
-  redeploy after changing them. Never give Vercel the service role key or AI keys.
-- **API** (`apps/api`) needs a server that stays running (background reviews, the reminder
-  loop, the SEC disk cache), so it is not on Vercel. `render.yaml` is a Render Blueprint for
-  it: New -> Blueprint -> this repository, then fill in the values marked `sync: false`.
-  Use the same `SUPABASE_SERVICE_ROLE_KEY` as before, or the keys saved in Admin ->
-  Connections can't be decrypted. `SEC_USER_AGENT` must contain a contact email or the API
-  won't start.
-- **Linking them:** `WEB_ORIGIN` on the API is the Vercel address (browser calls are
-  refused from anywhere else), and `NEXT_PUBLIC_API_URL` on Vercel is the Render address.
-- **Supabase Auth -> URL Configuration:** Site URL is the Vercel address; Redirect URLs
+Two Vercel projects from this one repository, plus the hosted Supabase project.
+
+- **Web** (`stock-buddy-ai`): Root Directory `apps/web`, framework Next.js. Variables:
+  `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_API_URL`
+  (the API project's address), `NEXT_PUBLIC_CONTACT_EMAIL`. They are baked in at build
+  time, so redeploy after changing them. Never give it the service role key or AI keys.
+- **API** (second project): Root Directory `apps/api`, framework FastAPI. Vercel installs
+  from `pyproject.toml` + `uv.lock` with uv and loads `app` from `apps/api/index.py`;
+  `apps/api/vercel.json` allows 300 s per request and schedules the reminder job.
+  Variables: `WEB_ORIGIN` (the web address), `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`,
+  `SUPABASE_SERVICE_ROLE_KEY` (the same one as before, or keys saved in Admin ->
+  Connections can't be decrypted), `SEC_USER_AGENT` (must contain an email or the API
+  won't start), `ADMIN_LOGIN_EMAIL`, `OPENAI_API_KEY` and/or `ANTHROPIC_API_KEY`, and
+  `CRON_SECRET` (any long random text).
+- **How Vercel changes behaviour** (`VERCEL=1` turns on `serverless`): nothing runs after
+  a response, so an Ask Buddy review runs inside its request and answers when finished
+  (the page shows "Reviewing…" meanwhile); report reminders are sent by Vercel Cron
+  calling `/api/cron/reminders` daily at 14:00 UTC with `CRON_SECRET`, not by a timer; the
+  SEC and engine caches live in `/tmp`, which is cleared between instances.
+- **Size:** the review library's charting, terminal, and unused AI-provider packages are
+  skipped with `[tool.uv] override-dependencies`; a production install is about 180 MB
+  (Vercel's Python limit is 500 MB).
+- **Supabase Auth -> URL Configuration:** Site URL is the web address; Redirect URLs
   include its `/auth/confirm` and `/auth/reset` (add the localhost ones to test locally).
 
 ## Recovery

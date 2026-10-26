@@ -80,7 +80,7 @@ async def lifespan(app: FastAPI):
     await apply_connections(app)
     await gateway.ensure_admin_user()
     reminder_task = None
-    if "PYTEST_CURRENT_TEST" not in os.environ:
+    if "PYTEST_CURRENT_TEST" not in os.environ and not settings.serverless:
         reminder_task = asyncio.create_task(_deliver_reminders(app))
     yield
     if reminder_task:
@@ -1000,7 +1000,7 @@ async def create_analysis(
     run = await repository.create_run(
         user_id, payload.portfolio_id, payload.ticker, as_of.isoformat()
     )
-    background_tasks.add_task(
+    review = (
         request.app.state.analysis.run,
         UUID(run["id"]),
         user_id,
@@ -1008,6 +1008,11 @@ async def create_analysis(
         payload.ticker,
         as_of.isoformat(),
     )
+    if request.app.state.settings.serverless:
+        # Nothing keeps running after the response on Vercel, so finish the review first.
+        await review[0](*review[1:])
+        return await repository.get_run(UUID(run["id"]), user_id) or run
+    background_tasks.add_task(*review)
     return run
 
 
@@ -1039,6 +1044,15 @@ async def reset_my_ai_usage(request: Request, account: Annotated[Account, Depend
     and today's other uses), for testing."""
     removed = await request.app.state.repository.reset_ai_usage_today(account.id)
     return {"reset": removed}
+
+
+@app.get("/api/cron/reminders")
+async def cron_reminders(request: Request, authorization: Annotated[str | None, Header()] = None):
+    """Sends due report reminders; Vercel Cron calls this once a day with CRON_SECRET."""
+    secret = request.app.state.settings.cron_secret
+    if not secret or authorization != f"Bearer {secret}":
+        raise HTTPException(status_code=401, detail="Not allowed")
+    return {"sent": await request.app.state.reminders.send_due()}
 
 
 @app.get("/api/analyses/readiness")

@@ -6,8 +6,14 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Added
 
-- `render.yaml`: a Render Blueprint for hosting the API (build with uv, `/health`
-  check, `WEB_ORIGIN` set to the Vercel site). Hosting steps are in `docs/OPERATIONS.md`.
+- The API runs on Vercel as its own project (`apps/api/index.py`, `apps/api/vercel.json`).
+  On Vercel an Ask Buddy review finishes inside its request (the page shows "Reviewing…"
+  until it answers), report reminders come from a daily Vercel Cron call to
+  `/api/cron/reminders` checked with `CRON_SECRET`, and caches use `/tmp`. Unused
+  packages from the review library (charts, its terminal app, Google/xAI/DeepSeek
+  connectors) are skipped, bringing the install to about 180 MB. `cryptography` and
+  `requests` are now listed as direct dependencies. Render setup removed. Steps in
+  `docs/OPERATIONS.md`.
 
 - Sign-in page: two drawn $100 "StockBuddy Reserve" play bills in the navy panel (an
   illustration with its own wording and emblem, not a copy of real currency), and
@@ -148,6 +154,11 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Changed
 
+- Sign-in page: a photo of a real $100 note (two, stacked) replaces the drawn play bill.
+  It is front only, shown at no more than about 58% of a real note's size, and stored at
+  low resolution (`apps/web/public/login/hundred-dollar-bill.webp`).
+- US-dollar green (#1f4d32) for the side menu and the sign-in panel (with a lighter
+  green glow), instead of slate grey and navy.
 - Sign-in, sign-up, and password-reset problems (e.g. "Invalid login credentials") show
   in red as an alert; confirmations such as "We sent a link" stay grey.
 - Ask Buddy tokens are a monthly allowance that resets on the 1st (UTC) instead of every

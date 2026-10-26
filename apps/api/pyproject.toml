@@ -6,10 +6,12 @@ requires-python = ">=3.11"
 dependencies = [
   "aihf @ git+https://github.com/virattt/ai-hedge-fund.git@4e1657ddc689e3939c481a8f0955444b10f02dc9",
   "anthropic>=0.125,<1",
+  "cryptography>=44",
   "fastapi>=0.115,<1",
   "httpx>=0.28,<1",
   "pydantic-settings>=2.7,<3",
   "python-multipart>=0.0.20,<1",
+  "requests>=2.32,<3",
   "uvicorn[standard]>=0.34,<1",
 ]
 
@@ -18,6 +20,19 @@ dev = [
   "pytest>=8.3,<9",
   "pytest-cov>=6,<7",
   "ruff>=0.9,<1",
+]
+
+[tool.uv]
+# The review library (aihf) also installs tools this API never loads: charts and maths
+# for its own backtests, its terminal app, and connectors for AI providers we don't
+# offer. Skipping them keeps the API small enough to run on Vercel.
+override-dependencies = [
+  "scipy; sys_platform == 'never'",
+  "matplotlib; sys_platform == 'never'",
+  "textual; sys_platform == 'never'",
+  "langchain-google-genai; sys_platform == 'never'",
+  "langchain-xai; sys_platform == 'never'",
+  "langchain-deepseek; sys_platform == 'never'",
 ]
 
 [build-system]

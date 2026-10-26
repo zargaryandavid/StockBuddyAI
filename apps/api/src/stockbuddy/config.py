@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 
 from pydantic import AliasChoices, Field
@@ -27,7 +28,15 @@ class Settings(BaseSettings):
     # service role key.
     connections_encryption_key: str = ""
     openai_vision_model: str = "gpt-6-sol"
-    sec_cache_dir: str = ".cache/sec"
+    # Vercel's disk is read-only except /tmp, which is wiped between instances.
+    sec_cache_dir: str = Field(
+        default_factory=lambda: "/tmp/stockbuddy/sec" if os.environ.get("VERCEL") else ".cache/sec"
+    )
+    # On a serverless host (Vercel sets VERCEL=1) nothing runs after a request ends, so a
+    # review runs inside its request and reminders come from a scheduled call instead.
+    serverless: bool = Field(default_factory=lambda: bool(os.environ.get("VERCEL")))
+    # Vercel Cron sends it as a bearer token to /api/cron/reminders.
+    cron_secret: str = ""
     admin_email: str = Field(
         default="",
         validation_alias=AliasChoices("ADMIN_LOGIN_EMAIL", "ADIMIN_LOGIN_EMAIL"),

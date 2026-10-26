@@ -407,3 +407,74 @@ def test_a_holding_without_enough_filings_is_refused_without_using_a_token():
         "AAPL": None,
         "SPCX": "Only 2 of 4 quarters of financials are filed so far.",
     }
+
+
+def test_on_a_serverless_host_the_review_finishes_before_the_answer():
+    class Studio:
+        def daily_limit(self, feature):
+            return 10
+
+    class InlineRepository(FakeRepository):
+        async def load_settings(self):
+            return Studio()
+
+        async def use_ai_feature(self, token, feature, daily_limit):
+            return True
+
+        async def create_run(self, user_id, portfolio_id, ticker, as_of):
+            return {"id": "10000000-0000-0000-0000-000000000009", "status": "pending"}
+
+        async def get_run(self, run_id, user_id):
+            return {"id": str(run_id), "status": "completed"}
+
+    analysis = ReadyAnalysis()
+    app.dependency_overrides[current_user] = user_override
+    try:
+        with TestClient(app) as client:
+            app.state.repository = InlineRepository(
+                {"portfolio_positions": [{"ticker": "AAPL", "shares": 1}]}
+            )
+            app.state.analysis = analysis
+            app.state.settings = app.state.settings.model_copy(update={"serverless": True})
+            response = client.post(
+                "/api/analyses",
+                headers={"Authorization": "Bearer test-token"},
+                json={"portfolio_id": str(PORTFOLIO_ID), "ticker": "AAPL", "as_of": "2024-12-31"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+    assert response.status_code == 202
+    assert response.json()["status"] == "completed"
+    assert analysis.args[3] == "AAPL"
+
+
+def test_reminder_cron_needs_the_secret():
+    class Reminders:
+        calls = 0
+
+        async def send_due(self):
+            self.calls += 1
+            return 2
+
+    reminders = Reminders()
+    with TestClient(app) as client:
+        app.state.reminders = reminders
+        app.state.settings = app.state.settings.model_copy(update={"cron_secret": ""})
+        unset = client.get("/api/cron/reminders", headers={"Authorization": "Bearer x"})
+        app.state.settings = app.state.settings.model_copy(update={"cron_secret": "s3cret"})
+        wrong = client.get("/api/cron/reminders", headers={"Authorization": "Bearer nope"})
+        right = client.get("/api/cron/reminders", headers={"Authorization": "Bearer s3cret"})
+    assert (unset.status_code, wrong.status_code) == (401, 401)
+    assert right.json() == {"sent": 2}
+    assert reminders.calls == 1
+
+
+def test_vercel_uses_tmp_for_caches_and_runs_serverless(monkeypatch):
+    from stockbuddy.config import Settings
+
+    monkeypatch.setenv("VERCEL", "1")
+    on_vercel = Settings()
+    monkeypatch.delenv("VERCEL")
+    local = Settings()
+    assert (on_vercel.serverless, on_vercel.sec_cache_dir) == (True, "/tmp/stockbuddy/sec")
+    assert (local.serverless, local.sec_cache_dir) == (False, ".cache/sec")

@@ -32,7 +32,8 @@ export function latestReviewDate(now = new Date()) {
 }
 
 type Row = { key: string; portfolioId: string; portfolioName: string; ticker: string; name: string };
-type Item = { row: Row; run: AnalysisRun | null; skipped?: boolean; note?: string };
+// pending: the review was asked for and hasn't answered yet (on Vercel it answers when done).
+type Item = { row: Row; run: AnalysisRun | null; skipped?: boolean; note?: string; pending?: boolean };
 type Phase = "idle" | "running" | "paused" | "stopping" | "finished" | "stopped";
 type Usage = { used: number; limit: number; left: number; period?: string; resets_on?: string };
 
@@ -188,6 +189,7 @@ export function RunTest({
       while (control.current.paused && !control.current.stopped) await wait(300);
       if (control.current.stopped) break;
       let run: AnalysisRun;
+      update(index, { pending: true });
       try {
         run = await api<AnalysisRun>("/api/analyses", {
           method: "POST",
@@ -197,14 +199,15 @@ export function RunTest({
         const text = friendlyError(cause instanceof Error ? cause : new Error("Could not start the review"));
         // One holding without enough filings shouldn't stop the others.
         if (/can't be reviewed yet/.test(text)) {
-          update(index, { skipped: true, note: text });
+          update(index, { pending: false, skipped: true, note: text });
           continue;
         }
+        update(index, { pending: false });
         setMessage(text);
         halted = true;
         break;
       }
-      update(index, { run });
+      update(index, { run, pending: false });
       while (isActive(run)) {
         await wait(POLL_MS);
         try {
@@ -242,7 +245,7 @@ export function RunTest({
   }
 
   const done = items.filter((item) => item.run && !isActive(item.run)).length;
-  const current = items.find((item) => isActive(item.run));
+  const current = items.find((item) => item.pending || isActive(item.run));
   const failed = items.filter((item) => item.run?.status === "failed").length;
   const skipped = items.filter((item) => item.skipped).length;
   const progress = items.length ? Math.round((done / items.length) * 100) : 0;
@@ -635,6 +638,7 @@ export function notEnoughData(run: AnalysisRun) {
 function statusText(item: Item) {
   if (item.note) return "Can't review yet";
   if (item.skipped) return "Not started";
+  if (item.pending) return "Reviewing…";
   if (!item.run) return "Waiting";
   if (isActive(item.run)) return "Reviewing…";
   if (item.run.status === "failed") return "Failed";
@@ -644,6 +648,7 @@ function statusText(item: Item) {
 }
 
 function StatusIcon({ item }: { item: Item }) {
+  if (item.pending) return <Loader2 size={16} className="spinning" aria-hidden="true" />;
   if (item.skipped || !item.run) return <CircleDashed size={16} aria-hidden="true" />;
   if (isActive(item.run)) return <Loader2 size={16} className="spinning" aria-hidden="true" />;
   if (item.run.status === "failed") return <CircleAlert size={16} aria-hidden="true" />;
