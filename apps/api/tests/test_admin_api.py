@@ -155,3 +155,30 @@ def test_admin_can_reset_their_own_ai_tokens_for_today():
     assert response.status_code == 200
     assert response.json() == {"reset": 2}
     assert repository.reset_for == ADMIN.id
+
+
+def test_people_can_delete_their_own_account_but_not_the_admin():
+    class DeletingGateway(Gateway):
+        deleted = []
+
+        async def delete_user(self, user_id):
+            self.deleted.append(user_id)
+
+    gateway = DeletingGateway()
+    with TestClient(app) as client:
+        app.state.gateway = gateway
+        user = {"Authorization": "Bearer user"}
+        unconfirmed = client.request(
+            "DELETE", "/api/account", headers=user, json={"confirm": "yes"}
+        )
+        admin = client.request(
+            "DELETE",
+            "/api/account",
+            headers={"Authorization": "Bearer admin"},
+            json={"confirm": "delete"},
+        )
+        done = client.request("DELETE", "/api/account", headers=user, json={"confirm": " Delete "})
+    assert unconfirmed.status_code == 422
+    assert admin.status_code == 403
+    assert done.status_code == 204
+    assert gateway.deleted == [USER.id]

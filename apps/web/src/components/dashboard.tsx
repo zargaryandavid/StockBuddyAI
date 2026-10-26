@@ -875,6 +875,12 @@ export function Dashboard({
     }
   }
 
+  async function accountDeleted() {
+    await createClient().auth.signOut();
+    router.push("/login?confirm=deleted");
+    router.refresh();
+  }
+
   async function signOut() {
     await createClient().auth.signOut();
     router.push("/login");
@@ -1013,6 +1019,8 @@ export function Dashboard({
           today={today}
           onSave={saveProfile}
           onClose={() => setShowProfile(false)}
+          canDeleteAccount={role !== "admin"}
+          onAccountDeleted={() => void accountDeleted()}
         />
       )}
 

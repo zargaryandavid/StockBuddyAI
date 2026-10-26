@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Copy, Link2 } from "lucide-react";
+import { Check, Copy, Link2, Trash2 } from "lucide-react";
 
 import { api } from "@/lib/api";
 import { ageOn } from "@/lib/age";
@@ -21,6 +21,8 @@ export function ProfileDialog({
   today,
   portfolios = [],
   currentPortfolioId = null,
+  canDeleteAccount = true,
+  onAccountDeleted,
   onSave,
   onClose,
 }: {
@@ -30,6 +32,10 @@ export function ProfileDialog({
   portfolios?: { id: string; name: string }[];
   /** The portfolio whose value a FIRE link counts as current assets. */
   currentPortfolioId?: string | null;
+  /** The admin account can't delete itself here. */
+  canDeleteAccount?: boolean;
+  /** Called after the account is gone; the caller signs out. */
+  onAccountDeleted?: () => void;
   onSave: (values: ProfileValues) => Promise<void>;
   onClose: () => void;
 }) {
@@ -125,6 +131,7 @@ export function ProfileDialog({
           </button>
         </form>
         <ShareLinks portfolios={portfolios} currentPortfolioId={currentPortfolioId} />
+        {onAccountDeleted && <DeleteAccount allowed={canDeleteAccount} onDeleted={onAccountDeleted} />}
       </section>
     </div>
   );
@@ -270,6 +277,90 @@ function ShareLinks({
         <p className="alert" role="alert">
           {error}
         </p>
+      )}
+    </section>
+  );
+}
+
+/** Deletes the account and all its data, after the person types "delete" to confirm. */
+function DeleteAccount({ allowed, onDeleted }: { allowed: boolean; onDeleted: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [typed, setTyped] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const confirmed = typed.trim().toLowerCase() === "delete";
+
+  async function remove() {
+    setBusy(true);
+    setError(null);
+    try {
+      await api("/api/account", { method: "DELETE", body: JSON.stringify({ confirm: typed }) });
+      onDeleted();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not delete the account");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="delete-account" aria-labelledby="delete-account-title">
+      <h3 id="delete-account-title">
+        <Trash2 size={16} aria-hidden="true" /> Delete my account and data
+      </h3>
+      {!allowed ? (
+        <p className="muted">The admin account can&apos;t be deleted here.</p>
+      ) : !open ? (
+        <>
+          <p className="muted">
+            Permanently removes your account and everything in it: portfolios, FIRE plan, assets,
+            wishlist, reviews, and share links.
+          </p>
+          <button type="button" className="button danger-outline" onClick={() => setOpen(true)}>
+            Delete my account…
+          </button>
+        </>
+      ) : (
+        <div className="delete-account-confirm">
+          <p>
+            <strong>This can&apos;t be undone.</strong> All your data is deleted right away and
+            shared links stop working.
+          </p>
+          <label>
+            <span>
+              Type <strong>delete</strong> to confirm
+            </span>
+            <input
+              value={typed}
+              autoComplete="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              onChange={(event) => setTyped(event.target.value)}
+              aria-describedby="delete-account-title"
+            />
+          </label>
+          {error && (
+            <p className="form-message error" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="confirm-actions">
+            <button
+              type="button"
+              className="button"
+              disabled={busy}
+              onClick={() => {
+                setOpen(false);
+                setTyped("");
+                setError(null);
+              }}
+            >
+              Keep my account
+            </button>
+            <button type="button" className="button danger" disabled={!confirmed || busy} onClick={() => void remove()}>
+              {busy ? "Deleting…" : "Delete my account"}
+            </button>
+          </div>
+        </div>
       )}
     </section>
   );

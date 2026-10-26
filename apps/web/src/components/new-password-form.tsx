@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { EyeIcon, EyeOffIcon } from "@/components/auth-form";
 import { createClient } from "@/lib/supabase/client";
 
 /** Sets a new password for the person signed in through a reset link. */
@@ -10,6 +11,7 @@ export function NewPasswordForm() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [show, setShow] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -31,14 +33,26 @@ export function NewPasswordForm() {
     <form onSubmit={submit} className="auth-form" noValidate>
       <label>
         New password
-        <input name="password" type="password" minLength={8} autoComplete="new-password" required />
+        <span className="password-field">
+          <input name="password" type={show ? "text" : "password"} minLength={8} autoComplete="new-password" required />
+          <button
+            className="password-toggle"
+            type="button"
+            aria-label={show ? "Hide passwords" : "Show passwords"}
+            aria-pressed={show}
+            title={show ? "Hide passwords" : "Show passwords"}
+            onClick={() => setShow((visible) => !visible)}
+          >
+            {show ? <EyeOffIcon /> : <EyeIcon />}
+          </button>
+        </span>
       </label>
       <label>
         Repeat new password
-        <input name="repeat" type="password" minLength={8} autoComplete="new-password" required />
+        <input name="repeat" type={show ? "text" : "password"} minLength={8} autoComplete="new-password" required />
       </label>
       {message && (
-        <p className="form-message" role="alert">
+        <p className="form-message error" role="alert">
           {message}
         </p>
       )}

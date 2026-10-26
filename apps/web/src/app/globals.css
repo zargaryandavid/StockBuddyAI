@@ -2971,7 +2971,7 @@ textarea {
 .auth-consent { display: flex; flex-direction: row; align-items: flex-start; gap: 0.55rem; font-size: 0.8125rem; line-height: 1.45; }
 .auth-consent input { width: 1rem; height: 1rem; flex: none; margin-top: 0.15rem; }
 .auth-consent a { color: var(--navy); text-decoration: underline; }
-.reset-shell { display: grid; place-items: center; min-height: 100vh; }
+.reset-shell { display: grid; grid-template-columns: 1fr; place-items: center; min-height: 100vh; }
 .reset-shell .login-panel { width: min(440px, calc(100vw - 2rem)); }
 
 /* Terms and Privacy Policy */
@@ -3206,3 +3206,19 @@ textarea {
 
 /* Real-note photo: rounded paper corners; never wider than about 58% of a real bill */
 .login-bill { border-radius: 4px; max-width: 340px; }
+
+/* Small confirmation dialogs (sign out, delete account) */
+.add-holding-modal.confirm-dialog { width: min(420px, calc(100vw - 2rem)); color: var(--text, #111827); }
+.confirm-dialog h2 { margin: 0 0 0.5rem; }
+.confirm-dialog p { margin: 0 0 1rem; }
+.confirm-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; }
+
+/* Profile: delete my account and data */
+.delete-account { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.delete-account h3 { display: flex; align-items: center; gap: 0.4rem; margin: 0 0 0.4rem; font-size: 0.95rem; color: var(--danger); }
+.delete-account p { margin: 0 0 0.75rem; }
+.delete-account-confirm { display: grid; gap: 0.6rem; padding: 0.8rem; border: 1px solid #fecaca; border-radius: 10px; background: #fef2f2; }
+.delete-account-confirm p { margin: 0; }
+.button.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+.button.danger:disabled { opacity: 0.45; }
+.button.danger-outline { color: var(--danger); border-color: #fecaca; background: #fff; }

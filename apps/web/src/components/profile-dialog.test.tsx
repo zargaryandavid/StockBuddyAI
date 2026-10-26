@@ -80,4 +80,42 @@ describe("ProfileDialog", () => {
     await waitFor(() => expect(within(links).queryByLabelText("FIRE plan link")).toBeNull());
     expect(calls.at(-1)).toEqual(["/api/share-links/token-for-fire-xxxxxxxxxxxxxxxxxxxxxxxxxx", "DELETE", null]);
   });
+
+  it("deletes the account only after typing delete", async () => {
+    const onAccountDeleted = vi.fn();
+    render(
+      <ProfileDialog
+        dateOfBirth={null}
+        today="2026-10-24"
+        onSave={vi.fn(async () => undefined)}
+        onClose={vi.fn()}
+        onAccountDeleted={onAccountDeleted}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Delete my account…" }));
+    const confirm = screen.getByRole("button", { name: "Delete my account" });
+    expect(confirm).toHaveProperty("disabled", true);
+    fireEvent.change(screen.getByLabelText(/Type delete to confirm/), { target: { value: "dele" } });
+    expect(confirm).toHaveProperty("disabled", true);
+    fireEvent.change(screen.getByLabelText(/Type delete to confirm/), { target: { value: "Delete" } });
+    fireEvent.click(confirm);
+
+    await waitFor(() => expect(onAccountDeleted).toHaveBeenCalled());
+    expect(calls).toContainEqual(["/api/account", "DELETE", { confirm: "Delete" }]);
+  });
+
+  it("explains that the admin account can't be deleted here", () => {
+    render(
+      <ProfileDialog
+        dateOfBirth={null}
+        today="2026-10-24"
+        onSave={vi.fn(async () => undefined)}
+        onClose={vi.fn()}
+        canDeleteAccount={false}
+        onAccountDeleted={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("The admin account can't be deleted here.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Delete my account…" })).toBeNull();
+  });
 });

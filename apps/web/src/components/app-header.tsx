@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 
@@ -17,6 +17,7 @@ export function AppHeader({
   children: ReactNode;
 }) {
   const nav = useRef<HTMLElement>(null);
+  const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   const shown = useRef<HTMLElement | null>(null);
   // On phones the menu is a sideways-scrolling row: bring the current page into view when
   // it changes, without fighting someone who is scrolling the row themselves.
@@ -60,11 +61,56 @@ export function AppHeader({
         {children}
       </nav>
       <div className="sidebar-footer">
-        <button type="button" onClick={onSignOut}>
+        <button type="button" onClick={() => setConfirmingSignOut(true)}>
           <LogOut size={16} aria-hidden="true" />
           Sign out
         </button>
       </div>
+      {confirmingSignOut && (
+        <SignOutDialog
+          onConfirm={() => {
+            setConfirmingSignOut(false);
+            onSignOut();
+          }}
+          onCancel={() => setConfirmingSignOut(false)}
+        />
+      )}
     </header>
+  );
+}
+
+/** "Are you sure?" before signing out, so a stray click doesn't end the session. */
+function SignOutDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onCancel();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
+  return (
+    <div
+      className="modal-backdrop"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onCancel();
+      }}
+    >
+      <section className="add-holding-modal confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="sign-out-title" aria-describedby="sign-out-text">
+        <h2 id="sign-out-title">Sign out?</h2>
+        <p id="sign-out-text" className="muted">
+          You&apos;ll need your email and password to sign back in. Your data stays saved.
+        </p>
+        <div className="confirm-actions">
+          <button type="button" className="button" onClick={onCancel} autoFocus>
+            Stay signed in
+          </button>
+          <button type="button" className="button primary" onClick={onConfirm}>
+            Sign out
+          </button>
+        </div>
+      </section>
+    </div>
   );
 }

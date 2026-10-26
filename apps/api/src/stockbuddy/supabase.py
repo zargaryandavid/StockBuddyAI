@@ -121,6 +121,15 @@ class SupabaseGateway:
             return
         self._admin_ready = True
 
+    async def delete_user(self, user_id: UUID) -> None:
+        """Deletes a sign-in and, through the database's cascades, all of its data."""
+        response = await self._client.delete(
+            f"{self.settings.supabase_url}/auth/v1/admin/users/{user_id}",
+            headers=self._service_headers(),
+        )
+        if response.status_code >= 400 and response.status_code != 404:
+            raise SupabaseError(f"Could not delete the account ({response.status_code})")
+
     async def upload_object(
         self, bucket: str, path: str, content: bytes, content_type: str
     ) -> None:

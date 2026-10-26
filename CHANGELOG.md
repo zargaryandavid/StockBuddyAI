@@ -6,6 +6,18 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Added
 
+- Profile: "Delete my account and data". Typing "delete" enables the button; the API
+  (`DELETE /api/account`) checks the word again and deletes the sign-in, which removes all
+  of that person's data through the database's cascades, then signs out to a notice. The
+  admin account can't be deleted this way.
+- Sign out asks "Sign out?" first (Stay signed in / Sign out).
+- New-password page: a show/hide eye button for both fields.
+
+- Branded sign-up confirmation and password-reset emails (`supabase/templates/`): green
+  StockBuddy header, gold button, friendly wording, a plain link as fallback, and links
+  that work in any browser (`token_hash`). Used locally via `supabase/config.toml`; paste
+  into the hosted project as described in `docs/OPERATIONS.md`.
+
 - The API runs on Vercel next to the website in the same project, as Vercel Services
   (root `vercel.json`: `/api/...` and `/health` go to `apps/api/index.py`, the rest to
   `apps/web`).
@@ -124,6 +136,10 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Fixed
 
+- The $100 note picture on the live sign-in page showed as broken: Vercel's image
+  resizer isn't available with Services, so the (already small) picture is served as is.
+- The new-password box is centred, and its errors (e.g. "New password should be
+  different from the old password.") are red like the others.
 - A review that fails because the AI account (OpenAI or Anthropic) is out of credits now
   says so and names where to add credits, instead of "No persona could reach the AI
   service. Try again in a few minutes." The queue stops so no more tokens are used.

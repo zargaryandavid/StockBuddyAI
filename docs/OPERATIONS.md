@@ -23,6 +23,22 @@ Authentication -> SMTP Settings (Supabase's built-in sender is heavily rate-limi
 only delivers to project team members). Admin access also requires the admin email to
 be confirmed.
 
+## Branded emails
+
+`supabase/templates/confirmation.html` (sign-up) and `supabase/templates/recovery.html`
+(password reset) are StockBuddy-styled emails. Their links use `token_hash`, so they work
+even when opened in another browser, and go to the `/auth/confirm` or `/auth/reset`
+address the app asked for. Local Supabase loads them from `supabase/config.toml`. For the
+hosted project, in Supabase Dashboard -> Authentication -> Emails -> Templates:
+
+- **Confirm signup:** subject "Confirm your email for StockBuddy"; body = the whole of
+  `confirmation.html`.
+- **Reset password:** subject "Reset your StockBuddy password"; body = the whole of
+  `recovery.html`.
+
+Supabase's built-in sender is rate-limited and meant for testing; set up custom SMTP
+(Authentication -> Emails -> SMTP Settings) before inviting early adopters.
+
 ## Password reset and legal pages
 
 The reset email links to `/auth/reset`; add `<web origin>/auth/reset` to the hosted

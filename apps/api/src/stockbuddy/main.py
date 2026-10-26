@@ -23,7 +23,7 @@ from fastapi import (
     UploadFile,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from stockbuddy.analysis import AnalysisService, review_models
 from stockbuddy.config import get_settings
@@ -224,6 +224,31 @@ async def require_admin(
     if not request.app.state.gateway.is_admin(account):
         raise HTTPException(status_code=403, detail="Admin access required")
     return account
+
+
+class AccountDeletion(BaseModel):
+    confirm: str
+
+
+@app.delete("/api/account", status_code=204)
+async def delete_my_account(
+    payload: AccountDeletion,
+    request: Request,
+    account: Annotated[Account, Depends(current_account)],
+):
+    """Deletes the signed-in person's account and every record that belongs to it."""
+    if payload.confirm.strip().lower() != "delete":
+        raise HTTPException(status_code=422, detail='Type "delete" to confirm')
+    if request.app.state.gateway.is_admin(account):
+        raise HTTPException(
+            status_code=403,
+            detail="The admin account can't be deleted here. Change ADMIN_LOGIN_EMAIL first.",
+        )
+    try:
+        await request.app.state.gateway.delete_user(account.id)
+    except SupabaseError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return Response(status_code=204)
 
 
 @app.get("/api/me")
