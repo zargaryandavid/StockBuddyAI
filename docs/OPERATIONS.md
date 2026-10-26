@@ -121,6 +121,23 @@ migration histories after pushing.
 - The next-report date is an estimate (last SEC filing plus 91 days). Companies set
   the real date; the popup and the email both say so.
 
+## Hosting
+
+- **Web** (`apps/web`) runs on Vercel as a single Next.js project with Root Directory
+  `apps/web`. It needs `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
+  `NEXT_PUBLIC_API_URL`, and `NEXT_PUBLIC_CONTACT_EMAIL`. These are baked in at build time, so
+  redeploy after changing them. Never give Vercel the service role key or AI keys.
+- **API** (`apps/api`) needs a server that stays running (background reviews, the reminder
+  loop, the SEC disk cache), so it is not on Vercel. `render.yaml` is a Render Blueprint for
+  it: New -> Blueprint -> this repository, then fill in the values marked `sync: false`.
+  Use the same `SUPABASE_SERVICE_ROLE_KEY` as before, or the keys saved in Admin ->
+  Connections can't be decrypted. `SEC_USER_AGENT` must contain a contact email or the API
+  won't start.
+- **Linking them:** `WEB_ORIGIN` on the API is the Vercel address (browser calls are
+  refused from anywhere else), and `NEXT_PUBLIC_API_URL` on Vercel is the Render address.
+- **Supabase Auth -> URL Configuration:** Site URL is the Vercel address; Redirect URLs
+  include its `/auth/confirm` and `/auth/reset` (add the localhost ones to test locally).
+
 ## Recovery
 
 Analysis runs are persisted as `pending`, `running`, `completed`, or `failed`. The MVP uses

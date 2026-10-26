@@ -6,6 +6,9 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Added
 
+- `render.yaml`: a Render Blueprint for hosting the API (build with uv, `/health`
+  check, `WEB_ORIGIN` set to the Vercel site). Hosting steps are in `docs/OPERATIONS.md`.
+
 - Sign-in page: two drawn $100 "StockBuddy Reserve" play bills in the navy panel (an
   illustration with its own wording and emblem, not a copy of real currency), and
   "© 2026 AIAutomationLA.com. All rights reserved." under the Terms and Privacy links.
