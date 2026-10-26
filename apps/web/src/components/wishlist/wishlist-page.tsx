@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState, type DragEvent, type KeyboardEvent } fr
 import { Check, GripVertical, Pencil, Sparkles, Trash2, X } from "lucide-react";
 
 import { api } from "@/lib/api";
+import { useT } from "@/lib/i18n/client";
 
 export type WishList = "short" | "long" | "want" | "exercise";
 
@@ -21,10 +22,11 @@ type CheckResult = { source: "exact" | "ai" | "basic" | "limit"; matches: WishMa
 
 export const EXERCISE_GOAL = 300;
 
-const COLUMNS: Record<"short" | "long" | "want", { title: string; horizon: string; placeholder: string }> = {
-  short: { title: "Short term", horizon: "Within 1 year", placeholder: "e.g. Take a week off at the sea" },
-  long: { title: "Long term", horizon: "1–5 years", placeholder: "e.g. Buy an apartment" },
-  want: { title: "Want", horizon: "Anytime", placeholder: "e.g. A good camera" },
+/** English text for each list; translated where it is shown. */
+const COLUMNS: Record<"short" | "long" | "want", { title: string; horizon: string; placeholder: string; inputLabel: string }> = {
+  short: { title: "Short term", horizon: "Within 1 year", placeholder: "e.g. Take a week off at the sea", inputLabel: "New short term wish" },
+  long: { title: "Long term", horizon: "1–5 years", placeholder: "e.g. Buy an apartment", inputLabel: "New long term wish" },
+  want: { title: "Want", horizon: "Anytime", placeholder: "e.g. A good camera", inputLabel: "New want wish" },
 };
 
 /**
@@ -76,8 +78,15 @@ function useDragSort(onMove: (from: number, to: number) => void) {
 
 function DragHandle(props: ReturnType<ReturnType<typeof useDragSort>["handleProps"]> & { label: string }) {
   const { label, ...handlers } = props;
+  const t = useT();
   return (
-    <button type="button" className="wish-icon wish-grip" aria-label={`Move ${label}. Drag, or use the up and down arrow keys.`} title="Drag to reorder" {...handlers}>
+    <button
+      type="button"
+      className="wish-icon wish-grip"
+      aria-label={t("Move {label}. Drag, or use the up and down arrow keys.", { label })}
+      title={t("Drag to reorder")}
+      {...handlers}
+    >
       <GripVertical size={15} aria-hidden="true" />
     </button>
   );
@@ -85,6 +94,7 @@ function DragHandle(props: ReturnType<ReturnType<typeof useDragSort>["handleProp
 
 /** Short- and long-term wishes, plus the "300 wishes" exercise with a repeat check. */
 export function WishlistPage() {
+  const t = useT();
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -123,7 +133,7 @@ export function WishlistPage() {
       await api(`/api/wishes/${wish.id}`, { method: "DELETE" });
       setWishes((current) => current.filter((item) => item.id !== wish.id));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not remove the wish");
+      setError(cause instanceof Error ? cause.message : t("Could not remove the wish"));
     }
   }
 
@@ -135,7 +145,7 @@ export function WishlistPage() {
       await update(wish, { done: !wish.done });
     } catch (cause) {
       setWishes((current) => current.map((item) => (item.id === wish.id ? { ...item, done: wish.done } : item)));
-      setError(cause instanceof Error ? cause.message : "Could not update the wish");
+      setError(cause instanceof Error ? cause.message : t("Could not update the wish"));
     }
   }
 
@@ -151,7 +161,7 @@ export function WishlistPage() {
       await api("/api/wishes/order", { method: "PUT", body: JSON.stringify({ list, ids: items.map((wish) => wish.id) }) });
     } catch (cause) {
       setWishes(before);
-      setError(cause instanceof Error ? cause.message : "Could not save the new order");
+      setError(cause instanceof Error ? cause.message : t("Could not save the new order"));
     }
   }
 
@@ -161,25 +171,26 @@ export function WishlistPage() {
     <section className="wishlist-page" aria-labelledby="wishlist-title">
       <header className="wishlist-head">
         <div>
-          <h1 id="wishlist-title">Wishlist</h1>
-          <p className="muted page-subtitle">What you want within a year, in five years, anytime, and the 300 wishes exercise.</p>
+          <h1 id="wishlist-title">{t("Wishlist")}</h1>
+          <p className="muted page-subtitle">{t("What you want within a year, in five years, anytime, and the 300 wishes exercise.")}</p>
         </div>
-        <div className="segmented" role="group" aria-label="Wishlist sections">
+        <div className="segmented" role="group" aria-label={t("Wishlist sections")}>
           <button type="button" className={section === "lists" ? "active" : ""} aria-pressed={section === "lists"} onClick={() => setSection("lists")}>
-            My lists
+            {t("My lists")}
           </button>
           <button type="button" className={section === "exercise" ? "active" : ""} aria-pressed={section === "exercise"} onClick={() => setSection("exercise")}>
-            300 wishes
+            {t("300 wishes")}
           </button>
         </div>
       </header>
       {error && (
         <div className="alert" role="alert">
-          {error}
+          {/* The load error is stored in English (the effect runs once), so it is translated here. */}
+          {t(error)}
         </div>
       )}
       {loading ? (
-        <p className="muted">Loading your wishes…</p>
+        <p className="muted">{t("Loading your wishes…")}</p>
       ) : section === "lists" ? (
         <div className="wishlist-columns">
           {(["short", "long", "want"] as const).map((list) => (
@@ -225,24 +236,25 @@ function WishColumn({
   onRemove: (wish: Wish) => void;
   onMove: (from: number, to: number) => void;
 }) {
+  const t = useT();
   const drag = useDragSort(onMove);
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
-  const { title, horizon, placeholder } = COLUMNS[list];
+  const { title, horizon, placeholder, inputLabel } = COLUMNS[list];
   const done = wishes.filter((wish) => wish.done).length;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!text.trim()) return setError("Write a wish first.");
+    if (!text.trim()) return setError(t("Write a wish first."));
     setSaving(true);
     setError(null);
     try {
       await onAdd(text.trim());
       setText("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not add the wish");
+      setError(cause instanceof Error ? cause.message : t("Could not add the wish"));
     } finally {
       setSaving(false);
     }
@@ -250,42 +262,42 @@ function WishColumn({
 
   async function saveEdit(wish: Wish) {
     const value = editing?.text.trim() ?? "";
-    if (!value) return setError("A wish can't be empty.");
+    if (!value) return setError(t("A wish can't be empty."));
     if (value === wish.text) return setEditing(null);
     setError(null);
     try {
       await onEdit(wish, value);
       setEditing(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not save the wish");
+      setError(cause instanceof Error ? cause.message : t("Could not save the wish"));
     }
   }
 
   return (
     <section className="panel wish-column" aria-labelledby={`wish-${list}-title`}>
       <div className="wish-column-head">
-        <h2 id={`wish-${list}-title`}>{title}</h2>
-        <span className="fire-list-count">{horizon}</span>
+        <h2 id={`wish-${list}-title`}>{t(title)}</h2>
+        <span className="fire-list-count">{t(horizon)}</span>
         {wishes.length > 0 && (
           <span className="muted wish-done-count">
-            {done} of {wishes.length} done
+            {t("{done} of {total} done", { done, total: wishes.length })}
           </span>
         )}
       </div>
       <form className="wish-add" onSubmit={submit} noValidate>
         <input
-          aria-label={`New ${title.toLowerCase()} wish`}
+          aria-label={t(inputLabel)}
           spellCheck
           value={text}
           maxLength={200}
-          placeholder={placeholder}
+          placeholder={t(placeholder)}
           onChange={(event) => {
             setText(event.target.value);
             setError(null);
           }}
         />
         <button type="submit" className="button primary" disabled={saving}>
-          Add
+          {t("Add")}
         </button>
       </form>
       {error && (
@@ -294,7 +306,7 @@ function WishColumn({
         </p>
       )}
       {wishes.length === 0 ? (
-        <p className="muted">No wishes yet.</p>
+        <p className="muted">{t("No wishes yet.")}</p>
       ) : (
         <ul className="wish-list">
           {wishes.map((wish, index) => (
@@ -309,7 +321,7 @@ function WishColumn({
                   }}
                 >
                   <input
-                    aria-label={`Edit ${wish.text}`}
+                    aria-label={t("Edit {wish}", { wish: wish.text })}
                     autoFocus
                     spellCheck
                     onFocus={(event) => event.currentTarget.select()}
@@ -320,10 +332,10 @@ function WishColumn({
                       if (event.key === "Escape") setEditing(null);
                     }}
                   />
-                  <button type="submit" className="wish-icon" aria-label="Save wish">
+                  <button type="submit" className="wish-icon" aria-label={t("Save wish")}>
                     <Check size={15} aria-hidden="true" />
                   </button>
-                  <button type="button" className="wish-icon" aria-label="Cancel" onClick={() => setEditing(null)}>
+                  <button type="button" className="wish-icon" aria-label={t("Cancel")} onClick={() => setEditing(null)}>
                     <X size={15} aria-hidden="true" />
                   </button>
                 </form>
@@ -333,15 +345,15 @@ function WishColumn({
                     <input
                       type="checkbox"
                       checked={wish.done}
-                      aria-label={wish.done ? `Mark "${wish.text}" not done` : `Mark "${wish.text}" done`}
+                      aria-label={wish.done ? t("Mark \"{wish}\" not done", { wish: wish.text }) : t("Mark \"{wish}\" done", { wish: wish.text })}
                       onChange={() => onToggle(wish)}
                     />
                     <span>{wish.text}</span>
                   </label>
-                  <button type="button" className="wish-icon" aria-label={`Edit ${wish.text}`} onClick={() => setEditing({ id: wish.id, text: wish.text })}>
+                  <button type="button" className="wish-icon" aria-label={t("Edit {wish}", { wish: wish.text })} onClick={() => setEditing({ id: wish.id, text: wish.text })}>
                     <Pencil size={15} aria-hidden="true" />
                   </button>
-                  <button type="button" className="wish-icon" aria-label={`Remove ${wish.text}`} onClick={() => onRemove(wish)}>
+                  <button type="button" className="wish-icon" aria-label={t("Remove {wish}", { wish: wish.text })} onClick={() => onRemove(wish)}>
                     <Trash2 size={15} aria-hidden="true" />
                   </button>
                 </>
@@ -367,6 +379,7 @@ function Exercise({
   onRemove: (wish: Wish) => void;
   onMove: (from: number, to: number) => void;
 }) {
+  const t = useT();
   const drag = useDragSort(onMove);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState<"check" | "save" | null>(null);
@@ -390,7 +403,7 @@ function Exercise({
   /** Adds the typed wish; with `force`, adds it even when it looks like a repeat. */
   async function addWish(force = false) {
     const value = text.trim();
-    if (!value) return setError("Write a wish first.");
+    if (!value) return setError(t("Write a wish first."));
     setError(null);
     try {
       if (!force) {
@@ -407,7 +420,7 @@ function Exercise({
       setText("");
       setRepeats(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not add the wish");
+      setError(cause instanceof Error ? cause.message : t("Could not add the wish"));
     } finally {
       setBusy(null);
     }
@@ -422,15 +435,22 @@ function Exercise({
       const result = await check(value, wish.id);
       const exact = result.source === "exact" && result.matches.length > 0;
       if (exact) {
-        return setError(`"${value}" is already wish #${number.get(result.matches[0].id)}.`);
+        return setError(t("\"{wish}\" is already wish #{number}.", { wish: value, number: number.get(result.matches[0].id) ?? "" }));
       }
-      if (result.matches.length && !window.confirm(`This looks like: ${result.matches.map((match) => `#${number.get(match.id)} ${match.text}`).join(", ")}. Save anyway?`)) {
+      if (
+        result.matches.length &&
+        !window.confirm(
+          t("This looks like: {matches}. Save anyway?", {
+            matches: result.matches.map((match) => `#${number.get(match.id)} ${match.text}`).join(", "),
+          }),
+        )
+      ) {
         return;
       }
       await onEdit(wish, value);
       setEditing(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not save the wish");
+      setError(cause instanceof Error ? cause.message : t("Could not save the wish"));
     }
   }
 
@@ -440,8 +460,8 @@ function Exercise({
     <section className="panel wish-exercise" aria-labelledby="wish-exercise-title">
       <div className="wish-exercise-head">
         <div>
-          <h2 id="wish-exercise-title">300 wishes</h2>
-          <p className="muted">Write 300 different wishes, big and small. Every one must be new: repeats are caught as you add them.</p>
+          <h2 id="wish-exercise-title">{t("300 wishes")}</h2>
+          <p className="muted">{t("Write 300 different wishes, big and small. Every one must be new: repeats are caught as you add them.")}</p>
         </div>
         <strong className="wish-progress-count">
           {count} / {EXERCISE_GOAL}
@@ -450,7 +470,7 @@ function Exercise({
       <div
         className="fire-progress-bar"
         role="progressbar"
-        aria-label="Wishes written"
+        aria-label={t("Wishes written")}
         aria-valuemin={0}
         aria-valuemax={EXERCISE_GOAL}
         aria-valuenow={count}
@@ -459,7 +479,7 @@ function Exercise({
       </div>
 
       {full ? (
-        <p className="notice">All 300 wishes are written. Edit any of them below.</p>
+        <p className="notice">{t("All 300 wishes are written. Edit any of them below.")}</p>
       ) : (
         <form
           className="wish-add"
@@ -470,10 +490,10 @@ function Exercise({
           }}
         >
           <input
-            aria-label="New wish"
+            aria-label={t("New wish")}
             value={text}
             maxLength={200}
-            placeholder={`Wish #${count + 1}`}
+            placeholder={t("Wish #{number}", { number: count + 1 })}
             onChange={(event) => {
               setText(event.target.value);
               setRepeats(null);
@@ -481,7 +501,7 @@ function Exercise({
             }}
           />
           <button type="submit" className="button primary" disabled={busy !== null}>
-            {busy === "check" ? "Checking…" : busy === "save" ? "Adding…" : "Add"}
+            {busy === "check" ? t("Checking…") : busy === "save" ? t("Adding…") : t("Add")}
           </button>
         </form>
       )}
@@ -493,15 +513,15 @@ function Exercise({
       {basicOnly && !repeats && (
         <p className="muted wish-basic-note">
           {basicOnly === "limit"
-            ? "You've used today's AI repeat checks, so only similar wording was compared until tomorrow."
-            : "The AI repeat check isn't available right now, so only similar wording was compared."}
+            ? t("You've used today's AI repeat checks, so only similar wording was compared until tomorrow.")
+            : t("The AI repeat check isn't available right now, so only similar wording was compared.")}
         </p>
       )}
       {repeats && (
         <div className="wish-repeat" role="status">
           <p>
             <Sparkles size={16} aria-hidden="true" />
-            {exactRepeat ? "This wish is already on your list:" : "This looks like a wish you already have:"}
+            {exactRepeat ? t("This wish is already on your list:") : t("This looks like a wish you already have:")}
           </p>
           <ul>
             {repeats.matches.map((match) => (
@@ -516,27 +536,27 @@ function Exercise({
           <div className="wish-repeat-actions">
             {!exactRepeat && (
               <button type="button" className="button" onClick={() => void addWish(true)}>
-                It&apos;s different, add anyway
+                {t("It's different, add anyway")}
               </button>
             )}
             <button type="button" className="text-button" onClick={() => setRepeats(null)}>
-              Change my wish
+              {t("Change my wish")}
             </button>
           </div>
           <small className="muted">
             {repeats.source === "ai"
-              ? "Checked by AI."
+              ? t("Checked by AI.")
               : repeats.source === "basic"
-                ? "AI check unavailable; compared the words."
+                ? t("AI check unavailable; compared the words.")
                 : repeats.source === "limit"
-                  ? "Today's AI checks are used up; compared the words."
+                  ? t("Today's AI checks are used up; compared the words.")
                   : ""}
           </small>
         </div>
       )}
 
       {wishes.length === 0 ? (
-        <p className="muted">Start with anything: a place, a skill, a feeling, a thing.</p>
+        <p className="muted">{t("Start with anything: a place, a skill, a feeling, a thing.")}</p>
       ) : (
         <ol className="wish-numbered">
           {wishes.map((wish, index) => (
@@ -552,26 +572,26 @@ function Exercise({
                   }}
                 >
                   <input
-                    aria-label={`Edit wish ${number.get(wish.id)}`}
+                    aria-label={t("Edit wish {number}", { number: number.get(wish.id) ?? "" })}
                     autoFocus
                     value={editing.text}
                     maxLength={200}
                     onChange={(event) => setEditing({ id: wish.id, text: event.target.value })}
                   />
-                  <button type="submit" className="wish-icon" aria-label="Save wish">
+                  <button type="submit" className="wish-icon" aria-label={t("Save wish")}>
                     <Check size={15} aria-hidden="true" />
                   </button>
-                  <button type="button" className="wish-icon" aria-label="Cancel" onClick={() => setEditing(null)}>
+                  <button type="button" className="wish-icon" aria-label={t("Cancel")} onClick={() => setEditing(null)}>
                     <X size={15} aria-hidden="true" />
                   </button>
                 </form>
               ) : (
                 <>
                   <span className="wish-text">{wish.text}</span>
-                  <button type="button" className="wish-icon" aria-label={`Edit ${wish.text}`} onClick={() => setEditing({ id: wish.id, text: wish.text })}>
+                  <button type="button" className="wish-icon" aria-label={t("Edit {wish}", { wish: wish.text })} onClick={() => setEditing({ id: wish.id, text: wish.text })}>
                     <Pencil size={15} aria-hidden="true" />
                   </button>
-                  <button type="button" className="wish-icon" aria-label={`Remove ${wish.text}`} onClick={() => onRemove(wish)}>
+                  <button type="button" className="wish-icon" aria-label={t("Remove {wish}", { wish: wish.text })} onClick={() => onRemove(wish)}>
                     <Trash2 size={15} aria-hidden="true" />
                   </button>
                 </>

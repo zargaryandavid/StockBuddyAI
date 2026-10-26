@@ -6,6 +6,15 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Added
 
+- English / Armenian. US and ARM flag buttons at the top of the side menu (and the
+  top-right of the sign-in, password, legal, and shared pages) switch the whole app; the
+  choice is kept in a `lang` cookie for a year, so pages render in that language straight
+  away. Every screen, the built-in lessons, the legal pages, and the API's fixed messages
+  are translated (~1,300 phrases). Admin-written articles, wishes, AI review text, and
+  brand names stay as they are; untranslated text falls back to English. Noto Sans
+  Armenian is loaded for Armenian letters. Translations live in `apps/web/src/lib/i18n/hy/`
+  (one file per area) with a shared `GLOSSARY.md`.
+
 - Profile: "Delete my account and data". Typing "delete" enables the button; the API
   (`DELETE /api/account`) checks the word again and deletes the sign-in, which removes all
   of that person's data through the database's cascades, then signs out to a notice. The

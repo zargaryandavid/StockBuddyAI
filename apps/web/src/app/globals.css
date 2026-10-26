@@ -26,9 +26,9 @@
   --sidebar-hover: rgba(255, 255, 255, 0.08);
   --sidebar-divider: rgba(255, 255, 255, 0.08);
   --sidebar-width: 224px;
-  --font-geist-sans: var(--font-inter);
-  --font-geist-mono: var(--font-inter);
-  --font-display: var(--font-inter);
+  --font-geist-sans: var(--font-inter), var(--font-armenian);
+  --font-geist-mono: var(--font-inter), var(--font-armenian);
+  --font-display: var(--font-inter), var(--font-armenian);
   /* Type scale: 12px is the smallest text; labels are sentence case. */
   --text-xs: 0.75rem;
   --text-sm: 0.8125rem;
@@ -42,8 +42,8 @@
 @theme inline {
   --color-background: var(--paper);
   --color-foreground: var(--ink);
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-inter);
+  --font-sans: var(--font-inter), var(--font-armenian);
+  --font-mono: var(--font-inter), var(--font-armenian);
 }
 
 * {
@@ -57,7 +57,7 @@ body {
   line-height: 1.5;
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  font-family: var(--font-inter), var(--font-armenian), -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -99,7 +99,7 @@ input[type="number"] {
 
 .brand {
   color: var(--ink);
-  font: 600 0.8125rem/1 var(--font-inter), sans-serif;
+  font: 600 0.8125rem/1 var(--font-inter), var(--font-armenian), sans-serif;
   letter-spacing: 0.05em;
   text-decoration: none;
 }
@@ -504,7 +504,7 @@ input[type="number"] {
 
 .setting-note {
   color: var(--muted);
-  font: 500 var(--text-xs)/1.4 var(--font-inter), sans-serif;
+  font: 500 var(--text-xs)/1.4 var(--font-inter), var(--font-armenian), sans-serif;
 }
 
 .notice {
@@ -542,7 +542,7 @@ input[type="number"] {
 .eyebrow, .step {
   margin: 0;
   color: var(--muted);
-  font: 500 var(--text-sm)/1.4 var(--font-inter), sans-serif;
+  font: 500 var(--text-sm)/1.4 var(--font-inter), var(--font-armenian), sans-serif;
 }
 
 .hero-stat {
@@ -852,7 +852,7 @@ input[type="number"] {
   border-top: 0;
   background: #f3f4f6;
   color: var(--label);
-  font: 600 var(--text-xs)/1 var(--font-inter), sans-serif;
+  font: 600 var(--text-xs)/1 var(--font-inter), var(--font-armenian), sans-serif;
 }
 
 .holding-row select {
@@ -986,7 +986,7 @@ label {
   flex-direction: column;
   gap: 0.4rem;
   color: var(--label);
-  font: 500 var(--text-sm)/1.4 var(--font-inter), sans-serif;
+  font: 500 var(--text-sm)/1.4 var(--font-inter), var(--font-armenian), sans-serif;
 }
 
 input, select, textarea {
@@ -1182,7 +1182,7 @@ textarea {
   padding: 0.65rem 0.8rem;
   background: #f3f4f6;
   color: var(--label);
-  font: 600 var(--text-xs)/1 var(--font-inter), sans-serif;
+  font: 600 var(--text-xs)/1 var(--font-inter), var(--font-armenian), sans-serif;
 }
 
 .sort-status {
@@ -1190,7 +1190,7 @@ textarea {
   border-bottom: 1px solid var(--line);
   background: #fafafa;
   color: var(--label);
-  font: 600 var(--text-xs)/1 var(--font-inter), sans-serif;
+  font: 600 var(--text-xs)/1 var(--font-inter), var(--font-armenian), sans-serif;
 }
 
 .sort-status strong {
@@ -1583,7 +1583,7 @@ textarea {
 .recommendation {
   border-radius: 2px;
   padding: 0.55rem 0.9rem;
-  font: 700 var(--text-sm)/1 var(--font-inter), sans-serif;
+  font: 700 var(--text-sm)/1 var(--font-inter), var(--font-armenian), sans-serif;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -2117,7 +2117,7 @@ textarea {
 
 .summary-card span {
   color: var(--label);
-  font: 500 var(--text-sm)/1.3 var(--font-inter), sans-serif;
+  font: 500 var(--text-sm)/1.3 var(--font-inter), var(--font-armenian), sans-serif;
 }
 
 .summary-card { min-width: 0; }
@@ -2240,7 +2240,7 @@ textarea {
 .transactions-header {
   background: #f8f7f4;
   color: var(--label);
-  font: 600 var(--text-xs)/1.2 var(--font-inter), sans-serif;
+  font: 600 var(--text-xs)/1.2 var(--font-inter), var(--font-armenian), sans-serif;
 }
 .transaction-kind {
   width: fit-content;
@@ -2318,7 +2318,7 @@ textarea {
   border-bottom: 1px solid var(--line);
   background: color-mix(in srgb, var(--line) 30%, white);
   color: var(--label);
-  font: 600 var(--text-xs)/1.15 var(--font-inter), sans-serif;
+  font: 600 var(--text-xs)/1.15 var(--font-inter), var(--font-armenian), sans-serif;
 }
 .holdings-header .sort-button {
   min-height: 2rem;
@@ -3004,7 +3004,9 @@ textarea {
 @media (max-width: 900px) {
   /* Logo and Sign out on the first row; the menu gets its own full-width row below. */
   .app-header .brand { order: 1; }
-  .app-header .sidebar-footer { order: 2; margin-left: auto; }
+  .app-header .sidebar-language { order: 2; margin-left: auto; padding: 0 0.5rem; border: 0; }
+  .app-header .sidebar-language .language-switcher { width: auto; }
+  .app-header .sidebar-footer { order: 2; }
   .app-header .main-tabs {
     order: 3; flex: 1 0 100%; justify-content: flex-start; min-height: 0;
     border-top: 1px solid rgba(255, 255, 255, 0.08); scrollbar-width: none;
@@ -3222,3 +3224,16 @@ textarea {
 .button.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
 .button.danger:disabled { opacity: 0.45; }
 .button.danger-outline { color: var(--danger); border-color: #fecaca; background: #fff; }
+
+/* Language switcher: US / ARM flags */
+.language-switcher { display: inline-flex; gap: 0.25rem; padding: 0.2rem; border-radius: 999px; background: rgba(255, 255, 255, 0.1); }
+.language-switcher button { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.25rem 0.5rem; border: 0; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; opacity: 0.7; }
+.language-switcher button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.92); color: #1f4d32; opacity: 1; }
+.language-switcher button:hover { opacity: 1; }
+.language-switcher svg { width: 18px; height: 12px; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15); flex: none; }
+.language-switcher.on-light { background: #eef3ec; color: #374151; }
+.language-switcher.on-light button[aria-pressed="true"] { background: #1f4d32; color: #fff; }
+.page-language { position: fixed; top: 0.9rem; right: 1rem; z-index: 50; }
+.sidebar-language { padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--sidebar-divider); }
+.sidebar-language .language-switcher { display: flex; width: 100%; }
+.sidebar-language .language-switcher button { flex: 1; justify-content: center; }

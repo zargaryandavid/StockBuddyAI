@@ -26,6 +26,8 @@ import {
   type FxRates,
 } from "@/lib/fire";
 import { forPeriod, periodSuffix, type Period } from "@/lib/fire-views";
+import { useT } from "@/lib/i18n/client";
+import { translator, type Translate } from "@/lib/i18n/core";
 import { cleanNumberInput } from "@/lib/inputs";
 import { money } from "@/lib/portfolio-metrics";
 
@@ -93,6 +95,7 @@ export function AssetsSection({
   onSave: (draft: AssetDraft) => Promise<void>;
   onRemove: (asset: FireAsset) => Promise<void>;
 }) {
+  const t = useT();
   const [draft, setDraft] = useState<AssetDraft | null>(null);
   const total = assets.reduce(
     (sum, asset) => sum + (toBase(Number(asset.market_value ?? 0), asset.currency, rates, currency) ?? 0),
@@ -103,23 +106,25 @@ export function AssetsSection({
     <section className="panel fire-list fire-assets" aria-labelledby="fire-assets-title">
       <div className="fire-list-heading">
         <div className="fire-list-title">
-          <h2 id="fire-assets-title">Your assets</h2>
+          <h2 id="fire-assets-title">{t("Your assets")}</h2>
           <span className="fire-list-count">
-            {assets.length} {assets.length === 1 ? "asset" : "assets"}
+            {assets.length === 1
+              ? t("{count} asset", { count: assets.length })
+              : t("{count} assets", { count: assets.length })}
           </span>
           {total > 0 && <strong className="fire-list-total asset">{money(total, currency)}</strong>}
         </div>
         <button type="button" className="button primary fire-add" onClick={() => setDraft(newAssetDraft(currency))}>
-          Add asset
+          {t("Add asset")}
         </button>
       </div>
       {loading ? (
-        <p className="muted">Loading…</p>
+        <p className="muted">{t("Loading…")}</p>
       ) : assets.length === 0 ? (
         <p className="muted">
-          Add rental property, land, or a vehicle or equipment you rent out. Adding rental
-          income creates its asset here, and you can link an asset to a rental income from
-          the income form.
+          {t(
+            "Add rental property, land, or a vehicle or equipment you rent out. Adding rental income creates its asset here, and you can link an asset to a rental income from the income form.",
+          )}
         </p>
       ) : (
         <ul>
@@ -138,7 +143,7 @@ export function AssetsSection({
                 <div className="fire-entry-main">
                   <strong>{asset.name}</strong>
                   <span>
-                    {type.label} ·{" "}
+                    {t(type.label)} ·{" "}
                     {asset.location && (
                       <>
                         <a
@@ -146,7 +151,7 @@ export function AssetsSection({
                           href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(asset.location)}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          title="Open in Google Maps"
+                          title={t("Open in Google Maps")}
                         >
                           <MapPin size={12} aria-hidden="true" />
                           {asset.location}
@@ -155,28 +160,31 @@ export function AssetsSection({
                       </>
                     )}
                     {linked.length
-                      ? `earns ${money(forPeriod(earns, period), currency)}${periodSuffix(period)} from ${linked.map((entry) => entry.name).join(", ")}`
-                      : "not linked to an income yet"}
+                      ? t("earns {amount} from {incomes}", {
+                          amount: `${money(forPeriod(earns, period), currency)}${periodSuffix(period, t)}`,
+                          incomes: linked.map((entry) => entry.name).join(", "),
+                        })
+                      : t("not linked to an income yet")}
                   </span>
                 </div>
                 <div className="fire-entry-amount">
                   <strong>
-                    {asset.market_value == null ? "No value" : money(Number(asset.market_value), asset.currency)}
+                    {asset.market_value == null ? t("No value") : money(Number(asset.market_value), asset.currency)}
                   </strong>
                   {asset.market_value != null && asset.currency !== currency && (
                     <span>
                       {(() => {
                         const converted = toBase(Number(asset.market_value), asset.currency, rates, currency);
-                        return converted == null ? "no exchange rate" : `≈ ${money(converted, currency)}`;
+                        return converted == null ? t("no exchange rate") : `≈ ${money(converted, currency)}`;
                       })()}
                     </span>
                   )}
                 </div>
                 <div className="fire-entry-actions">
-                  <button type="button" aria-label={`Edit asset ${asset.name}`} onClick={() => setDraft(assetDraftFrom(asset))}>
+                  <button type="button" aria-label={t("Edit asset {name}", { name: asset.name })} onClick={() => setDraft(assetDraftFrom(asset))}>
                     <Pencil size={15} aria-hidden="true" />
                   </button>
-                  <button type="button" aria-label={`Remove asset ${asset.name}`} onClick={() => void onRemove(asset)}>
+                  <button type="button" aria-label={t("Remove asset {name}", { name: asset.name })} onClick={() => void onRemove(asset)}>
                     <Trash2 size={15} aria-hidden="true" />
                   </button>
                 </div>
@@ -201,10 +209,10 @@ export function AssetsSection({
   );
 }
 
-export function assetDraftProblem(draft: AssetDraft): string | null {
-  if (!draft.name.trim()) return "Give the asset a name.";
+export function assetDraftProblem(draft: AssetDraft, t: Translate = translator("en")): string | null {
+  if (!draft.name.trim()) return t("Give the asset a name.");
   if (draft.market_value !== "" && !(Number(draft.market_value) >= 0)) {
-    return "Enter the market value (zero or more), or leave it blank.";
+    return t("Enter the market value (zero or more), or leave it blank.");
   }
   return null;
 }
@@ -222,6 +230,7 @@ function AssetDialog({
   onClose: () => void;
   onSave: () => Promise<void>;
 }) {
+  const t = useT();
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const set = (patch: Partial<AssetDraft>) => {
@@ -238,7 +247,7 @@ function AssetDialog({
   }, [onClose]);
 
   async function submit() {
-    const problem = assetDraftProblem(draft);
+    const problem = assetDraftProblem(draft, t);
     if (problem) {
       setError(problem);
       return;
@@ -247,7 +256,7 @@ function AssetDialog({
     try {
       await onSave();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not save the asset");
+      setError(cause instanceof Error ? cause.message : t("Could not save the asset"));
       setSaving(false);
     }
   }
@@ -262,8 +271,8 @@ function AssetDialog({
     >
       <section className="add-holding-modal fire-dialog" role="dialog" aria-modal="true" aria-labelledby="asset-dialog-title">
         <div className="modal-heading">
-          <h2 id="asset-dialog-title">{draft.id ? "Edit asset" : "Add asset"}</h2>
-          <button type="button" aria-label="Close" onClick={onClose}>
+          <h2 id="asset-dialog-title">{draft.id ? t("Edit asset") : t("Add asset")}</h2>
+          <button type="button" aria-label={t("Close")} onClick={onClose}>
             ×
           </button>
         </div>
@@ -276,22 +285,22 @@ function AssetDialog({
           }}
         >
           <label>
-            Rental type
+            {t("Rental type")}
             <select value={draft.asset_type} onChange={(event) => set({ asset_type: event.target.value as FireAssetType })}>
               {ASSET_TYPES.map((type) => (
                 <option key={type.key} value={type.key}>
-                  {type.label}
+                  {t(type.label)}
                 </option>
               ))}
             </select>
           </label>
           <label>
-            Name
-            <input autoFocus value={draft.name} placeholder="Downtown condo" onChange={(event) => set({ name: event.target.value })} />
+            {t("Name")}
+            <input autoFocus value={draft.name} placeholder={t("Downtown condo")} onChange={(event) => set({ name: event.target.value })} />
           </label>
           <div className="fire-dialog-row">
             <label>
-              Market value ({draft.currency}, optional)
+              {t("Market value ({currency}, optional)", { currency: draft.currency })}
               <input
                 type="number"
                 min="0"
@@ -301,7 +310,7 @@ function AssetDialog({
               />
             </label>
             <label>
-              Currency
+              {t("Currency")}
               <select value={draft.currency} onChange={(event) => set({ currency: event.target.value })}>
                 {[...new Set([draft.currency, ...currencies])].map((code) => (
                   <option key={code} value={code}>
@@ -312,22 +321,22 @@ function AssetDialog({
             </label>
           </div>
           <label>
-            Location (optional)
+            {t("Location (optional)")}
             <input
               value={draft.location}
               maxLength={200}
-              placeholder="Street, city, or area"
+              placeholder={t("Street, city, or area")}
               onChange={(event) => set({ location: event.target.value })}
             />
           </label>
           <label>
-            Note (optional)
+            {t("Note (optional)")}
             <input value={draft.note} maxLength={500} onChange={(event) => set({ note: event.target.value })} />
           </label>
           <p className="muted">
-            Link it to its rent from the income form (Type: Rental income). Assets are shown
-            in &ldquo;What you own today&rdquo; but are not FIRE assets, because their income
-            is already counted.
+            {t(
+              "Link it to its rent from the income form (Type: Rental income). Assets are shown in “What you own today” but are not FIRE assets, because their income is already counted.",
+            )}
           </p>
           {error && (
             <p className="alert" role="alert">
@@ -335,7 +344,7 @@ function AssetDialog({
             </p>
           )}
           <button type="submit" className="button primary" disabled={saving}>
-            {saving ? "Saving…" : draft.id ? "Save asset" : "Add asset"}
+            {saving ? t("Saving…") : draft.id ? t("Save asset") : t("Add asset")}
           </button>
         </form>
       </section>

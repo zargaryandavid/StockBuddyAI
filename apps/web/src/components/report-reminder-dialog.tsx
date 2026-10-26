@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { BellRing } from "lucide-react";
 
 import { api } from "@/lib/api";
+import { useT } from "@/lib/i18n/client";
 
 export type ReportReminder = {
   id: string;
@@ -53,6 +54,7 @@ export function ReportReminderDialog({
   emailEnabled: boolean;
   onClose: () => void;
 }) {
+  const t = useT();
   const [remindOn, setRemindOn] = useState(() =>
     defaultReminderDate(lastReportDate, today),
   );
@@ -103,7 +105,7 @@ export function ReportReminderDialog({
       setSaved({ ...created, remind_on: remindOn });
       setExisting((current) => [...current, { ...created, remind_on: remindOn }]);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not save the reminder");
+      setError(cause instanceof Error ? t(cause.message) : t("Could not save the reminder"));
     } finally {
       setSaving(false);
     }
@@ -116,7 +118,7 @@ export function ReportReminderDialog({
       setExisting((current) => current.filter((row) => row.id !== id));
       if (saved?.id === id) setSaved(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not cancel the reminder");
+      setError(cause instanceof Error ? t(cause.message) : t("Could not cancel the reminder"));
     }
   }
 
@@ -135,8 +137,8 @@ export function ReportReminderDialog({
         aria-labelledby="reminder-title"
       >
         <div className="modal-heading">
-          <h2 id="reminder-title">Report reminder for {ticker}</h2>
-          <button type="button" aria-label="Close" onClick={onClose}>
+          <h2 id="reminder-title">{t("Report reminder for {ticker}", { ticker })}</h2>
+          <button type="button" aria-label={t("Close")} onClick={onClose}>
             ×
           </button>
         </div>
@@ -144,27 +146,32 @@ export function ReportReminderDialog({
         <div className="modal-fields">
           <dl className="reminder-facts">
             <div>
-              <dt>Last SEC report</dt>
+              <dt>{t("Last SEC report")}</dt>
               <dd>{lastReportDate}</dd>
             </div>
             <div>
-              <dt>Next report expected</dt>
-              <dd>{expected < today ? `any day now (estimated ${expected})` : `around ${expected}`}</dd>
+              <dt>{t("Next report expected")}</dt>
+              <dd>
+                {expected < today
+                  ? t("any day now (estimated {date})", { date: expected })
+                  : t("around {date}", { date: expected })}
+              </dd>
             </div>
           </dl>
           <p className="reminder-note">
-            Companies usually file every three months, so this date is an estimate.
-            The company announces the exact date.
+            {t(
+              "Companies usually file every three months, so this date is an estimate. The company announces the exact date.",
+            )}
           </p>
 
           {saved ? (
             <p className="notice" role="status">
-              Reminder set. We’ll email {email} on {saved.remind_on}.
+              {t("Reminder set. We’ll email {email} on {date}.", { email, date: saved.remind_on })}
             </p>
           ) : (
             <>
               <label>
-                Email me on
+                {t("Email me on")}
                 <input
                   type="date"
                   min={addDays(today, 0)}
@@ -173,13 +180,14 @@ export function ReportReminderDialog({
                 />
               </label>
               <label>
-                Send to
+                {t("Send to")}
                 <input value={email} readOnly aria-readonly="true" />
               </label>
               {!emailEnabled && (
                 <p className="reminder-note" role="note">
-                  Email sending isn’t set up on this server yet. Your reminder will be
-                  saved and sent once it is.
+                  {t(
+                    "Email sending isn’t set up on this server yet. Your reminder will be saved and sent once it is.",
+                  )}
                 </p>
               )}
               <button
@@ -189,7 +197,7 @@ export function ReportReminderDialog({
                 onClick={() => void save()}
               >
                 <BellRing size={16} aria-hidden="true" />
-                {saving ? "Saving…" : "Send me a reminder"}
+                {saving ? t("Saving…") : t("Send me a reminder")}
               </button>
             </>
           )}
@@ -202,13 +210,13 @@ export function ReportReminderDialog({
 
           {existing.length > 0 && (
             <div className="reminder-list">
-              <h3>Scheduled reminders for {ticker}</h3>
+              <h3>{t("Scheduled reminders for {ticker}", { ticker })}</h3>
               <ul>
                 {existing.map((row) => (
                   <li key={row.id}>
                     <span>{row.remind_on}</span>
                     <button type="button" onClick={() => void remove(row.id)}>
-                      Cancel reminder
+                      {t("Cancel reminder")}
                     </button>
                   </li>
                 ))}

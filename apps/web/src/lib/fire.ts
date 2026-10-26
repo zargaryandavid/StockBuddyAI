@@ -1,6 +1,11 @@
 // FIRE planning math, modeled on Path2Wealth: repeating incomes and expenses,
 // a month-by-month projection to the FIRE number, and a short plain-language read.
 // Dates are "YYYY-MM-DD" calendar keys handled in UTC so they never shift a day.
+// Display text goes through an optional translator `t`; without one it reads in English.
+
+import { translator, type Translate } from "./i18n/core";
+
+const english: Translate = translator("en");
 
 export type FireKind = "income" | "expense";
 export type FireFrequency = "once" | "monthly" | "quarterly" | "semiannual" | "annual";
@@ -565,13 +570,16 @@ export function assetMix({
     .sort((a, b) => b.value - a.value);
 }
 
-export function yearsLabel(hitMonth: number | null) {
-  if (hitMonth == null) return "50+ years";
-  if (hitMonth === 0) return "Reached";
+export function yearsLabel(hitMonth: number | null, t: Translate = english) {
+  if (hitMonth == null) return t("50+ years");
+  if (hitMonth === 0) return t("Reached");
   const years = Math.floor(hitMonth / 12);
   const months = hitMonth % 12;
-  if (years === 0) return `${months} mo`;
-  return `${years} yr${years === 1 ? "" : "s"}${months ? ` ${months} mo` : ""}`;
+  if (years === 0) return t("{months} mo", { months });
+  if (!months) return years === 1 ? t("{years} yr", { years }) : t("{years} yrs", { years });
+  return years === 1
+    ? t("{years} yr {months} mo", { years, months })
+    : t("{years} yrs {months} mo", { years, months });
 }
 
 const wholeMoney = (value: number) => {
@@ -582,7 +590,7 @@ const wholeMoney = (value: number) => {
 export type PlanNote = { title: string; text: string; tone?: "good" | "warn" | "bad" };
 
 /** A short read of the plan: FIRE date, emergency fund, and the biggest bottleneck. */
-export function planNotes(plan: FirePlan, cash: number) {
+export function planNotes(plan: FirePlan, cash: number, t: Translate = english) {
   const notes: PlanNote[] = [];
   const targetMonthly = plan.annualSpend / 12;
   // The FIRE number is spending ÷ withdrawal rate, so the rate is spending ÷ FIRE number.
@@ -590,22 +598,41 @@ export function planNotes(plan: FirePlan, cash: number) {
   if (plan.fireNumber <= 0) {
     notes.push({
       title: "FIRE",
-      text: "Add your expenses (or a retirement spending amount) to set a FIRE number.",
+      text: t("Add your expenses (or a retirement spending amount) to set a FIRE number."),
     });
   } else if (plan.hitMonth === 0) {
     notes.push({
       title: "FIRE",
-      text: `You're there: ${wholeMoney(plan.currentAssets)} would pay about ${wholeMoney((plan.currentAssets * withdrawalRate) / 12)}/mo at your ${Math.round(withdrawalRate * 1000) / 10}% withdrawal rate, covering ${wholeMoney(targetMonthly)}/mo of spending. Protect the balance.`,
+      text: t(
+        "You're there: {assets} would pay about {pays}/mo at your {rate}% withdrawal rate, covering {spending}/mo of spending. Protect the balance.",
+        {
+          assets: wholeMoney(plan.currentAssets),
+          pays: wholeMoney((plan.currentAssets * withdrawalRate) / 12),
+          rate: Math.round(withdrawalRate * 1000) / 10,
+          spending: wholeMoney(targetMonthly),
+        },
+      ),
     });
   } else if (plan.hitMonth != null) {
     notes.push({
       title: "FIRE",
-      text: `Your ${wholeMoney(plan.fireNumber)} target pays about ${wholeMoney(targetMonthly)}/mo in retirement. Investing ${wholeMoney(plan.monthlyInvest)}/mo, you reach it in about ${yearsLabel(plan.hitMonth)}.`,
+      text: t(
+        "Your {target} target pays about {spending}/mo in retirement. Investing {invest}/mo, you reach it in about {time}.",
+        {
+          target: wholeMoney(plan.fireNumber),
+          spending: wholeMoney(targetMonthly),
+          invest: wholeMoney(plan.monthlyInvest),
+          time: yearsLabel(plan.hitMonth, t),
+        },
+      ),
     });
   } else {
     notes.push({
       title: "FIRE",
-      text: `At ${wholeMoney(plan.monthlyInvest)}/mo the ${wholeMoney(plan.fireNumber)} target is more than 50 years away. Investing more or spending less in retirement is what moves it.`,
+      text: t(
+        "At {invest}/mo the {target} target is more than 50 years away. Investing more or spending less in retirement is what moves it.",
+        { invest: wholeMoney(plan.monthlyInvest), target: wholeMoney(plan.fireNumber) },
+      ),
     });
   }
 
@@ -615,23 +642,38 @@ export function planNotes(plan: FirePlan, cash: number) {
     const have = Math.max(0, cash) + plan.savingsBalances;
     const months = have / bills;
     const tone = months >= 5 ? "good" : months >= 3 ? "warn" : "bad";
-    const verdict =
+    const vars = {
+      low: wholeMoney(bills * 5),
+      high: wholeMoney(bills * 6),
+      have: wholeMoney(have),
+      months: months.toFixed(1),
+      more: wholeMoney(bills * 5 - have),
+    };
+    const text =
       months >= 6
-        ? "fully covered"
+        ? t(
+            "Aim for 5–6 months of expenses ({low}–{high}). Cash and savings accounts ({have}) cover about {months} months: fully covered. Bonds are not counted here.",
+            vars,
+          )
         : months >= 5
-          ? "covered"
+          ? t(
+              "Aim for 5–6 months of expenses ({low}–{high}). Cash and savings accounts ({have}) cover about {months} months: covered. Bonds are not counted here.",
+              vars,
+            )
           : months >= 3
-            ? `close; ${wholeMoney(bills * 5 - have)} more reaches 5 months`
-            : `keep building; ${wholeMoney(bills * 5 - have)} more reaches 5 months`;
-    notes.push({
-      title: "Emergency fund",
-      tone,
-      text: `Aim for 5–6 months of expenses (${wholeMoney(bills * 5)}–${wholeMoney(bills * 6)}). Cash and savings accounts (${wholeMoney(have)}) cover about ${months.toFixed(1)} months: ${verdict}. Bonds are not counted here.`,
-    });
+            ? t(
+                "Aim for 5–6 months of expenses ({low}–{high}). Cash and savings accounts ({have}) cover about {months} months: close; {more} more reaches 5 months. Bonds are not counted here.",
+                vars,
+              )
+            : t(
+                "Aim for 5–6 months of expenses ({low}–{high}). Cash and savings accounts ({have}) cover about {months} months: keep building; {more} more reaches 5 months. Bonds are not counted here.",
+                vars,
+              );
+    notes.push({ title: t("Emergency fund"), tone, text });
   } else {
     notes.push({
-      title: "Emergency fund",
-      text: "Add repeating expenses such as rent and bills to size a 5–6 month emergency fund.",
+      title: t("Emergency fund"),
+      text: t("Add repeating expenses such as rent and bills to size a 5–6 month emergency fund."),
     });
   }
 
@@ -639,23 +681,37 @@ export function planNotes(plan: FirePlan, cash: number) {
     const rate = plan.annualSpend > 0 ? (plan.annualSpend / plan.fireNumber) * 100 : 0;
     const four = plan.atFourPercent;
     notes.push({
-      title: "Withdrawal rate",
+      title: t("Withdrawal rate"),
       tone: rate > 6 ? "bad" : "warn",
-      text: `${Math.round(rate * 10) / 10}% a year is aggressive: long studies of retirements support about 4% (3.5% for early retirees). At 4% you need ${wholeMoney(four.fireNumber)} and reach it in ${yearsLabel(four.hitMonth)}.`,
+      text: t(
+        "{rate}% a year is aggressive: long studies of retirements support about 4% (3.5% for early retirees). At 4% you need {target} and reach it in {time}.",
+        {
+          rate: Math.round(rate * 10) / 10,
+          target: wholeMoney(four.fireNumber),
+          time: yearsLabel(four.hitMonth, t),
+        },
+      ),
     });
   }
 
   let bottleneck: string;
   if (plan.monthlyIncome > 0 && bills >= plan.monthlyIncome) {
-    bottleneck = `expenses (${wholeMoney(bills)}/mo) use your whole income, so nothing is left to invest.`;
+    bottleneck = t("Expenses ({bills}/mo) use your whole income, so nothing is left to invest.", {
+      bills: wholeMoney(bills),
+    });
   } else if (plan.savingsRate != null && plan.savingsRate < 0.15) {
-    bottleneck = `you keep ${Math.round(plan.savingsRate * 100)}% of income; raising that is the biggest lever on your FIRE date.`;
+    bottleneck = t("You keep {rate}% of income; raising that is the biggest lever on your FIRE date.", {
+      rate: Math.round(plan.savingsRate * 100),
+    });
   } else if (plan.hitMonth == null || plan.hitMonth > 360) {
-    bottleneck = `retirement spending of ${wholeMoney(plan.annualSpend)}/yr sets a ${wholeMoney(plan.fireNumber)} target; lowering it pulls the date in fastest.`;
+    bottleneck = t(
+      "Retirement spending of {spending}/yr sets a {target} target; lowering it pulls the date in fastest.",
+      { spending: wholeMoney(plan.annualSpend), target: wholeMoney(plan.fireNumber) },
+    );
   } else {
-    bottleneck = "nothing major stands out. Consistency is the whole game from here.";
+    bottleneck = t("Nothing major stands out. Consistency is the whole game from here.");
   }
-  notes.push({ title: "Bottleneck", text: bottleneck[0].toUpperCase() + bottleneck.slice(1) });
+  notes.push({ title: t("Bottleneck"), text: bottleneck });
   return notes;
 }
 
@@ -679,6 +735,7 @@ export function monthEvents({
   month,
   rates = {},
   baseCurrency = "USD",
+  t = english,
 }: {
   entries: FireEntry[];
   reports: { ticker: string; report_date: string }[];
@@ -686,6 +743,7 @@ export function monthEvents({
   month: number;
   rates?: FxRates;
   baseCurrency?: string;
+  t?: Translate;
 }): CalendarEvent[] {
   const from = keyFor(year, month, 1);
   const to = keyFor(year, month, 31);
@@ -706,7 +764,7 @@ export function monthEvents({
   for (const report of reports) {
     const last = report.report_date.slice(0, 10);
     if (last >= from && last <= to) {
-      events.push({ date: last, kind: "report", title: `${report.ticker} report`, amount: null });
+      events.push({ date: last, kind: "report", title: t("{ticker} report", { ticker: report.ticker }), amount: null });
     }
     // Quarterly filers report again about three months later (an estimate).
     const { year: y, month: m, day } = parseKey(last);
@@ -717,7 +775,7 @@ export function monthEvents({
         events.push({
           date: next,
           kind: "report",
-          title: `${report.ticker} report (est.)`,
+          title: t("{ticker} report (est.)", { ticker: report.ticker }),
           amount: null,
           estimated: true,
         });

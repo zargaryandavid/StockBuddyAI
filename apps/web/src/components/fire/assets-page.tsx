@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { api } from "@/lib/api";
 import type { FireAsset, FireEntry, FxRates } from "@/lib/fire";
+import { useT } from "@/lib/i18n/client";
 
 import { AssetsSection, type AssetDraft } from "./assets-section";
 
@@ -11,6 +12,7 @@ const CURRENCIES = ["USD", "AMD", "EUR", "GBP", "RUB", "CAD", "CHF", "JPY"];
 
 /** The Assets page: rental property, land, vehicles, and equipment, with the rent each earns. */
 export function AssetsPage({ today, currency = "USD" }: { today: string; currency?: string }) {
+  const t = useT();
   const [assets, setAssets] = useState<FireAsset[]>([]);
   const [entries, setEntries] = useState<FireEntry[]>([]);
   const [rates, setRates] = useState<FxRates>({});
@@ -88,14 +90,15 @@ export function AssetsPage({ today, currency = "USD" }: { today: string; currenc
   return (
     <section className="assets-page" aria-labelledby="assets-page-title">
       <header className="assets-page-head">
-        <h1 id="assets-page-title">Assets</h1>
+        <h1 id="assets-page-title">{t("Assets")}</h1>
         <p className="muted page-subtitle">
-          Property, land, vehicles, and equipment you own. Link each to its rent in FIRE → Add income.
+          {t("Property, land, vehicles, and equipment you own. Link each to its rent in FIRE → Add income.")}
         </p>
       </header>
       {error && (
         <div className="alert" role="alert">
-          {error}
+          {/* Fallback messages are English keys; server messages pass through unchanged. */}
+          {t(error)}
         </div>
       )}
       <AssetsSection

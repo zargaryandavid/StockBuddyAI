@@ -7,6 +7,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import Link from "next/link";
@@ -70,6 +71,8 @@ import {
   signedMoney,
   signedPercent,
 } from "@/lib/portfolio-metrics";
+import { translate, type Translate } from "@/lib/i18n/core";
+import { useT } from "@/lib/i18n/client";
 import { createClient } from "@/lib/supabase/client";
 import { defaultBook, type BookSettings, type Role } from "@/lib/workspace";
 
@@ -105,6 +108,13 @@ export function Dashboard({
   initialTab?: MainTab;
 }) {
   const router = useRouter();
+  const t = useT();
+  // Callbacks that feed the first portfolio load read the translator from here, so a
+  // language switch does not reload the portfolio and drop unsaved edits.
+  const tRef = useRef(t);
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
   const [activeTab, setActiveTab] = useState<MainTab>(initialTab);
   const [portfolioView, setPortfolioView] = useState<PortfolioView>("current");
   const [importMode, setImportMode] = useState<ImportMode | null>(null);
@@ -348,7 +358,14 @@ export function Dashboard({
       )?.allocation;
       const sectorWarning =
         sectorAllocation != null && sectorAllocation > sectorLimit
-          ? `Sector concentration exceeded: ${position.sector} represents ${(sectorAllocation * 100).toFixed(1)}% of the portfolio. Your configured limit is ${(sectorLimit * 100).toFixed(1)}%.`
+          ? t(
+              "Sector concentration exceeded: {sector} represents {share}% of the portfolio. Your configured limit is {limit}%.",
+              {
+                sector: t(position.sector ?? ""),
+                share: (sectorAllocation * 100).toFixed(1),
+                limit: (sectorLimit * 100).toFixed(1),
+              },
+            )
           : undefined;
       const status = positionStatus(position, metric, {
         positionLimit,
@@ -399,6 +416,7 @@ export function Dashboard({
     sectorLimit,
     sortDirection,
     sortKey,
+    t,
     today,
   ]);
 
@@ -448,8 +466,13 @@ export function Dashboard({
                 ...rows[index],
                 resolve_error:
                   result.reason instanceof Error
-                    ? `Could not update ${rows[index].ticker}: ${result.reason.message}`
-                    : `Could not update ${rows[index].ticker}.`,
+                    ? tRef.current("Could not update {ticker}: {message}", {
+                        ticker: rows[index].ticker,
+                        message: tRef.current(result.reason.message),
+                      })
+                    : tRef.current("Could not update {ticker}.", {
+                        ticker: rows[index].ticker,
+                      }),
               },
         ),
       );
@@ -540,6 +563,7 @@ export function Dashboard({
           cause instanceof Error
             ? cause
             : new Error("Could not load transaction history"),
+          t,
         ),
       );
     } finally {
@@ -560,7 +584,8 @@ export function Dashboard({
         }
       })
       .catch((cause: Error) => {
-        if (active) setError(friendlyError(cause));
+        // Stored in English and translated where it is shown.
+        if (active) setError(friendlyError(cause, english));
       })
       .finally(() => {
         if (active) setLoadingPortfolios(false);
@@ -582,7 +607,7 @@ export function Dashboard({
 
   async function addDraftPosition() {
     if (!draftPosition.ticker.trim()) {
-      setError("Enter a ticker or company name.");
+      setError(t("Enter a ticker or company name."));
       return;
     }
     try {
@@ -597,6 +622,7 @@ export function Dashboard({
       setError(
         friendlyError(
           cause instanceof Error ? cause : new Error("Could not identify this company"),
+          t,
         ),
       );
     }
@@ -652,6 +678,7 @@ export function Dashboard({
       setError(
         friendlyError(
           cause instanceof Error ? cause : new Error("Could not identify this company"),
+          t,
         ),
       );
     } finally {
@@ -679,10 +706,10 @@ export function Dashboard({
         headers: ["ticker", "shares"],
         duplicateTickers: duplicateTickers(result.positions),
       });
-      setNotice("Picture read successfully. Confirm the preview before importing.");
+      setNotice(t("Picture read successfully. Confirm the preview before importing."));
     } catch (cause) {
       setError(
-        friendlyError(cause instanceof Error ? cause : new Error("Could not read picture")),
+        friendlyError(cause instanceof Error ? cause : new Error("Could not read picture"), t),
       );
     } finally {
       setExtracting(false);
@@ -709,13 +736,13 @@ export function Dashboard({
     setError("");
     setNotice(
       combine
-        ? "Import added. Duplicate positions were combined using weighted average cost."
-        : "Import added. Existing duplicate positions were kept unchanged.",
+        ? t("Import added. Duplicate positions were combined using weighted average cost.")
+        : t("Import added. Existing duplicate positions were kept unchanged."),
     );
   }
 
   async function recordTransaction(transaction: TransactionInput) {
-    if (!editingId) throw new Error("Save this portfolio before recording a transaction.");
+    if (!editingId) throw new Error(t("Save this portfolio before recording a transaction."));
     const recorded = await api<PortfolioTransaction>(
       `/api/portfolios/${editingId}/transactions`,
       { method: "POST", body: JSON.stringify(transaction) },
@@ -729,7 +756,12 @@ export function Dashboard({
       ),
     );
     setNotice(
-      `${transaction.kind === "buy" ? "Buy" : "Sell"} of ${transaction.quantity} ${transaction.ticker} recorded; holdings updated.`,
+      t(
+        transaction.kind === "buy"
+          ? "Buy of {quantity} {ticker} recorded; holdings updated."
+          : "Sell of {quantity} {ticker} recorded; holdings updated.",
+        { quantity: transaction.quantity, ticker: transaction.ticker },
+      ),
     );
   }
 
@@ -737,16 +769,16 @@ export function Dashboard({
     const position = positions[index];
     if (!position || transactionQuantity <= 0 || transactionPrice < 0) return;
     if (!editingId) {
-      setError("Save this portfolio before recording a transaction.");
+      setError(t("Save this portfolio before recording a transaction."));
       return;
     }
     if (dirty) {
-      setError("Save your portfolio changes before recording a transaction.");
+      setError(t("Save your portfolio changes before recording a transaction."));
       return;
     }
     if (transactionKind === "sell") {
       if (transactionQuantity > Number(position.shares)) {
-        setError("Sale quantity cannot exceed the held quantity.");
+        setError(t("Sale quantity cannot exceed the held quantity."));
         return;
       }
     }
@@ -772,13 +804,14 @@ export function Dashboard({
         ...current.filter((transaction) => transaction.id !== recorded.id),
       ]);
       setTransactionRow(null);
-      setNotice("Transaction recorded and portfolio position updated.");
+      setNotice(t("Transaction recorded and portfolio position updated."));
     } catch (cause) {
       setError(
         friendlyError(
           cause instanceof Error
             ? cause
             : new Error("Could not record the transaction"),
+          t,
         ),
       );
     }
@@ -791,7 +824,7 @@ export function Dashboard({
     setNotice("");
     const pendingPositions = positions.filter((position) => position.ticker.trim());
     if (!pendingPositions.length) {
-      setError("Add at least one ticker and share amount.");
+      setError(t("Add at least one ticker and share amount."));
       return;
     }
     try {
@@ -817,7 +850,7 @@ export function Dashboard({
         notes: position.notes || null,
       }));
       if (new Set(cleanPositions.map((position) => position.ticker)).size !== cleanPositions.length) {
-        throw new Error("The portfolio contains the same company more than once.");
+        throw new Error(t("The portfolio contains the same company more than once."));
       }
       setPositions(resolvedPositions);
       const saved = await api<Portfolio>(
@@ -843,10 +876,10 @@ export function Dashboard({
       setEditingId(saved.id);
       setSaveConfirmation(wasUpdating ? "updated" : "saved");
       setDirty(false);
-      setNotice(wasUpdating ? "Portfolio updated." : "Portfolio saved.");
+      setNotice(wasUpdating ? t("Portfolio updated.") : t("Portfolio saved."));
     } catch (cause) {
       setError(
-        friendlyError(cause instanceof Error ? cause : new Error("Could not save portfolio")),
+        friendlyError(cause instanceof Error ? cause : new Error("Could not save portfolio"), t),
       );
     }
   }
@@ -865,11 +898,12 @@ export function Dashboard({
       }
       await loadPortfolios();
       setPendingDeleteId("");
-      setNotice("Portfolio deleted.");
+      setNotice(t("Portfolio deleted."));
     } catch (cause) {
       setError(
         friendlyError(
           cause instanceof Error ? cause : new Error("Could not delete portfolio"),
+          t,
         ),
       );
     }
@@ -909,9 +943,9 @@ export function Dashboard({
           }}
         >
           <Briefcase size={16} aria-hidden="true" />
-          Portfolio
+          {t("Portfolio")}
         </button>
-        <div className="sidebar-subnav" role="group" aria-label="Portfolio tools">
+        <div className="sidebar-subnav" role="group" aria-label={t("Portfolio tools")}>
           <button
             type="button"
             className={activeTab === "portfolio" && portfolioView === "analytics" ? "active" : ""}
@@ -919,7 +953,7 @@ export function Dashboard({
             onClick={openAnalytics}
           >
             <IndustryIcon icon="chart-line" size={15} />
-            Analytics
+            {t("Analytics")}
           </button>
           <button
             type="button"
@@ -932,7 +966,7 @@ export function Dashboard({
             }}
           >
             <History size={15} aria-hidden="true" />
-            Transactions
+            {t("Transactions")}
           </button>
           <button
             type="button"
@@ -941,7 +975,7 @@ export function Dashboard({
             onClick={() => setActiveTab("test")}
           >
             <Bot size={15} aria-hidden="true" />
-            Ask Buddy
+            {t("Ask Buddy")}
           </button>
         </div>
         <button
@@ -951,7 +985,7 @@ export function Dashboard({
           onClick={() => setActiveTab("assets")}
         >
           <Building2 size={16} aria-hidden="true" />
-          Assets
+          {t("Assets")}
         </button>
         <button
           type="button"
@@ -960,7 +994,7 @@ export function Dashboard({
           onClick={() => setActiveTab("wishlist")}
         >
           <Sparkles size={16} aria-hidden="true" />
-          Wishlist
+          {t("Wishlist")}
         </button>
         <button
           type="button"
@@ -969,7 +1003,7 @@ export function Dashboard({
           onClick={() => setActiveTab("education")}
         >
           <GraduationCap size={16} aria-hidden="true" />
-          Education
+          {t("Education")}
         </button>
         <button
           type="button"
@@ -978,34 +1012,34 @@ export function Dashboard({
           onClick={() => setActiveTab("support")}
         >
           <Heart size={16} aria-hidden="true" />
-          Support us
+          {t("Support us")}
         </button>
         <button
           type="button"
           className="nav-soon"
           aria-disabled="true"
-          title="Shop is coming soon"
+          title={t("Shop is coming soon")}
           onClick={(event) => event.preventDefault()}
         >
           <ShoppingBag size={16} aria-hidden="true" />
-          Shop
-          <span className="nav-badge">Soon</span>
+          {t("Shop")}
+          <span className="nav-badge">{t("Soon")}</span>
         </button>
         <button
           type="button"
           className="nav-soon"
           aria-disabled="true"
-          title="Settings are coming soon"
+          title={t("Settings are coming soon")}
           onClick={(event) => event.preventDefault()}
         >
           <Settings size={16} aria-hidden="true" />
-          Settings
-          <span className="nav-badge">Soon</span>
+          {t("Settings")}
+          <span className="nav-badge">{t("Soon")}</span>
         </button>
         {role === "admin" && (
           <Link href="/admin">
             <ShieldCheck size={16} aria-hidden="true" />
-            Admin
+            {t("Admin")}
           </Link>
         )}
       </AppHeader>
@@ -1024,8 +1058,8 @@ export function Dashboard({
         />
       )}
 
-      {error && <div className="alert page-message" role="alert">{error}</div>}
-      {notice && <div className="notice page-message">{notice}</div>}
+      {error && <div className="alert page-message" role="alert">{t(error)}</div>}
+      {notice && <div className="notice page-message">{t(notice)}</div>}
 
       {activeTab === "wishlist" ? (
         <section className="simple-page wishlist-shell">
@@ -1064,10 +1098,10 @@ export function Dashboard({
         <section className="simple-page portfolio-page">
           {portfolioView === "current" && (
             <header className="portfolio-page-head">
-              <h1>Portfolio</h1>
+              <h1>{t("Portfolio")}</h1>
               <button type="button" className="button portfolio-analytics-link" onClick={openAnalytics}>
                 <IndustryIcon icon="chart-line" size={16} />
-                See analytics
+                {t("See analytics")}
               </button>
             </header>
           )}
@@ -1077,7 +1111,7 @@ export function Dashboard({
               <form onSubmit={createPortfolio} className="stack">
                 <div className="field-row portfolio-details-row">
                   <label>
-                    Portfolio name
+                    {t("Portfolio name")}
                     <input
                       value={portfolioName}
                       onChange={(event) => {
@@ -1085,12 +1119,12 @@ export function Dashboard({
                         setSaveConfirmation(null);
                         setDirty(true);
                       }}
-                      placeholder="My portfolio"
+                      placeholder={t("My portfolio")}
                       required
                     />
                   </label>
                   <label>
-                    Cash
+                    {t("Cash")}
                     <input
                       type="number"
                       min="0"
@@ -1107,46 +1141,48 @@ export function Dashboard({
                 </div>
 
                 {loadingPortfolios ? (
-                  <div className="portfolio-summary-grid" aria-label="Loading portfolio summary">
+                  <div className="portfolio-summary-grid" aria-label={t("Loading portfolio summary")}>
                     {Array.from({ length: 9 }).map((_, index) => (
                       <div className="summary-card skeleton" key={index} />
                     ))}
                   </div>
                 ) : (
-                  <section className="portfolio-summary-grid" aria-label="Portfolio summary">
+                  <section className="portfolio-summary-grid" aria-label={t("Portfolio summary")}>
                     <SummaryCard
-                      label="Total portfolio value"
+                      label={t("Total portfolio value")}
                       value={money(metrics.totalValue, baseCurrency)}
                     />
                     <SummaryCard
-                      label="Total cost basis"
+                      label={t("Total cost basis")}
                       value={money(metrics.totalCostBasis, baseCurrency)}
-                      note={metrics.hasPartialCostBasis ? "Partial cost data" : undefined}
+                      note={metrics.hasPartialCostBasis ? t("Partial cost data") : undefined}
                     />
                     <SummaryCard
-                      label="Unrealized gain/loss"
+                      label={t("Unrealized gain/loss")}
                       value={signedMoney(metrics.unrealizedAmount, baseCurrency)}
                       note={signedPercent(metrics.unrealizedPercent)}
                       tone={metrics.unrealizedAmount >= 0 ? "positive" : "negative"}
                       emphasis
                     />
                     <SummaryCard
-                      label="Today’s gain/loss"
+                      label={t("Today’s gain/loss")}
                       value={signedMoney(metrics.dayAmount, baseCurrency)}
                       note={signedPercent(metrics.dayPercent)}
                       tone={metrics.dayAmount >= 0 ? "positive" : "negative"}
                     />
                     <SummaryCard
-                      label="Cash balance"
+                      label={t("Cash balance")}
                       value={money(cash, baseCurrency)}
-                      note={`${((metrics.cashPercentage ?? 0) * 100).toFixed(1)}% cash`}
+                      note={t("{percent}% cash", {
+                        percent: ((metrics.cashPercentage ?? 0) * 100).toFixed(1),
+                      })}
                     />
                     <SummaryCard
-                      label="Number of holdings"
+                      label={t("Number of holdings")}
                       value={String(positions.length)}
                     />
                     <SummaryCard
-                      label="Largest position"
+                      label={t("Largest position")}
                       value={
                         metrics.largestPosition
                           ? `${metrics.largestPosition.ticker} · ${(
@@ -1156,10 +1192,10 @@ export function Dashboard({
                           : "—"
                       }
                     />
-                    <SummaryCard label="Benchmark" value={benchmarkLabel(benchmark)} />
+                    <SummaryCard label={t("Benchmark")} value={benchmarkLabel(benchmark, t)} />
                     <SummaryCard
-                      label="Last price update"
-                      value={latestPriceDate(positions) ?? "No prices"}
+                      label={t("Last price update")}
+                      value={latestPriceDate(positions) ?? t("No prices")}
                     />
                   </section>
                 )}
@@ -1170,13 +1206,13 @@ export function Dashboard({
                   aria-expanded={settingsOpen}
                   onClick={() => setSettingsOpen((current) => !current)}
                 >
-                  Portfolio settings
+                  {t("Portfolio settings")}
                   {settingsOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                 </button>
                 {settingsOpen && (
                   <div className="portfolio-settings-grid">
                     <label>
-                      Base currency
+                      {t("Base currency")}
                       <select
                         value={baseCurrency}
                         onChange={(event) => {
@@ -1190,7 +1226,7 @@ export function Dashboard({
                       </select>
                     </label>
                     <label>
-                      Benchmark
+                      {t("Benchmark")}
                       <select
                         value={benchmark}
                         onChange={(event) => {
@@ -1204,40 +1240,40 @@ export function Dashboard({
                         <option value="IWM">Russell 2000</option>
                       </select>
                     </label>
-                    <PercentSetting label="Max position (%)" value={maxPosition} fallback={book.max_position_pct} onChange={(value) => { setMaxPosition(value); setDirty(true); }} />
-                    <PercentSetting label="Max sector (%)" value={maxSector} fallback={book.max_industry_pct} onChange={(value) => { setMaxSector(value); setDirty(true); }} />
-                    <PercentSetting label="Min cash (%)" value={minCash} onChange={(value) => { setMinCash(value ?? 0); setDirty(true); }} />
+                    <PercentSetting label={t("Max position (%)")} value={maxPosition} fallback={book.max_position_pct} onChange={(value) => { setMaxPosition(value); setDirty(true); }} />
+                    <PercentSetting label={t("Max sector (%)")} value={maxSector} fallback={book.max_industry_pct} onChange={(value) => { setMaxSector(value); setDirty(true); }} />
+                    <PercentSetting label={t("Min cash (%)")} value={minCash} onChange={(value) => { setMinCash(value ?? 0); setDirty(true); }} />
                     <label>
-                      Time horizon
+                      {t("Time horizon")}
                       <select value={timeHorizon} onChange={(event) => { setTimeHorizon(event.target.value as typeof timeHorizon); setDirty(true); }}>
-                        <option>Short Term</option>
-                        <option>Medium Term</option>
-                        <option>Long Term</option>
+                        <option value="Short Term">{t("Short Term")}</option>
+                        <option value="Medium Term">{t("Medium Term")}</option>
+                        <option value="Long Term">{t("Long Term")}</option>
                       </select>
                     </label>
-                    <PercentSetting label="Rebalance at (%)" value={rebalanceThreshold} onChange={(value) => { setRebalanceThreshold(value ?? 0); setDirty(true); }} />
+                    <PercentSetting label={t("Rebalance at (%)")} value={rebalanceThreshold} onChange={(value) => { setRebalanceThreshold(value ?? 0); setDirty(true); }} />
                   </div>
                 )}
 
                 {!loadingPortfolios && positions.length === 0 && (
                   <div className="portfolio-empty">
                     <IndustryIcon icon="briefcase" size={26} />
-                    <h2>No positions yet</h2>
-                    <p>Add a position or import a portfolio to begin.</p>
+                    <h2>{t("No positions yet")}</h2>
+                    <p>{t("Add a position or import a portfolio to begin.")}</p>
                   </div>
                 )}
 
                 {positions.length > 0 && (
                   <>
-                  <div className="column-visibility-controls" aria-label="Visible portfolio columns">
-                    <span>Columns</span>
+                  <div className="column-visibility-controls" aria-label={t("Visible portfolio columns")}>
+                    <span>{t("Columns")}</span>
                     <button
                       type="button"
                       aria-pressed={showReturns}
                       onClick={() => setShowReturns((visible) => !visible)}
                     >
                       {showReturns ? <Eye size={15} /> : <EyeOff size={15} />}
-                      Returns
+                      {t("Returns")}
                     </button>
                     <button
                       type="button"
@@ -1245,7 +1281,7 @@ export function Dashboard({
                       onClick={() => setShowLifecycle((visible) => !visible)}
                     >
                       {showLifecycle ? <Eye size={15} /> : <EyeOff size={15} />}
-                      Lifecycle phase
+                      {t("Lifecycle phase")}
                     </button>
                     <button
                       type="button"
@@ -1253,13 +1289,13 @@ export function Dashboard({
                       onClick={() => setShowStockBuddyStatus((visible) => !visible)}
                     >
                       {showStockBuddyStatus ? <Eye size={15} /> : <EyeOff size={15} />}
-                      StockBuddy status
+                      {t("StockBuddy status")}
                     </button>
                   </div>
                   <div
                     className={`holdings-table${showReturns ? "" : " hide-returns"}${showLifecycle ? "" : " hide-lifecycle"}${showStockBuddyStatus ? "" : " hide-stockbuddy-status"}`}
                     role="table"
-                    aria-label="Current portfolio holdings"
+                    aria-label={t("Current portfolio holdings")}
                     style={{
                       ["--holding-columns" as string]: holdingColumns({
                         returns: showReturns,
@@ -1269,22 +1305,22 @@ export function Dashboard({
                     }}
                   >
                     <div className="holdings-primary-row holdings-header" role="row">
-                      <SortButton label="Symbol and company" active={sortKey === "symbol"} direction={sortDirection} defaultDirection="asc" onClick={() => sortPositions("symbol")} />
-                      <span role="columnheader">Quantity</span>
-                      <span role="columnheader" title="Weighted average purchase price when transactions are combined">Purchase price</span>
-                      <span role="columnheader">Current price</span>
-                      <span role="columnheader" title="Price divided by trailing 12-month earnings per share from SEC filings">P/E</span>
-                      <span className="report-date-col" role="columnheader">Report date</span>
-                      <SortButton label="Market value" active={sortKey === "value"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("value")} />
-                      <SortButton label="Portfolio weight" active={sortKey === "weight"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("weight")} />
-                      <SortButton label="Unrealized gain/loss" active={sortKey === "gain"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("gain")} />
-                      <SortButton className="return-col" label="1M" active={sortKey === "growth_1m"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("growth_1m")} />
-                      <SortButton className="return-col" label="6M" active={sortKey === "growth_6m"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("growth_6m")} />
-                      <SortButton className="return-col" label="1Y" active={sortKey === "growth_1y"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("growth_1y")} />
-                      <SortButton className="return-col" label="Day" active={sortKey === "day"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("day")} />
-                      <SortButton className="lifecycle-col" label="Lifecycle phase" active={sortKey === "phase"} direction={sortDirection} defaultDirection="asc" onClick={() => sortPositions("phase")} />
-                      <SortButton className="status-col" label="StockBuddy status" active={sortKey === "status"} direction={sortDirection} defaultDirection="asc" onClick={() => sortPositions("status")} />
-                      <span role="columnheader">Actions</span>
+                      <SortButton label={t("Symbol and company")} alphabetic active={sortKey === "symbol"} direction={sortDirection} defaultDirection="asc" onClick={() => sortPositions("symbol")} />
+                      <span role="columnheader">{t("Quantity")}</span>
+                      <span role="columnheader" title={t("Weighted average purchase price when transactions are combined")}>{t("Purchase price")}</span>
+                      <span role="columnheader">{t("Current price")}</span>
+                      <span role="columnheader" title={t("Price divided by trailing 12-month earnings per share from SEC filings")}>{t("P/E")}</span>
+                      <span className="report-date-col" role="columnheader">{t("Report date")}</span>
+                      <SortButton label={t("Market value")} active={sortKey === "value"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("value")} />
+                      <SortButton label={t("Portfolio weight")} active={sortKey === "weight"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("weight")} />
+                      <SortButton label={t("Unrealized gain/loss")} active={sortKey === "gain"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("gain")} />
+                      <SortButton className="return-col" label={t("1M")} active={sortKey === "growth_1m"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("growth_1m")} />
+                      <SortButton className="return-col" label={t("6M")} active={sortKey === "growth_6m"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("growth_6m")} />
+                      <SortButton className="return-col" label={t("1Y")} active={sortKey === "growth_1y"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("growth_1y")} />
+                      <SortButton className="return-col" label={t("Day")} active={sortKey === "day"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("day")} />
+                      <SortButton className="lifecycle-col" label={t("Lifecycle phase")} active={sortKey === "phase"} direction={sortDirection} defaultDirection="asc" onClick={() => sortPositions("phase")} />
+                      <SortButton className="status-col" label={t("StockBuddy status")} active={sortKey === "status"} direction={sortDirection} defaultDirection="asc" onClick={() => sortPositions("status")} />
+                      <span role="columnheader">{t("Actions")}</span>
                     </div>
                     {displayRows.map(({ position, originalIndex: index, metric, status }) => {
                       const expanded = expandedRows.has(index);
@@ -1311,8 +1347,12 @@ export function Dashboard({
                                 type="button"
                                 className="drag-handle"
                                 draggable
-                                aria-label={`Move ${position.ticker || `row ${index + 1}`}. Drag, or use the up and down arrow keys.`}
-                                title="Drag to reorder"
+                                aria-label={
+                                  position.ticker
+                                    ? t("Move {ticker}. Drag, or use the up and down arrow keys.", { ticker: position.ticker })
+                                    : t("Move row {number}. Drag, or use the up and down arrow keys.", { number: index + 1 })
+                                }
+                                title={t("Drag to reorder")}
                                 onDragStart={(event) => {
                                   setSortKey("custom");
                                   setDragFrom(index);
@@ -1333,90 +1373,90 @@ export function Dashboard({
                               >
                                 <GripVertical size={15} aria-hidden="true" />
                               </button>
-                              <button type="button" className="expand-position" aria-label={`${expanded ? "Collapse" : "Expand"} ${position.ticker}`} aria-expanded={expanded} onClick={() => toggleExpanded(setExpandedRows, index)}>
+                              <button type="button" className="expand-position" aria-label={t(expanded ? "Collapse {ticker}" : "Expand {ticker}", { ticker: position.ticker })} aria-expanded={expanded} onClick={() => toggleExpanded(setExpandedRows, index)}>
                                 {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                               </button>
                               <div>
                                 <input
-                                  aria-label={`Ticker ${index + 1}`}
+                                  aria-label={t("Ticker {number}", { number: index + 1 })}
                                   value={position.ticker}
                                   onBlur={() => void resolveRow(index)}
                                   onChange={(event) => updatePosition(index, { ticker: event.target.value, price: undefined, resolve_error: null })}
                                 />
-                                <span>{resolvingRows.includes(index) ? "Finding…" : position.name || position.company_name || "Company unavailable"}</span>
+                                <span>{resolvingRows.includes(index) ? t("Finding…") : position.name || position.company_name || t("Company unavailable")}</span>
                               </div>
                             </div>
-                            <input aria-label={`Quantity ${index + 1}`} type="number" min="0" step="1" value={position.shares} onChange={(event) => updatePosition(index, { shares: Number(event.target.value.replace(/^0+(?=\d)/, "")) })} />
-                            <input aria-label={`Purchase price ${index + 1}`} type="number" min="0" step="0.01" placeholder="—" value={position.purchase_price ?? ""} onChange={(event) => updatePosition(index, { purchase_price: event.target.value === "" ? null : Number(event.target.value) })} />
-                            <span className="financial-cell" role="cell">{position.price == null ? <span className="data-state"><CircleAlert size={14} /> Missing price</span> : money(position.price, baseCurrency)}</span>
-                            <span className="financial-cell" role="cell" title="Price ÷ trailing 12-month EPS (SEC filings)">{position.is_etf_index ? "N/A" : position.pe_ratio == null ? "—" : position.pe_ratio.toFixed(1)}</span>
-                            <span className="financial-cell report-date-col" role="cell" title={position.report_source || "Report source unavailable"}>
-                              {position.is_etf_index ? "N/A" : position.report_date ? (
+                            <input aria-label={t("Quantity {number}", { number: index + 1 })} type="number" min="0" step="1" value={position.shares} onChange={(event) => updatePosition(index, { shares: Number(event.target.value.replace(/^0+(?=\d)/, "")) })} />
+                            <input aria-label={t("Purchase price {number}", { number: index + 1 })} type="number" min="0" step="0.01" placeholder="—" value={position.purchase_price ?? ""} onChange={(event) => updatePosition(index, { purchase_price: event.target.value === "" ? null : Number(event.target.value) })} />
+                            <span className="financial-cell" role="cell">{position.price == null ? <span className="data-state"><CircleAlert size={14} /> {t("Missing price")}</span> : money(position.price, baseCurrency)}</span>
+                            <span className="financial-cell" role="cell" title={t("Price ÷ trailing 12-month EPS (SEC filings)")}>{position.is_etf_index ? t("N/A") : position.pe_ratio == null ? "—" : position.pe_ratio.toFixed(1)}</span>
+                            <span className="financial-cell report-date-col" role="cell" title={position.report_source || t("Report source unavailable")}>
+                              {position.is_etf_index ? t("N/A") : position.report_date ? (
                                 <button
                                   type="button"
                                   className="report-date-button"
-                                  aria-label={`Set a report reminder for ${position.ticker}, last report ${position.report_date}`}
+                                  aria-label={t("Set a report reminder for {ticker}, last report {date}", { ticker: position.ticker, date: position.report_date })}
                                   onClick={() => setReminderFor({ ticker: position.ticker, companyName: position.name || position.company_name || null, lastReportDate: position.report_date as string })}
                                 >
                                   {position.report_date}
                                 </button>
-                              ) : "Unavailable"}
+                              ) : t("Unavailable")}
                             </span>
                             <strong className="financial-cell" role="cell">{metric.marketValue == null ? "—" : money(metric.marketValue, baseCurrency)}</strong>
                             <span className="financial-cell" role="cell">{metric.weight == null ? "—" : `${(metric.weight * 100).toFixed(1)}%`}</span>
                             <strong className={`financial-cell gain-cell ${(metric.unrealizedAmount ?? 0) >= 0 ? "positive" : "negative"}`} role="cell">
                               {metric.unrealizedAmount == null ? "—" : <StackedChange amount={signedMoney(metric.unrealizedAmount, baseCurrency)} percent={signedPercent(metric.unrealizedPercent)} />}
                             </strong>
-                            <span className="financial-cell return-col" role="cell" title="1-month return"><GrowthValue value={position.growth_1m} /></span>
-                            <span className="financial-cell return-col" role="cell" title="6-month return"><GrowthValue value={position.growth_6m} /></span>
-                            <span className="financial-cell return-col" role="cell" title="1-year return"><GrowthValue value={position.growth_1y ?? position.growth} /></span>
-                            <span className={`financial-cell return-col ${(metric.dayAmount ?? 0) >= 0 ? "positive" : "negative"}`} role="cell" title="Day change">
+                            <span className="financial-cell return-col" role="cell" title={t("1-month return")}><GrowthValue value={position.growth_1m} /></span>
+                            <span className="financial-cell return-col" role="cell" title={t("6-month return")}><GrowthValue value={position.growth_6m} /></span>
+                            <span className="financial-cell return-col" role="cell" title={t("1-year return")}><GrowthValue value={position.growth_1y ?? position.growth} /></span>
+                            <span className={`financial-cell return-col ${(metric.dayAmount ?? 0) >= 0 ? "positive" : "negative"}`} role="cell" title={t("Day change")}>
                               {metric.dayAmount == null ? "—" : <StackedChange amount={signedMoney(metric.dayAmount, baseCurrency)} percent={signedPercent(metric.dayPercent)} />}
                             </span>
-                            <button type="button" className="phase-badge lifecycle-col" title="Open lifecycle evidence" onClick={() => toggleExpanded(setExpandedRows, index)}>{position.lifecycle_phase || "Not Analyzed"}</button>
-                            <button type="button" className={`status-badge status-col status-${status.status.toLowerCase().replaceAll(" ", "-")}`} title={status.warnings.join(" ") || "No active warnings"} onClick={() => toggleExpanded(setExpandedRows, index)}>
+                            <button type="button" className="phase-badge lifecycle-col" title={t("Open lifecycle evidence")} onClick={() => toggleExpanded(setExpandedRows, index)}>{t(position.lifecycle_phase || "Not Analyzed")}</button>
+                            <button type="button" className={`status-badge status-col status-${status.status.toLowerCase().replaceAll(" ", "-")}`} title={status.warnings.map((warning) => t(warning)).join(" ") || t("No active warnings")} onClick={() => toggleExpanded(setExpandedRows, index)}>
                               {status.warnings.length > 0 && <Info size={13} />}
-                              {status.status}
+                              {t(status.status)}
                             </button>
                             <div className="position-actions">
-                              <button type="button" aria-label={`Actions for ${position.ticker}`} aria-expanded={actionRow === index} onClick={() => setActionRow(actionRow === index ? null : index)}><Ellipsis size={18} /></button>
+                              <button type="button" aria-label={t("Actions for {ticker}", { ticker: position.ticker })} aria-expanded={actionRow === index} onClick={() => setActionRow(actionRow === index ? null : index)}><Ellipsis size={18} /></button>
                               {actionRow === index && (
                                 <div className="actions-menu">
-                                  <button type="button" onClick={() => { setSelectedId(editingId); setActiveTab("test"); }}>Analyze position</button>
-                                  <button type="button" onClick={() => { setTransactionRow(index); setTransactionPrice(Math.round(Number(position.price ?? position.purchase_price ?? 0) * 100) / 100); setActionRow(null); toggleExpanded(setExpandedRows, index, true); }}>Add transaction</button>
-                                  <button type="button" onClick={() => { setRemoveRow(index); setActionRow(null); }}>Remove position</button>
+                                  <button type="button" onClick={() => { setSelectedId(editingId); setActiveTab("test"); }}>{t("Analyze position")}</button>
+                                  <button type="button" onClick={() => { setTransactionRow(index); setTransactionPrice(Math.round(Number(position.price ?? position.purchase_price ?? 0) * 100) / 100); setActionRow(null); toggleExpanded(setExpandedRows, index, true); }}>{t("Add transaction")}</button>
+                                  <button type="button" onClick={() => { setRemoveRow(index); setActionRow(null); }}>{t("Remove position")}</button>
                                 </div>
                               )}
                             </div>
                           </div>
                           {removeRow === index && (
                             <div className="position-confirm" role="alert">
-                              Remove {position.ticker} from this portfolio?
-                              <button type="button" onClick={() => setRemoveRow(null)}>Cancel</button>
-                              <button type="button" onClick={() => { setPositions((current) => current.filter((_, row) => row !== index)); setRemoveRow(null); setDirty(true); }}>Confirm removal</button>
+                              {t("Remove {ticker} from this portfolio?", { ticker: position.ticker })}
+                              <button type="button" onClick={() => setRemoveRow(null)}>{t("Cancel")}</button>
+                              <button type="button" onClick={() => { setPositions((current) => current.filter((_, row) => row !== index)); setRemoveRow(null); setDirty(true); }}>{t("Confirm removal")}</button>
                             </div>
                           )}
                           {expanded && (
                             <div className="position-detail-row">
                               <label>
-                                Asset type
-                                <select aria-label={`Asset type for ${position.ticker}`} value={position.asset_type || "Other"} onChange={(event) => updatePosition(index, { asset_type: event.target.value as Position["asset_type"], classification_source: "manual" })}>{assetTypes.map((value) => <option key={value}>{value}</option>)}</select>
+                                {t("Asset type")}
+                                <select aria-label={t("Asset type for {ticker}", { ticker: position.ticker })} value={position.asset_type || "Other"} onChange={(event) => updatePosition(index, { asset_type: event.target.value as Position["asset_type"], classification_source: "manual" })}>{assetTypes.map((value) => <option key={value} value={value}>{t(value)}</option>)}</select>
                               </label>
                               <label>
-                                Sector
-                                <select aria-label={`Sector for ${position.ticker}`} value={position.sector || "Unknown"} onChange={(event) => updatePosition(index, { sector: event.target.value, classification_source: "manual" })}>{sectors.map((value) => <option key={value}>{value}</option>)}</select>
+                                {t("Sector")}
+                                <select aria-label={t("Sector for {ticker}", { ticker: position.ticker })} value={position.sector || "Unknown"} onChange={(event) => updatePosition(index, { sector: event.target.value, classification_source: "manual" })}>{sectors.map((value) => <option key={value} value={value}>{t(value)}</option>)}</select>
                               </label>
                               <span className="detail-industry">
-                                Industry <strong>{position.industry || "Unknown"}</strong>
+                                {t("Industry")} <strong>{position.industry || t("Unknown")}</strong>
                               </span>
                               {transactionRow === index && (
-                                <div className="transaction-editor" role="group" aria-label={`Transaction for ${position.ticker}`}>
-                                  <label>Transaction<select value={transactionKind} onChange={(event) => setTransactionKind(event.target.value as "buy" | "sell")}><option value="buy">Buy</option><option value="sell">Sell</option></select></label>
-                                  <label>Quantity<input type="number" min="1" step="1" value={transactionQuantity} onChange={(event) => setTransactionQuantity(Number(event.target.value))} /></label>
-                                  <label>Price<input type="number" min="0" step="0.01" value={transactionPrice} onChange={(event) => setTransactionPrice(Number(event.target.value))} /></label>
+                                <div className="transaction-editor" role="group" aria-label={t("Transaction for {ticker}", { ticker: position.ticker })}>
+                                  <label>{t("Transaction")}<select value={transactionKind} onChange={(event) => setTransactionKind(event.target.value as "buy" | "sell")}><option value="buy">{t("Buy")}</option><option value="sell">{t("Sell")}</option></select></label>
+                                  <label>{t("Quantity")}<input type="number" min="1" step="1" value={transactionQuantity} onChange={(event) => setTransactionQuantity(Number(event.target.value))} /></label>
+                                  <label>{t("Price")}<input type="number" min="0" step="0.01" value={transactionPrice} onChange={(event) => setTransactionPrice(Number(event.target.value))} /></label>
                                   <div className="transaction-actions">
-                                    <button type="button" className="button" onClick={() => setTransactionRow(null)}>Cancel</button>
-                                    <button type="button" className="button primary" onClick={() => void applyTransaction(index)}>Apply</button>
+                                    <button type="button" className="button" onClick={() => setTransactionRow(null)}>{t("Cancel")}</button>
+                                    <button type="button" className="button primary" onClick={() => void applyTransaction(index)}>{t("Apply")}</button>
                                   </div>
                                 </div>
                               )}
@@ -1429,24 +1469,24 @@ export function Dashboard({
                   </>
                 )}
 
-                <div className="portfolio-add-actions" aria-label="Add holdings">
+                <div className="portfolio-add-actions" aria-label={t("Add holdings")}>
                   <button
                     type="button"
                     onClick={() => chooseImportMode("manual")}
                   >
-                    + Add position
+                    {t("+ Add position")}
                   </button>
                   <button
                     type="button"
                     onClick={() => chooseImportMode("csv")}
                   >
-                    + Import CSV
+                    {t("+ Import CSV")}
                   </button>
                   <button
                     type="button"
                     onClick={() => chooseImportMode("picture")}
                   >
-                    + Import screenshot
+                    {t("+ Import screenshot")}
                   </button>
                 </div>
 
@@ -1456,17 +1496,17 @@ export function Dashboard({
                   disabled={extracting || !positions.length}
                 >
                   {saveConfirmation === "updated"
-                    ? "Updated ✓"
+                    ? t("Updated ✓")
                     : saveConfirmation === "saved"
-                      ? "Saved ✓"
-                      : "Save changes"}
+                      ? t("Saved ✓")
+                      : t("Save changes")}
                 </button>
-                {dirty && <p className="unsaved-state">Unsaved changes</p>}
+                {dirty && <p className="unsaved-state">{t("Unsaved changes")}</p>}
               </form>
 
               {portfolios.length > 0 && (
                 <section className="saved-portfolios">
-                  <h2>My portfolios</h2>
+                  <h2>{t("My portfolios")}</h2>
                   <div className="portfolio-list">
                     {portfolios.map((portfolio) => (
                       <div className="portfolio-list-item" key={portfolio.id}>
@@ -1476,7 +1516,7 @@ export function Dashboard({
                           onClick={() => openPortfolio(portfolio)}
                         >
                           <strong>{portfolio.name}</strong>
-                          <span>{portfolio.portfolio_positions.length} {portfolio.portfolio_positions.length === 1 ? "holding" : "holdings"}</span>
+                          <span>{t(portfolio.portfolio_positions.length === 1 ? "{count} holding" : "{count} holdings", { count: portfolio.portfolio_positions.length })}</span>
                         </button>
                         <div className="portfolio-delete-actions">
                           {pendingDeleteId === portfolio.id ? (
@@ -1486,25 +1526,25 @@ export function Dashboard({
                                 className="cancel-delete"
                                 onClick={() => setPendingDeleteId("")}
                               >
-                                Cancel
+                                {t("Cancel")}
                               </button>
                               <button
                                 type="button"
                                 className="delete-portfolio confirm"
-                                aria-label={`Confirm delete ${portfolio.name}`}
+                                aria-label={t("Confirm delete {name}", { name: portfolio.name })}
                                 onClick={() => void deletePortfolio(portfolio)}
                               >
-                                Confirm delete
+                                {t("Confirm delete")}
                               </button>
                             </>
                           ) : (
                             <button
                               type="button"
                               className="delete-portfolio"
-                              aria-label={`Delete ${portfolio.name}`}
+                              aria-label={t("Delete {name}", { name: portfolio.name })}
                               onClick={() => setPendingDeleteId(portfolio.id)}
                             >
-                              Delete
+                              {t("Delete")}
                             </button>
                           )}
                         </div>
@@ -1516,7 +1556,7 @@ export function Dashboard({
                     className="button new-portfolio"
                     onClick={startNewPortfolio}
                   >
-                    + Create new portfolio
+                    {t("+ Create new portfolio")}
                   </button>
                 </section>
               )}
@@ -1548,9 +1588,9 @@ export function Dashboard({
                 today={today}
                 blockedReason={
                   !editingId
-                    ? "Save this portfolio first, then record its transactions."
+                    ? t("Save this portfolio first, then record its transactions.")
                     : dirty
-                      ? "Save your portfolio changes before recording a transaction."
+                      ? t("Save your portfolio changes before recording a transaction.")
                       : null
                 }
                 onRecord={recordTransaction}
@@ -1793,14 +1833,14 @@ export function Dashboard({
                 <div className="modal-heading">
                   <h2 id="add-holding-title">
                     {importMode === "manual"
-                      ? "Add position"
+                      ? t("Add position")
                       : importMode === "csv"
-                        ? "Import CSV"
-                        : "Import screenshot"}
+                        ? t("Import CSV")
+                        : t("Import screenshot")}
                   </h2>
                   <button
                     type="button"
-                    aria-label="Close"
+                    aria-label={t("Close")}
                     disabled={extracting}
                     onClick={() => setImportMode(null)}
                   >
@@ -1811,11 +1851,11 @@ export function Dashboard({
                 {importMode === "manual" && (
                   <div className="modal-fields">
                     <label>
-                      Ticker or company
+                      {t("Ticker or company")}
                       <input
                         autoFocus
                         value={draftPosition.ticker}
-                        placeholder="AAPL or Apple"
+                        placeholder={t("AAPL or Apple")}
                         onChange={(event) =>
                           setDraftPosition((current) => ({
                             ...current,
@@ -1828,9 +1868,9 @@ export function Dashboard({
                       />
                     </label>
                     <label>
-                      Shares
+                      {t("Shares")}
                       <input
-                        aria-label="New stock shares"
+                        aria-label={t("New stock shares")}
                         type="number"
                         min="0"
                         step="1"
@@ -1849,13 +1889,13 @@ export function Dashboard({
                       />
                     </label>
                     <label>
-                      Purchase price
+                      {t("Purchase price")}
                       <input
-                        aria-label="New stock purchase price"
+                        aria-label={t("New stock purchase price")}
                         type="number"
                         min="0"
                         step="0.01"
-                        placeholder="Optional"
+                        placeholder={t("Optional")}
                         value={draftPosition.purchase_price ?? ""}
                         onChange={(event) =>
                           setDraftPosition((current) => ({
@@ -1871,15 +1911,15 @@ export function Dashboard({
                       className="button primary"
                       onClick={() => void addDraftPosition()}
                     >
-                      Add position
+                      {t("Add position")}
                     </button>
                   </div>
                 )}
 
                 {importMode === "csv" && (
                   <label className="file-drop compact-drop">
-                    <span>Choose portfolio.csv</span>
-                    <small>Required headers: ticker,shares</small>
+                    <span>{t("Choose portfolio.csv")}</span>
+                    <small>{t("Required headers: ticker,shares")}</small>
                     <input
                       type="file"
                       accept=".csv,text/csv"
@@ -1895,9 +1935,9 @@ export function Dashboard({
                           setColumnMap(mapping);
                           setImportPreview(preview);
                           setError(preview.errors.join(" "));
-                          setNotice("CSV parsed. Confirm the preview before importing.");
+                          setNotice(t("CSV parsed. Confirm the preview before importing."));
                         } catch (cause) {
-                          setError(cause instanceof Error ? cause.message : "Invalid CSV");
+                          setError(cause instanceof Error ? cause.message : t("Invalid CSV"));
                         }
                       }}
                     />
@@ -1908,9 +1948,9 @@ export function Dashboard({
                   <>
                     <label className="file-drop compact-drop">
                       <span>
-                        {extracting ? "Reading picture…" : "Choose a portfolio printscreen"}
+                        {extracting ? t("Reading picture…") : t("Choose a portfolio printscreen")}
                       </span>
-                      <small>PNG, JPEG, or WebP · maximum 8 MB</small>
+                      <small>{t("PNG, JPEG, or WebP · maximum 8 MB")}</small>
                       <input
                         type="file"
                         accept="image/png,image/jpeg,image/webp"
@@ -1923,14 +1963,14 @@ export function Dashboard({
                       />
                     </label>
                     <p className="privacy-note">
-                      Sent to OpenAI for extraction and not stored by StockBuddyAI.
+                      {t("Sent to OpenAI for extraction and not stored by StockBuddyAI.")}
                     </p>
                   </>
                 )}
 
                 {importPreview && (
-                  <section className="import-preview" aria-label="Import preview">
-                    <h3>Import preview</h3>
+                  <section className="import-preview" aria-label={t("Import preview")}>
+                    <h3>{t("Import preview")}</h3>
                     {importMode === "csv" && importPreview.headers.length > 0 && (
                       <div className="column-mapping">
                         {(
@@ -1941,9 +1981,9 @@ export function Dashboard({
                           ] as const
                         ).map(([field, label]) => (
                           <label key={field}>
-                            {label}
+                            {t(label)}
                             <select
-                              aria-label={`Map ${label}`}
+                              aria-label={t("Map {label}", { label: t(label) })}
                               value={columnMap[field] ?? ""}
                               onChange={(event) => {
                                 const mapping = {
@@ -1957,7 +1997,7 @@ export function Dashboard({
                               }}
                             >
                               {field === "averageCost" && (
-                                <option value="">Not provided</option>
+                                <option value="">{t("Not provided")}</option>
                               )}
                               {importPreview.headers.map((header) => (
                                 <option key={header} value={header}>
@@ -1970,10 +2010,12 @@ export function Dashboard({
                       </div>
                     )}
                     <p>
-                      {importPreview.positions.length} recognized rows
                       {importPreview.errors.length
-                        ? ` · ${importPreview.errors.length} rows need attention`
-                        : ""}
+                        ? t("{count} recognized rows · {errors} rows need attention", {
+                            count: importPreview.positions.length,
+                            errors: importPreview.errors.length,
+                          })
+                        : t("{count} recognized rows", { count: importPreview.positions.length })}
                     </p>
                     {importPreview.errors.length > 0 && (
                       <ul className="import-errors">
@@ -1986,10 +2028,10 @@ export function Dashboard({
                       {importPreview.positions.map((position, index) => (
                         <div key={`${position.ticker}-${index}`}>
                           <strong>{position.ticker}</strong>
-                          <span>{position.shares} quantity</span>
+                          <span>{t("{count} quantity", { count: position.shares })}</span>
                           <span>
                             {position.purchase_price == null
-                              ? "No purchase price"
+                              ? t("No purchase price")
                               : money(position.purchase_price, baseCurrency)}
                           </span>
                         </div>
@@ -2004,16 +2046,17 @@ export function Dashboard({
                         ),
                       )) && (
                       <p className="import-warning">
-                        Duplicate positions detected. Choose whether to combine them
-                        using weighted average cost or keep existing rows unchanged.
+                        {t(
+                          "Duplicate positions detected. Choose whether to combine them using weighted average cost or keep existing rows unchanged.",
+                        )}
                       </p>
                     )}
                     <div className="import-preview-actions">
                       <button type="button" onClick={() => setImportPreview(null)}>
-                        Cancel
+                        {t("Cancel")}
                       </button>
                       <button type="button" onClick={() => void commitImport(false)}>
-                        Import and skip duplicates
+                        {t("Import and skip duplicates")}
                       </button>
                       <button
                         type="button"
@@ -2021,7 +2064,7 @@ export function Dashboard({
                         onClick={() => void commitImport(true)}
                         disabled={importPreview.errors.length > 0}
                       >
-                        Import and combine duplicates
+                        {t("Import and combine duplicates")}
                       </button>
                     </div>
                   </section>
@@ -2034,14 +2077,14 @@ export function Dashboard({
         <RunTest
           portfolios={portfolios}
           dailyLimit={book.daily_ai_reviews ?? null}
-          subtitle={
-            <>
-              Pick the holdings you want a second opinion on. Five investor personas review each one and Buddy sums it up: keep, add, trim, or sell. Study output, not financial advice. Position cap{" "}
-              {Math.round(book.max_position_pct * 100)}% · industry cap{" "}
-              {Math.round(book.max_industry_pct * 100)}%.
-            </>
-          }
-          friendlyError={friendlyError}
+          subtitle={t(
+            "Pick the holdings you want a second opinion on. Five investor personas review each one and Buddy sums it up: keep, add, trim, or sell. Study output, not financial advice. Position cap {position}% · industry cap {industry}%.",
+            {
+              position: Math.round(book.max_position_pct * 100),
+              industry: Math.round(book.max_industry_pct * 100),
+            },
+          )}
+          friendlyError={(cause) => friendlyError(cause, t)}
           renderReport={(run) => <Report run={run} />}
         />
       )}
@@ -2094,6 +2137,7 @@ function holdingColumns({
 
 function SortButton({
   label,
+  alphabetic = false,
   active,
   direction,
   defaultDirection,
@@ -2101,6 +2145,8 @@ function SortButton({
   className = "",
 }: {
   label: string;
+  /** Sorts text (A to Z) rather than numbers. */
+  alphabetic?: boolean;
   active: boolean;
   direction: SortDirection;
   defaultDirection: SortDirection;
@@ -2113,19 +2159,19 @@ function SortButton({
       : active
         ? "asc"
         : defaultDirection;
-  const alphabetic = label.startsWith("Symbol");
-  const directionLabel = alphabetic
+  const t = useT();
+  const sortLabel = alphabetic
     ? nextDirection === "asc"
-      ? "A to Z"
-      : "Z to A"
+      ? t("Sort {label} A to Z", { label })
+      : t("Sort {label} Z to A", { label })
     : nextDirection === "asc"
-      ? "smallest to largest"
-      : "largest to smallest";
+      ? t("Sort {label} smallest to largest", { label })
+      : t("Sort {label} largest to smallest", { label });
   return (
     <button
       type="button"
       className={`sort-button ${className} ${active ? "active" : ""}`}
-      aria-label={`Sort ${label} ${directionLabel}`}
+      aria-label={sortLabel}
       aria-pressed={active}
       onClick={onClick}
     >
@@ -2173,16 +2219,24 @@ function GrowthValue({ value }: { value?: number | null }) {
 }
 
 function Report({ run }: { run: AnalysisRun }) {
+  const t = useT();
   if (run.status === "pending" || run.status === "running") {
     return (
       <section className="report loading-card">
         <span className="pulse" />
-        <div><p className="step">Analysis in progress</p><h2>Reading {run.ticker}’s filed history</h2></div>
+        <div>
+          <p className="step">{t("Analysis in progress")}</p>
+          <h2>{t("Reading {ticker}’s filed history", { ticker: run.ticker })}</h2>
+        </div>
       </section>
     );
   }
   if (run.status === "failed") {
-    return <section className="report alert">Analysis failed: {run.error}</section>;
+    return (
+      <section className="report alert">
+        {t("Analysis failed: {error}", { error: run.error ? t(run.error) : "" })}
+      </section>
+    );
   }
   const recommendation = run.recommendations?.[0];
   const signals = run.analysis_signals ?? [];
@@ -2190,9 +2244,16 @@ function Report({ run }: { run: AnalysisRun }) {
     return (
       <section className="report report-short">
         <p>
-          <strong>Not enough company data to review {run.ticker} on {run.as_of}.</strong> The personas need
-          4 quarters of financials filed with the SEC, and {run.ticker} doesn&apos;t have them yet (common for
-          new listings, ETFs, and funds).
+          <strong>
+            {t("Not enough company data to review {ticker} on {date}.", {
+              ticker: run.ticker,
+              date: run.as_of,
+            })}
+          </strong>{" "}
+          {t(
+            "The personas need 4 quarters of financials filed with the SEC, and {ticker} doesn't have them yet (common for new listings, ETFs, and funds).",
+            { ticker: run.ticker },
+          )}
         </p>
       </section>
     );
@@ -2201,18 +2262,18 @@ function Report({ run }: { run: AnalysisRun }) {
     <section className="report">
       <div className="report-header">
         <div>
-          <p className="step">03 / Recorded decision</p>
+          <p className="step">{t("03 / Recorded decision")}</p>
           <h2>{run.ticker} · {run.as_of}</h2>
         </div>
         {recommendation && <RecommendationBadge recommendation={recommendation} />}
       </div>
       {recommendation && (
         <div className="weight-grid">
-          <Metric label="Current weight" value={percent(recommendation.current_weight)} />
-          <Metric label="Target weight" value={percent(recommendation.target_weight)} />
-          <Metric label="Reference close" value={`$${Number(recommendation.mark).toFixed(2)}`} />
+          <Metric label={t("Current weight")} value={percent(recommendation.current_weight)} />
+          <Metric label={t("Target weight")} value={percent(recommendation.target_weight)} />
+          <Metric label={t("Reference close")} value={`$${Number(recommendation.mark).toFixed(2)}`} />
           <Metric
-            label="Share change"
+            label={t("Share change")}
             value={`${recommendation.delta_shares > 0 ? "+" : ""}${recommendation.delta_shares}`}
           />
         </div>
@@ -2220,13 +2281,14 @@ function Report({ run }: { run: AnalysisRun }) {
       <div className="signal-grid">
         {signals.map((signal) => <SignalCard key={`${signal.strategy}-${signal.persona}`} signal={signal} />)}
       </div>
-      <p className="disclaimer">Study output only. No order was sent to a broker.</p>
+      <p className="disclaimer">{t("Study output only. No order was sent to a broker.")}</p>
     </section>
   );
 }
 
 function RecommendationBadge({ recommendation }: { recommendation: Recommendation }) {
-  return <span className={`recommendation ${recommendation.label}`}>{recommendation.label}</span>;
+  const t = useT();
+  return <span className={`recommendation ${recommendation.label}`}>{t(recommendation.label)}</span>;
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
@@ -2266,6 +2328,7 @@ function PercentSetting({
   fallback?: number;
   onChange: (value: number | null) => void;
 }) {
+  const t = useT();
   return (
     <label>
       {label}
@@ -2275,7 +2338,7 @@ function PercentSetting({
         max="100"
         step="0.1"
         placeholder={
-          fallback == null ? "0" : `Default ${(fallback * 100).toFixed(1)}`
+          fallback == null ? "0" : t("Default {value}", { value: (fallback * 100).toFixed(1) })
         }
         value={value == null ? "" : value * 100}
         onChange={(event) =>
@@ -2288,14 +2351,14 @@ function PercentSetting({
   );
 }
 
-function benchmarkLabel(ticker: string) {
+function benchmarkLabel(ticker: string, t: Translate) {
   return (
     {
       SPY: "S&P 500",
       QQQ: "Nasdaq-100",
       DIA: "Dow Jones",
       IWM: "Russell 2000",
-      VTI: "Total US Market",
+      VTI: t("Total US Market"),
     }[ticker] ?? ticker
   );
 }
@@ -2384,11 +2447,14 @@ function normalizeSector(
 }
 
 function SignalCard({ signal }: { signal: Signal }) {
+  const t = useT();
   return (
     <article className="signal-card">
       <div className="signal-title">
         <div><span>{signal.strategy}</span><h3>{signal.persona}</h3></div>
-        <strong className={signal.signal}>{signal.abstained ? "ABSTAIN" : `${signal.signal} ${signal.confidence}%`}</strong>
+        <strong className={signal.signal}>{signal.abstained
+            ? t("ABSTAIN")
+            : t("{signal} {confidence}%", { signal: t(signal.signal), confidence: signal.confidence })}</strong>
       </div>
       <p>{signal.reasoning}</p>
     </article>
@@ -2420,8 +2486,12 @@ function gainLoss(position: Position) {
   };
 }
 
-function friendlyError(error: Error) {
+/** Leaves text in English; used where the message is stored and translated when shown. */
+const english: Translate = (text, vars) => translate("en", text, vars);
+
+/** A readable, translated message for a failed request (API messages translate when known). */
+function friendlyError(error: Error, t: Translate) {
   return ["Failed to fetch", "Load failed"].includes(error.message)
-    ? "Portfolio data is temporarily unavailable. Your unsaved changes are still here."
-    : error.message;
+    ? t("Portfolio data is temporarily unavailable. Your unsaved changes are still here.")
+    : t(error.message);
 }

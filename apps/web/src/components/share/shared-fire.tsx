@@ -8,11 +8,12 @@ import {
   buildPlan,
   categoryFor,
   monthlyAmount,
-  yearsLabel,
   type FireEntry,
   type FireSettings,
 } from "@/lib/fire";
 import { fireProgress } from "@/lib/fire-views";
+import type { Translate } from "@/lib/i18n/core";
+import { useT } from "@/lib/i18n/client";
 import { money } from "@/lib/portfolio-metrics";
 
 import { Tile } from "./shared-portfolio";
@@ -26,8 +27,20 @@ const DEFAULTS: FireSettings = {
   inflation_pct: 3,
 };
 
+/** Time until FIRE, like `yearsLabel` in the app, with each form as a whole translatable phrase. */
+function timeToFire(hitMonth: number | null, t: Translate) {
+  if (hitMonth == null) return t("50+ years");
+  if (hitMonth === 0) return t("Reached");
+  const years = Math.floor(hitMonth / 12);
+  const months = hitMonth % 12;
+  if (years === 0) return t("{months} mo", { months });
+  if (!months) return years === 1 ? t("{years} yr", { years }) : t("{years} yrs", { years });
+  return years === 1 ? t("{years} yr {months} mo", { years, months }) : t("{years} yrs {months} mo", { years, months });
+}
+
 /** Read-only FIRE plan built with the same math as the app. */
 export function SharedFireView({ page, today }: { page: SharedPage; today: string }) {
+  const t = useT();
   const currency = page.currency || "USD";
   const rates = page.rates ?? {};
   const entries = page.entries ?? [];
@@ -50,21 +63,33 @@ export function SharedFireView({ page, today }: { page: SharedPage; today: strin
 
   return (
     <>
-      <section className="share-tiles" aria-label="FIRE summary">
-        <Tile label="Monthly income" value={money(plan.monthlyIncome, currency)} tone="up" />
-        <Tile label="Monthly expenses" value={money(plan.monthlyExpenses, currency)} tone="down" />
-        <Tile label="Savings rate" value={plan.savingsRate == null ? "—" : `${(plan.savingsRate * 100).toFixed(1)}%`} />
-        <Tile label="Current assets" value={money(plan.currentAssets, currency)} note="Portfolio + savings" />
-        <Tile label="FIRE number" value={money(plan.fireNumber, currency)} note={`${plan.annualSpend ? Math.round(100 / (Number(page.settings?.withdrawal_rate_pct) || 4)) : 25}× yearly spending`} />
+      <section className="share-tiles" aria-label={t("FIRE summary")}>
+        <Tile label={t("Monthly income")} value={money(plan.monthlyIncome, currency)} tone="up" />
+        <Tile label={t("Monthly expenses")} value={money(plan.monthlyExpenses, currency)} tone="down" />
+        <Tile label={t("Savings rate")} value={plan.savingsRate == null ? "—" : `${(plan.savingsRate * 100).toFixed(1)}%`} />
+        <Tile label={t("Current assets")} value={money(plan.currentAssets, currency)} note={t("Portfolio + savings")} />
         <Tile
-          label="Time to FIRE"
-          value={plan.fireNumber ? yearsLabel(plan.hitMonth) : "—"}
-          note={fireDate ? `Around ${fireDate}` : progress.percent != null ? `${progress.percent.toFixed(1)}% funded` : undefined}
+          label={t("FIRE number")}
+          value={money(plan.fireNumber, currency)}
+          note={t("{multiple}× yearly spending", {
+            multiple: plan.annualSpend ? Math.round(100 / (Number(page.settings?.withdrawal_rate_pct) || 4)) : 25,
+          })}
+        />
+        <Tile
+          label={t("Time to FIRE")}
+          value={plan.fireNumber ? timeToFire(plan.hitMonth, t) : "—"}
+          note={
+            fireDate
+              ? t("Around {date}", { date: fireDate })
+              : progress.percent != null
+                ? t("{percent}% funded", { percent: progress.percent.toFixed(1) })
+                : undefined
+          }
         />
       </section>
 
       <section className="share-panel" aria-labelledby="share-path-title">
-        <h2 id="share-path-title">Path to FIRE</h2>
+        <h2 id="share-path-title">{t("Path to FIRE")}</h2>
         <ProjectionChart plan={plan} currency={currency} today={today} />
       </section>
 
@@ -76,14 +101,14 @@ export function SharedFireView({ page, today }: { page: SharedPage; today: strin
 
       {(page.assets?.length ?? 0) > 0 && (
         <section className="share-panel" aria-labelledby="share-assets-title">
-          <h2 id="share-assets-title">Assets · {page.assets?.length}</h2>
+          <h2 id="share-assets-title">{t("Assets · {count}", { count: page.assets?.length ?? 0 })}</h2>
           <ul className="share-list">
             {page.assets?.map((asset) => (
               <li key={asset.id}>
                 <div>
                   <strong>{asset.name}</strong>
                   <span>
-                    {assetTypeFor(asset.asset_type).label}
+                    {t(assetTypeFor(asset.asset_type).label)}
                     {asset.location ? ` · ${asset.location}` : ""}
                   </span>
                 </div>
@@ -110,15 +135,17 @@ function EntryList({
   rates: Record<string, number>;
   currency: string;
 }) {
-  const title = kind === "income" ? "Incomes" : "Expenses";
+  const t = useT();
   const total = entries.reduce((sum, entry) => sum + monthlyAmount(entry, today, rates, currency), 0);
   return (
     <section className={`share-panel share-entries ${kind}`} aria-labelledby={`share-${kind}-title`}>
       <h2 id={`share-${kind}-title`}>
-        {title} · {money(total, currency)}/mo
+        {kind === "income"
+          ? t("Incomes · {total}/mo", { total: money(total, currency) })
+          : t("Expenses · {total}/mo", { total: money(total, currency) })}
       </h2>
       {entries.length === 0 ? (
-        <p className="muted">None yet.</p>
+        <p className="muted">{t("None yet.")}</p>
       ) : (
         <ul className="share-list">
           {entries.map((entry) => (
@@ -126,9 +153,9 @@ function EntryList({
               <div>
                 <strong>{entry.name}</strong>
                 <span>
-                  {categoryFor(entry.kind, entry.category).label} ·{" "}
-                  {FREQUENCIES.find((item) => item.key === entry.frequency)?.label ?? entry.frequency}
-                  {entry.ends_on ? ` · until ${entry.ends_on}` : ""}
+                  {t(categoryFor(entry.kind, entry.category).label)} ·{" "}
+                  {t(FREQUENCIES.find((item) => item.key === entry.frequency)?.label ?? entry.frequency)}
+                  {entry.ends_on ? ` · ${t("until {date}", { date: entry.ends_on })}` : ""}
                 </span>
               </div>
               <strong>

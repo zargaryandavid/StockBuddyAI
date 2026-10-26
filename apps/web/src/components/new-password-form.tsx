@@ -4,10 +4,12 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { EyeIcon, EyeOffIcon } from "@/components/auth-form";
+import { useT } from "@/lib/i18n/client";
 import { createClient } from "@/lib/supabase/client";
 
 /** Sets a new password for the person signed in through a reset link. */
 export function NewPasswordForm() {
+  const t = useT();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -32,15 +34,15 @@ export function NewPasswordForm() {
   return (
     <form onSubmit={submit} className="auth-form" noValidate>
       <label>
-        New password
+        {t("New password")}
         <span className="password-field">
           <input name="password" type={show ? "text" : "password"} minLength={8} autoComplete="new-password" required />
           <button
             className="password-toggle"
             type="button"
-            aria-label={show ? "Hide passwords" : "Show passwords"}
+            aria-label={show ? t("Hide passwords") : t("Show passwords")}
             aria-pressed={show}
-            title={show ? "Hide passwords" : "Show passwords"}
+            title={show ? t("Hide passwords") : t("Show passwords")}
             onClick={() => setShow((visible) => !visible)}
           >
             {show ? <EyeOffIcon /> : <EyeIcon />}
@@ -48,16 +50,16 @@ export function NewPasswordForm() {
         </span>
       </label>
       <label>
-        Repeat new password
+        {t("Repeat new password")}
         <input name="repeat" type={show ? "text" : "password"} minLength={8} autoComplete="new-password" required />
       </label>
       {message && (
         <p className="form-message error" role="alert">
-          {message}
+          {t(message)}
         </p>
       )}
       <button className="button primary" disabled={busy} type="submit">
-        {busy ? "Saving…" : "Save new password"}
+        {busy ? t("Saving…") : t("Save new password")}
       </button>
     </form>
   );

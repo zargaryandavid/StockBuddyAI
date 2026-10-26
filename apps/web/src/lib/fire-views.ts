@@ -11,6 +11,27 @@ import {
   type FireKind,
   type FxRates,
 } from "./fire";
+import { translator, type Translate } from "./i18n/core";
+
+// Display text goes through an optional translator `t`; without one it reads in English.
+const english: Translate = translator("en");
+
+const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "Oct 2026" from a "YYYY-MM-DD" key (or a Date), in the reader's language. */
+export function shortMonthYear(date: string | Date, t: Translate = english) {
+  const value = typeof date === "string" ? new Date(`${date.slice(0, 10)}T00:00:00Z`) : date;
+  return t("{month} {year}", {
+    month: t(SHORT_MONTHS[value.getUTCMonth()]),
+    year: value.getUTCFullYear(),
+  });
+}
+
+/** "Oct 26" from a "YYYY-MM-DD" key, in the reader's language. */
+export function shortMonthDay(date: string, t: Translate = english) {
+  const value = new Date(`${date.slice(0, 10)}T00:00:00Z`);
+  return t("{month} {day}", { month: t(SHORT_MONTHS[value.getUTCMonth()]), day: value.getUTCDate() });
+}
 
 export type Period = "monthly" | "annual";
 
@@ -19,8 +40,8 @@ export function forPeriod(monthly: number, period: Period) {
   return period === "annual" ? monthly * 12 : monthly;
 }
 
-export function periodSuffix(period: Period) {
-  return period === "annual" ? "/yr" : "/mo";
+export function periodSuffix(period: Period, t: Translate = english) {
+  return period === "annual" ? t("/yr") : t("/mo");
 }
 
 export type FireProgress = {
@@ -69,6 +90,7 @@ export function currencyView(
   today: string,
   rates: FxRates,
   base = "USD",
+  t: Translate = english,
 ): CurrencyView {
   const amount = Number(entry.amount) || 0;
   const rate = entry.currency === base ? 1 : rates[entry.currency];
@@ -80,7 +102,7 @@ export function currencyView(
   return {
     currency: entry.currency,
     amount,
-    cadence: CADENCE[entry.frequency] ?? FREQUENCIES[0].label,
+    cadence: t(CADENCE[entry.frequency] ?? FREQUENCIES[0].label),
     basePerPayment,
     baseMonthly: toBase(monthlyNative, entry.currency, rates, base),
     unitsPerBase: rate ? 1 / rate : null,
@@ -109,6 +131,7 @@ export function breakdown(
   today: string,
   rates: FxRates,
   base = "USD",
+  t: Translate = english,
 ): Breakdown {
   const grouped = new Map<string, BreakdownRow>();
   for (const entry of entries) {
@@ -116,7 +139,7 @@ export function breakdown(
     const monthly = monthlyAmount(entry, today, rates, base);
     if (monthly <= 0) continue;
     const key = kind === "income" ? entry.id : entry.category;
-    const label = kind === "income" ? entry.name : categoryFor(kind, entry.category).label;
+    const label = kind === "income" ? entry.name : t(categoryFor(kind, entry.category).label);
     const existing = grouped.get(key);
     const foreign = entry.currency && entry.currency !== base;
     grouped.set(key, {
@@ -126,7 +149,7 @@ export function breakdown(
       share: 0,
       original:
         kind === "income" && foreign
-          ? { amount: Number(entry.amount), currency: entry.currency, cadence: CADENCE[entry.frequency] }
+          ? { amount: Number(entry.amount), currency: entry.currency, cadence: t(CADENCE[entry.frequency]) }
           : null,
     });
   }
@@ -162,7 +185,7 @@ function addDays(key: string, days: number) {
 }
 
 /** Weeks start on Monday; months on the 1st. The first period contains today. */
-function periodBounds(today: string, granularity: Granularity, count: number) {
+function periodBounds(today: string, granularity: Granularity, count: number, t: Translate) {
   const bounds: { start: string; end: string; label: string }[] = [];
   if (granularity === "month") {
     const [year, month] = today.split("-").map(Number);
@@ -172,7 +195,7 @@ function periodBounds(today: string, granularity: Granularity, count: number) {
       bounds.push({
         start: utcKey(start),
         end: utcKey(end),
-        label: start.toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" }),
+        label: shortMonthYear(start, t),
       });
     }
     return bounds;
@@ -184,7 +207,7 @@ function periodBounds(today: string, granularity: Granularity, count: number) {
     bounds.push({
       start,
       end: addDays(start, 6),
-      label: `Week of ${new Date(`${start}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}`,
+      label: t("Week of {date}", { date: shortMonthDay(start, t) }),
     });
   }
   return bounds;
@@ -203,8 +226,9 @@ export function cashFlowByPeriod(
   base: string,
   granularity: Granularity,
   count = 12,
+  t: Translate = english,
 ): CashPeriod[] {
-  const periods = periodBounds(today, granularity, count).map((bound) => ({
+  const periods = periodBounds(today, granularity, count, t).map((bound) => ({
     ...bound,
     total: 0,
     items: [] as PeriodItem[],

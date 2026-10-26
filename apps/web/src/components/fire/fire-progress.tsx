@@ -2,9 +2,21 @@
 
 import { Pencil } from "lucide-react";
 
-import { fireTiming, monthYearLabel } from "@/lib/age";
+import { fireTiming } from "@/lib/age";
 import { fireProgress } from "@/lib/fire-views";
+import { useT } from "@/lib/i18n/client";
+import type { Translate } from "@/lib/i18n/core";
 import { money } from "@/lib/portfolio-metrics";
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+/** "November 2039" in the reader's language. */
+function monthYear(date: string, t: Translate) {
+  return t("{month} {year}", { month: t(MONTHS[Number(date.slice(5, 7)) - 1]), year: date.slice(0, 4) });
+}
 
 /** How much of the FIRE target is funded, what is left, and when (and at what age) it lands. */
 export function FireProgressPanel({
@@ -24,24 +36,25 @@ export function FireProgressPanel({
   currency: string;
   onEditProfile?: () => void;
 }) {
+  const t = useT();
   const progress = fireProgress(currentAssets, fireTarget);
   const timing = fireTiming(dateOfBirth, today, hitMonth);
   const width = progress.percent == null ? 0 : Math.min(100, progress.percent);
   return (
     <section className="panel fire-progress" aria-labelledby="fire-progress-title">
       <div className="fire-progress-main">
-        <h2 id="fire-progress-title">FIRE progress</h2>
+        <h2 id="fire-progress-title">{t("FIRE progress")}</h2>
         {progress.percent == null ? (
-          <p className="muted">Add expenses or a retirement spending amount to set a FIRE target.</p>
+          <p className="muted">{t("Add expenses or a retirement spending amount to set a FIRE target.")}</p>
         ) : (
           <>
             <p className="fire-progress-percent">
-              <strong>{progress.percent.toFixed(1)}%</strong> funded
+              <strong>{progress.percent.toFixed(1)}%</strong> {t("funded")}
             </p>
             <div
               className="fire-progress-bar"
               role="progressbar"
-              aria-label="FIRE target funded"
+              aria-label={t("FIRE target funded")}
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={Math.round(width * 10) / 10}
@@ -50,9 +63,12 @@ export function FireProgressPanel({
             </div>
             <p className="fire-progress-amounts">
               <span>
-                {money(currentAssets, currency)} of {money(fireTarget, currency)}
+                {t("{current} of {target}", {
+                  current: money(currentAssets, currency),
+                  target: money(fireTarget, currency),
+                })}
               </span>
-              <strong>{money(progress.remaining, currency)} remaining</strong>
+              <strong>{t("{amount} remaining", { amount: money(progress.remaining, currency) })}</strong>
             </p>
           </>
         )}
@@ -60,15 +76,15 @@ export function FireProgressPanel({
       <dl className="fire-progress-timing">
         {timing.currentAge != null && (
           <div>
-            <dt>Current age</dt>
+            <dt>{t("Current age")}</dt>
             <dd className="fire-progress-age">
               {timing.currentAge}
               {onEditProfile && (
                 <button
                   type="button"
                   className="fire-age-edit"
-                  aria-label="Edit date of birth"
-                  title="Edit date of birth"
+                  aria-label={t("Edit date of birth")}
+                  title={t("Edit date of birth")}
                   onClick={onEditProfile}
                 >
                   <Pencil size={14} aria-hidden="true" />
@@ -79,25 +95,25 @@ export function FireProgressPanel({
         )}
         {timing.fireAge != null && (
           <div>
-            <dt>Estimated FIRE age</dt>
+            <dt>{t("Estimated FIRE age")}</dt>
             <dd>{timing.fireAge}</dd>
           </div>
         )}
         <div>
-          <dt>Estimated FIRE date</dt>
+          <dt>{t("Estimated FIRE date")}</dt>
           <dd>
             {timing.fireDate
               ? hitMonth === 0
-                ? "Reached"
-                : monthYearLabel(timing.fireDate)
+                ? t("Reached")
+                : monthYear(timing.fireDate, t)
               : progress.percent == null
                 ? "—"
-                : "Not within 50 years"}
+                : t("Not within 50 years")}
           </dd>
         </div>
         {dateOfBirth == null && onEditProfile && (
           <button type="button" className="fire-progress-dob" onClick={onEditProfile}>
-            Add your date of birth to see ages
+            {t("Add your date of birth to see ages")}
           </button>
         )}
       </dl>

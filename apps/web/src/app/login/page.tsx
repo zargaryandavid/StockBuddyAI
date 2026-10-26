@@ -1,7 +1,10 @@
 import { Suspense } from "react";
 import Link from "next/link";
 
+import { LanguageSwitcher } from "@/components/language-switcher";
+
 import { AuthForm } from "@/components/auth-form";
+import { getT } from "@/lib/i18n/server";
 import Image from "next/image";
 
 const CONFIRM_NOTICES: Record<string, string> = {
@@ -22,23 +25,26 @@ async function FormWithNotice({ searchParams }: { searchParams: SearchParams }) 
   return <AuthForm notice={confirm ? CONFIRM_NOTICES[confirm] : undefined} />;
 }
 
-export default function LoginPage({ searchParams }: { searchParams: SearchParams }) {
+export default async function LoginPage({ searchParams }: { searchParams: SearchParams }) {
+  const t = await getT();
   return (
     <main className="login-shell">
+      <LanguageSwitcher className="on-light page-language" />
       <section className="login-copy">
         <Link className="brand" href="/">
           STOCKBUDDY
         </Link>
-        <p className="eyebrow">Fundamentals, not hype</p>
-        <h1>Your AI buddy for portfolio and financial management.</h1>
+        <p className="eyebrow">{t("Fundamentals, not hype")}</p>
+        <h1>{t("Your AI buddy for portfolio and financial management.")}</h1>
         <p>
-          Reach financial freedom and learn more about your current portfolio. Let your
-          money work for you: a simple website for a simple path to wealth.
+          {t(
+            "Reach financial freedom and learn more about your current portfolio. Let your money work for you: a simple website for a simple path to wealth.",
+          )}
         </p>
         <div className="principles">
-          <span>No personalized information</span>
-          <span>User-friendly interface</span>
-          <span>Transparent analytics</span>
+          <span>{t("No personalized information")}</span>
+          <span>{t("User-friendly interface")}</span>
+          <span>{t("Transparent analytics")}</span>
         </div>
         <div className="login-bills" aria-hidden="true">
           {/* A real note, shown front only, small and low-resolution as US rules ask. */}
@@ -48,18 +54,18 @@ export default function LoginPage({ searchParams }: { searchParams: SearchParams
       </section>
       <section className="login-panel">
         <div>
-          <p className="eyebrow">Private workspace</p>
-          <h2>Sign in to your book</h2>
-          <p className="muted">Early access. Your data stays private to your account.</p>
+          <p className="eyebrow">{t("Private workspace")}</p>
+          <h2>{t("Sign in to your book")}</h2>
+          <p className="muted">{t("Early access. Your data stays private to your account.")}</p>
         </div>
         <Suspense fallback={<AuthForm />}>
           <FormWithNotice searchParams={searchParams} />
         </Suspense>
-        <nav className="login-legal" aria-label="Legal">
-          <Link href="/terms">Terms</Link>
-          <Link href="/privacy">Privacy Policy</Link>
+        <nav className="login-legal" aria-label={t("Legal")}>
+          <Link href="/terms">{t("Terms")}</Link>
+          <Link href="/privacy">{t("Privacy Policy")}</Link>
         </nav>
-        <p className="login-copyright">© 2026 AIAutomationLA.com. All rights reserved.</p>
+        <p className="login-copyright">{t("© 2026 AIAutomationLA.com. All rights reserved.")}</p>
       </section>
     </main>
   );

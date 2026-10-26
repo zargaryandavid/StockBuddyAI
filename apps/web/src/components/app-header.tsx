@@ -4,6 +4,9 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { useT } from "@/lib/i18n/client";
+
 export function AppHeader({
   email,
   onSignOut,
@@ -16,6 +19,7 @@ export function AppHeader({
   onOpenProfile?: () => void;
   children: ReactNode;
 }) {
+  const t = useT();
   const nav = useRef<HTMLElement>(null);
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   const shown = useRef<HTMLElement | null>(null);
@@ -44,12 +48,15 @@ export function AppHeader({
         STOCKBUDDY
         <span>AI</span>
       </Link>
+      <div className="sidebar-language">
+        <LanguageSwitcher />
+      </div>
       {onOpenProfile ? (
         <button
           type="button"
           className="sidebar-account sidebar-account-button"
-          aria-label={`Your profile (${email})`}
-          title="Your profile"
+          aria-label={`${t("Your profile")} (${email})`}
+          title={t("Your profile")}
           onClick={onOpenProfile}
         >
           {account}
@@ -57,13 +64,13 @@ export function AppHeader({
       ) : (
         <div className="sidebar-account">{account}</div>
       )}
-      <nav className="main-tabs" aria-label="Main navigation" ref={nav}>
+      <nav className="main-tabs" aria-label={t("Main navigation")} ref={nav}>
         {children}
       </nav>
       <div className="sidebar-footer">
         <button type="button" onClick={() => setConfirmingSignOut(true)}>
           <LogOut size={16} aria-hidden="true" />
-          Sign out
+          {t("Sign out")}
         </button>
       </div>
       {confirmingSignOut && (
@@ -81,6 +88,7 @@ export function AppHeader({
 
 /** "Are you sure?" before signing out, so a stray click doesn't end the session. */
 function SignOutDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
+  const t = useT();
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") onCancel();
@@ -98,16 +106,16 @@ function SignOutDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCance
       }}
     >
       <section className="add-holding-modal confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="sign-out-title" aria-describedby="sign-out-text">
-        <h2 id="sign-out-title">Sign out?</h2>
+        <h2 id="sign-out-title">{t("Sign out?")}</h2>
         <p id="sign-out-text" className="muted">
-          You&apos;ll need your email and password to sign back in. Your data stays saved.
+          {t("You'll need your email and password to sign back in. Your data stays saved.")}
         </p>
         <div className="confirm-actions">
           <button type="button" className="button" onClick={onCancel} autoFocus>
-            Stay signed in
+            {t("Stay signed in")}
           </button>
           <button type="button" className="button primary" onClick={onConfirm}>
-            Sign out
+            {t("Sign out")}
           </button>
         </div>
       </section>

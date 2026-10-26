@@ -1,17 +1,22 @@
 import Link from "next/link";
 
-import { NewPasswordForm } from "@/components/new-password-form";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
-export default function ResetPasswordPage() {
+import { NewPasswordForm } from "@/components/new-password-form";
+import { getT } from "@/lib/i18n/server";
+
+export default async function ResetPasswordPage() {
+  const t = await getT();
   return (
     <main className="login-shell reset-shell">
+      <LanguageSwitcher className="on-light page-language" />
       <section className="login-panel">
         <div>
           <Link className="brand" href="/">
             STOCKBUDDY
           </Link>
-          <h2>Choose a new password</h2>
-          <p className="muted">Use at least 8 characters. You stay signed in afterwards.</p>
+          <h2>{t("Choose a new password")}</h2>
+          <p className="muted">{t("Use at least 8 characters. You stay signed in afterwards.")}</p>
         </div>
         <NewPasswordForm />
       </section>

@@ -1,3 +1,6 @@
+"use client";
+
+import { useT } from "@/lib/i18n/client";
 import { money } from "@/lib/portfolio-metrics";
 
 import { portfolioTotals, type SharedPortfolio } from "./types";
@@ -6,6 +9,7 @@ const percent = (value: number) => `${value >= 0 ? "+" : ""}${(value * 100).toFi
 
 /** Read-only portfolio: totals and every holding with its value, weight, and gain. */
 export function SharedPortfolioView({ portfolio }: { portfolio: SharedPortfolio }) {
+  const t = useT();
   const currency = portfolio.base_currency || "USD";
   const totals = portfolioTotals(portfolio);
   const gain = totals.cost > 0 ? totals.holdings - totals.cost : null;
@@ -19,30 +23,30 @@ export function SharedPortfolioView({ portfolio }: { portfolio: SharedPortfolio 
 
   return (
     <>
-      <section className="share-tiles" aria-label="Portfolio summary">
-        <Tile label="Total value" value={money(totals.total, currency)} />
-        <Tile label="Holdings" value={money(totals.holdings, currency)} />
-        <Tile label="Cash" value={money(totals.cash, currency)} />
+      <section className="share-tiles" aria-label={t("Portfolio summary")}>
+        <Tile label={t("Total value")} value={money(totals.total, currency)} />
+        <Tile label={t("Holdings")} value={money(totals.holdings, currency)} />
+        <Tile label={t("Cash")} value={money(totals.cash, currency)} />
         {gain != null && (
           <Tile
-            label="Unrealized gain"
+            label={t("Unrealized gain")}
             value={`${money(gain, currency)} (${percent(gain / totals.cost)})`}
             tone={gain >= 0 ? "up" : "down"}
           />
         )}
       </section>
       <section className="share-panel" aria-labelledby="share-holdings-title">
-        <h2 id="share-holdings-title">Holdings · {rows.length}</h2>
+        <h2 id="share-holdings-title">{t("Holdings · {count}", { count: rows.length })}</h2>
         <div className="share-table-wrap">
           <table className="share-table">
             <thead>
               <tr>
-                <th scope="col">Holding</th>
-                <th scope="col">Shares</th>
-                <th scope="col">Price</th>
-                <th scope="col">Value</th>
-                <th scope="col">Weight</th>
-                <th scope="col">Gain</th>
+                <th scope="col">{t("Holding")}</th>
+                <th scope="col">{t("Shares")}</th>
+                <th scope="col">{t("Price")}</th>
+                <th scope="col">{t("Value")}</th>
+                <th scope="col">{t("Weight")}</th>
+                <th scope="col">{t("Gain")}</th>
               </tr>
             </thead>
             <tbody>

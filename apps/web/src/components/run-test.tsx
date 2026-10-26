@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   CheckCircle2,
   ChevronDown,
@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 
 import { api, type AnalysisRun, type Portfolio } from "@/lib/api";
+import { useT } from "@/lib/i18n/client";
+import type { Translate } from "@/lib/i18n/core";
 
 /** The newest close the AI review accepts: yesterday in New York, as YYYY-MM-DD. */
 export function latestReviewDate(now = new Date()) {
@@ -40,7 +42,6 @@ type Usage = { used: number; limit: number; left: number; period?: string; reset
 const POLL_MS = 2000;
 const isActive = (run: AnalysisRun | null) => run?.status === "pending" || run?.status === "running";
 const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
-const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
 
 /**
  * Ask Buddy (formerly Run test): pick portfolios and holdings (all by default) and review them one at a time.
@@ -59,6 +60,7 @@ export function RunTest({
   friendlyError: (error: Error) => string;
   renderReport: (run: AnalysisRun) => ReactNode;
 }) {
+  const t = useT();
   const latest = latestReviewDate();
   const rows = useMemo<Row[]>(
     () =>
@@ -196,9 +198,10 @@ export function RunTest({
           body: JSON.stringify({ portfolio_id: queue[index].portfolioId, ticker: queue[index].ticker, as_of: asOf }),
         });
       } catch (cause) {
-        const text = friendlyError(cause instanceof Error ? cause : new Error("Could not start the review"));
+        const error = cause instanceof Error ? cause : new Error("Could not start the review");
+        const text = friendlyError(error);
         // One holding without enough filings shouldn't stop the others.
-        if (/can't be reviewed yet/.test(text)) {
+        if (/can't be reviewed yet/.test(error.message) || /can't be reviewed yet/.test(text)) {
           update(index, { pending: false, skipped: true, note: text });
           continue;
         }
@@ -254,7 +257,7 @@ export function RunTest({
     <section className="simple-page test-page run-test" aria-labelledby="run-test-title">
       <div className="page-heading">
         <div>
-          <h1 id="run-test-title">Ask Buddy</h1>
+          <h1 id="run-test-title">{t("Ask Buddy")}</h1>
           <p className="page-subtitle">{subtitle}</p>
         </div>
       </div>
@@ -271,8 +274,12 @@ export function RunTest({
 
         <div className="run-test-controls">
           <Picker
-            label="Portfolios"
-            summary={allPortfolios ? `All (${portfolios.length})` : `${pickedPortfolioCount} of ${portfolios.length}`}
+            label={t("Portfolios")}
+            summary={
+              allPortfolios
+                ? t("All ({count})", { count: portfolios.length })
+                : t("{count} of {total}", { count: pickedPortfolioCount, total: portfolios.length })
+            }
             disabled={working}
           >
             <label className="run-test-check run-test-all">
@@ -281,7 +288,7 @@ export function RunTest({
                 checked={allPortfolios}
                 onChange={() => setPickedPortfolios(allPortfolios ? new Set() : null)}
               />
-              All portfolios
+              {t("All portfolios")}
             </label>
             {portfolios.map((portfolio) => (
               <label key={portfolio.id} className="run-test-check">
@@ -292,8 +299,12 @@ export function RunTest({
           </Picker>
 
           <Picker
-            label="Holdings"
-            summary={allRows ? `All (${visible.length})` : `${chosen.length} of ${visible.length}`}
+            label={t("Holdings")}
+            summary={
+              allRows
+                ? t("All ({count})", { count: visible.length })
+                : t("{count} of {total}", { count: chosen.length, total: visible.length })
+            }
             disabled={working}
             wide
           >
@@ -304,7 +315,7 @@ export function RunTest({
                     <th scope="col">
                       <input
                         type="checkbox"
-                        aria-label="Select all holdings"
+                        aria-label={t("Select all holdings")}
                         checked={allRows}
                         ref={(input) => {
                           if (input) input.indeterminate = chosen.length > 0 && !allRows;
@@ -312,9 +323,9 @@ export function RunTest({
                         onChange={toggleAllRows}
                       />
                     </th>
-                    <th scope="col">Ticker</th>
-                    <th scope="col">Company</th>
-                    <th scope="col">Portfolio</th>
+                    <th scope="col">{t("Ticker")}</th>
+                    <th scope="col">{t("Company")}</th>
+                    <th scope="col">{t("Portfolio")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -327,7 +338,7 @@ export function RunTest({
                       <td>
                         <input
                           type="checkbox"
-                          aria-label={`Review ${row.ticker} in ${row.portfolioName}`}
+                          aria-label={t("Review {ticker} in {portfolio}", { ticker: row.ticker, portfolio: row.portfolioName })}
                           checked={rowOn(row.key)}
                           disabled={Boolean(blockedWhy(row))}
                           onClick={(event) => event.stopPropagation()}
@@ -339,7 +350,8 @@ export function RunTest({
                         {row.name || "—"}
                         {blockedWhy(row) && (
                           <span className="run-test-blocked">
-                            <Ban size={13} aria-hidden="true" /> Can&apos;t review yet: {blockedWhy(row)}
+                            <Ban size={13} aria-hidden="true" />{" "}
+                            {t("Can't review yet: {reason}", { reason: blockedWhy(row) ?? "" })}
                           </span>
                         )}
                       </td>
@@ -349,12 +361,12 @@ export function RunTest({
                 </tbody>
               </table>
             ) : (
-              <p className="muted">{rows.length ? "Pick at least one portfolio." : "Add holdings to a portfolio first."}</p>
+              <p className="muted">{rows.length ? t("Pick at least one portfolio.") : t("Add holdings to a portfolio first.")}</p>
             )}
           </Picker>
 
           <label className="run-test-date">
-            As-of close
+            {t("As-of close")}
             <input
               type="date"
               value={asOf}
@@ -372,7 +384,9 @@ export function RunTest({
               onClick={() => void start()}
             >
               <Play size={16} aria-hidden="true" />
-              Run {plural(chosen.length, "review")}
+              {chosen.length === 1
+                ? t("Run {count} review", { count: chosen.length })
+                : t("Run {count} reviews", { count: chosen.length })}
             </button>
           )}
         </div>
@@ -382,52 +396,58 @@ export function RunTest({
             <Ban size={15} aria-hidden="true" />
             <span>
               <strong>
-                {plural(blockedVisible.length, "holding")} can&apos;t be reviewed yet and{" "}
-                {blockedVisible.length === 1 ? "is" : "are"} left out:
+                {blockedVisible.length === 1
+                  ? t("{count} holding can't be reviewed yet and is left out:", { count: blockedVisible.length })
+                  : t("{count} holdings can't be reviewed yet and are left out:", { count: blockedVisible.length })}
               </strong>{" "}
-              {[...new Set(blockedVisible.map((row) => row.ticker))].join(", ")}. Buddy needs 4 quarters of
-              company financials filed with the SEC; ETFs, funds, and new listings don&apos;t have them yet.
+              {t(
+                "{tickers}. Buddy needs 4 quarters of company financials filed with the SEC; ETFs, funds, and new listings don't have them yet.",
+                { tickers: [...new Set(blockedVisible.map((row) => row.ticker))].join(", ") },
+              )}
             </span>
           </p>
         )}
         <p className="muted run-test-note">
-          Uses the close of {asOf}. Prices are final through {latest}; today&apos;s close is used once the day is over.
+          {t("Uses the close of {date}. Prices are final through {latest}; today's close is used once the day is over.", {
+            date: asOf,
+            latest,
+          })}
         </p>
       </article>
       {buying && <BuyTokensDialog limit={usage?.limit ?? dailyLimit} onClose={() => setBuying(false)} />}
 
       {items.length > 0 && (
-        <section className="panel run-test-progress" aria-label="Review progress">
+        <section className="panel run-test-progress" aria-label={t("Review progress")}>
           <div className="run-test-progress-head">
             <p>
               <strong>
                 {phase === "finished"
-                  ? "Finished"
+                  ? t("Finished")
                   : phase === "stopped"
-                    ? "Stopped"
+                    ? t("Stopped")
                     : phase === "paused"
-                      ? "Paused"
+                      ? t("Paused")
                       : phase === "stopping"
-                        ? "Stopping after this review…"
+                        ? t("Stopping after this review…")
                         : current
-                          ? `Reviewing ${current.row.ticker}`
-                          : "Starting…"}
+                          ? t("Reviewing {ticker}", { ticker: current.row.ticker })
+                          : t("Starting…")}
               </strong>{" "}
               <span className="muted">
-                {done} of {items.length} done
-                {failed ? ` · ${failed} failed` : ""}
-                {skipped ? ` · ${skipped} not started (no tokens used)` : ""}
+                {t("{done} of {total} done", { done, total: items.length })}
+                {failed ? ` · ${t("{count} failed", { count: failed })}` : ""}
+                {skipped ? ` · ${t("{count} not started (no tokens used)", { count: skipped })}` : ""}
               </span>
             </p>
             {working && (
               <div className="run-test-progress-buttons">
                 <button type="button" className="button" onClick={pause} disabled={phase === "stopping"}>
                   {phase === "paused" ? <Play size={15} aria-hidden="true" /> : <Pause size={15} aria-hidden="true" />}
-                  {phase === "paused" ? "Resume" : "Pause"}
+                  {phase === "paused" ? t("Resume") : t("Pause")}
                 </button>
                 <button type="button" className="button danger" onClick={stop} disabled={phase === "stopping"}>
                   <Square size={14} aria-hidden="true" />
-                  Stop
+                  {t("Stop")}
                 </button>
               </div>
             )}
@@ -435,7 +455,7 @@ export function RunTest({
           <div
             className={`run-test-bar ${phase}`}
             role="progressbar"
-            aria-label="Reviews done"
+            aria-label={t("Reviews done")}
             aria-valuemin={0}
             aria-valuemax={items.length}
             aria-valuenow={done}
@@ -444,7 +464,7 @@ export function RunTest({
           </div>
           {working && (
             <p className="muted run-test-note">
-              Pause or Stop takes effect after the review in progress. Holdings not started use no tokens.
+              {t("Pause or Stop takes effect after the review in progress. Holdings not started use no tokens.")}
             </p>
           )}
           {message && (
@@ -460,7 +480,7 @@ export function RunTest({
                     <StatusIcon item={item} />
                     <strong>{item.row.ticker}</strong>
                     <span className="muted">{item.row.portfolioName}</span>
-                    <span className="run-test-status">{statusText(item)}</span>
+                    <span className="run-test-status">{statusText(item, t)}</span>
                   </summary>
                   {item.note && <p className="run-test-row-note">{item.note}</p>}
                   {item.run && !isActive(item.run) && renderReport(item.run)}
@@ -500,13 +520,14 @@ function TokenWallet({
   resetsOn: string | null;
   onBuy: () => void;
 }) {
+  const t = useT();
   const known = left !== null && limit !== null;
   const share = known && limit ? Math.min(100, Math.round(((used ?? limit - left) / limit) * 100)) : 0;
   const empty = known && left === 0;
   const short = known && !empty && needed > left;
   const warn = empty || short;
   return (
-    <section className={`run-test-wallet${warn ? " warn" : ""}`} aria-label="Your tokens">
+    <section className={`run-test-wallet${warn ? " warn" : ""}`} aria-label={t("Your tokens")}>
       {warn ? (
         <TriangleAlert size={22} aria-hidden="true" className="run-test-wallet-icon" />
       ) : (
@@ -517,34 +538,58 @@ function TokenWallet({
           <p className="run-test-wallet-warning" role="alert">
             {empty ? (
               <>
-                <strong>You&apos;ve used this month&apos;s {plural(limit, "free token")}.</strong> They come back on{" "}
-                {resetDate(resetsOn)}, or you can buy more tokens.
+                <strong>
+                  {limit === 1
+                    ? t("You've used this month's {count} free token.", { count: limit })
+                    : t("You've used this month's {count} free tokens.", { count: limit ?? 0 })}
+                </strong>{" "}
+                {t("They come back on {date}, or you can buy more tokens.", { date: resetDate(resetsOn) })}
               </>
             ) : (
               <>
                 <strong>
-                  This run needs {plural(needed, "token")}, but you have {left} left.
+                  {needed === 1
+                    ? t("This run needs {count} token, but you have {left} left.", { count: needed, left: left ?? 0 })
+                    : t("This run needs {count} tokens, but you have {left} left.", { count: needed, left: left ?? 0 })}
                 </strong>{" "}
-                The first {left} will run and the rest won&apos;t start. Untick{" "}
-                {plural(needed - left, "holding")} to choose which, or buy more tokens.
+                {needed - (left ?? 0) === 1
+                  ? t(
+                      "The first {left} will run and the rest won't start. Untick {count} holding to choose which, or buy more tokens.",
+                      { left: left ?? 0, count: needed - (left ?? 0) },
+                    )
+                  : t(
+                      "The first {left} will run and the rest won't start. Untick {count} holdings to choose which, or buy more tokens.",
+                      { left: left ?? 0, count: needed - (left ?? 0) },
+                    )}
               </>
             )}
           </p>
         )}
         <p className="run-test-wallet-title">
-          <span>This month&apos;s free tokens</span>
-          <span className="run-test-wallet-free">Free during early access</span>
+          <span>{t("This month's free tokens")}</span>
+          <span className="run-test-wallet-free">{t("Free during early access")}</span>
         </p>
         {known ? (
           <>
             <p className="run-test-wallet-count">
-              <strong>{left}</strong> of {limit} left
-              <span className="muted"> · {used ?? limit - left} used · resets on {resetDate(resetsOn)}</span>
+              {/* The translated sentence, with the number left in bold wherever the language puts it. */}
+              {t("{left} of {limit} left", { left: "\u0000", limit })
+                .split("\u0000")
+                .map((part, at) => (
+                  <Fragment key={at}>
+                    {at > 0 && <strong>{left}</strong>}
+                    {part}
+                  </Fragment>
+                ))}
+              <span className="muted">
+                {" · "}
+                {t("{used} used · resets on {date}", { used: used ?? limit - left, date: resetDate(resetsOn) })}
+              </span>
             </p>
             <div
               className="run-test-meter"
               role="meter"
-              aria-label="Tokens used this month"
+              aria-label={t("Tokens used this month")}
               aria-valuemin={0}
               aria-valuemax={limit}
               aria-valuenow={used ?? limit - left}
@@ -553,16 +598,31 @@ function TokenWallet({
             </div>
           </>
         ) : (
-          <p className="run-test-wallet-count">{limit != null ? `${plural(limit, "token")} a day` : "Loading…"}</p>
+          <p className="run-test-wallet-count">{limit != null
+            ? limit === 1
+              ? t("{count} token a day", { count: limit })
+              : t("{count} tokens a day", { count: limit })
+            : t("Loading…")}</p>
         )}
         <p className="muted run-test-wallet-rule">
-          1 token = 1 holding review. This run: {plural(needed, "token")}
-          {known && !warn ? `, ${left - needed} left after.` : "."}
+          {known && !warn
+            ? needed === 1
+              ? t("1 token = 1 holding review. This run: {count} token, {after} left after.", {
+                  count: needed,
+                  after: left - needed,
+                })
+              : t("1 token = 1 holding review. This run: {count} tokens, {after} left after.", {
+                  count: needed,
+                  after: left - needed,
+                })
+            : needed === 1
+              ? t("1 token = 1 holding review. This run: {count} token.", { count: needed })
+              : t("1 token = 1 holding review. This run: {count} tokens.", { count: needed })}
         </p>
       </div>
       <button type="button" className={`button run-test-buy${warn ? " accent" : ""}`} onClick={onBuy}>
         <ShoppingCart size={15} aria-hidden="true" />
-        Buy tokens
+        {t("Buy tokens")}
       </button>
     </section>
   );
@@ -576,6 +636,7 @@ const PACKS = [
 
 /** Token packs preview. Buying isn't open yet; the free monthly tokens stay. */
 function BuyTokensDialog({ limit, onClose }: { limit: number | null; onClose: () => void }) {
+  const t = useT();
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
@@ -594,32 +655,36 @@ function BuyTokensDialog({ limit, onClose }: { limit: number | null; onClose: ()
     >
       <section className="add-holding-modal buy-tokens" role="dialog" aria-modal="true" aria-labelledby="buy-tokens-title">
         <div className="modal-heading">
-          <h2 id="buy-tokens-title">Buy tokens</h2>
-          <button type="button" aria-label="Close" onClick={onClose}>
+          <h2 id="buy-tokens-title">{t("Buy tokens")}</h2>
+          <button type="button" aria-label={t("Close")} onClick={onClose}>
             ×
           </button>
         </div>
         <p className="muted">
-          Tokens pay for AI reviews: 1 token reviews 1 holding with all five personas. Bought tokens
-          don&apos;t expire and are used after your free monthly ones.
+          {t(
+            "Tokens pay for AI reviews: 1 token reviews 1 holding with all five personas. Bought tokens don't expire and are used after your free monthly ones.",
+          )}
         </p>
         <ul className="buy-tokens-packs">
           {PACKS.map((pack) => (
             <li key={pack.name}>
               <p className="buy-tokens-name">{pack.name}</p>
               <p className="buy-tokens-amount">
-                <Coins size={16} aria-hidden="true" /> {pack.tokens} tokens
+                <Coins size={16} aria-hidden="true" /> {t("{count} tokens", { count: pack.tokens })}
               </p>
-              <p className="muted">{pack.note}</p>
+              <p className="muted">{t(pack.note)}</p>
               <button type="button" className="button" disabled>
-                Coming soon
+                {t("Coming soon")}
               </button>
             </li>
           ))}
         </ul>
         <p className="run-test-note muted">
-          Buying isn&apos;t open yet. During early access you get{" "}
-          {limit != null ? plural(limit, "free token") : "free tokens"} every month.
+          {limit == null
+            ? t("Buying isn't open yet. During early access you get free tokens every month.")
+            : limit === 1
+              ? t("Buying isn't open yet. During early access you get {count} free token every month.", { count: limit })
+              : t("Buying isn't open yet. During early access you get {count} free tokens every month.", { count: limit })}
         </p>
       </section>
     </div>
@@ -635,16 +700,17 @@ export function notEnoughData(run: AnalysisRun) {
   );
 }
 
-function statusText(item: Item) {
-  if (item.note) return "Can't review yet";
-  if (item.skipped) return "Not started";
-  if (item.pending) return "Reviewing…";
-  if (!item.run) return "Waiting";
-  if (isActive(item.run)) return "Reviewing…";
-  if (item.run.status === "failed") return "Failed";
-  if (notEnoughData(item.run)) return "Not enough data";
+function statusText(item: Item, t: Translate) {
+  if (item.note) return t("Can't review yet");
+  if (item.skipped) return t("Not started");
+  if (item.pending) return t("Reviewing…");
+  if (!item.run) return t("Waiting");
+  if (isActive(item.run)) return t("Reviewing…");
+  if (item.run.status === "failed") return t("Failed");
+  if (notEnoughData(item.run)) return t("Not enough data");
   const label = item.run.recommendations?.[0]?.label;
-  return label ? label[0].toUpperCase() + label.slice(1) : "Done";
+  // The label is data ("hold"); only its displayed form is translated.
+  return label ? t(label[0].toUpperCase() + label.slice(1)) : t("Done");
 }
 
 function StatusIcon({ item }: { item: Item }) {

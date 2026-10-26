@@ -22,6 +22,8 @@ import {
   type AnalyticsLimits,
 } from "@/lib/analytics";
 import { api, type Portfolio, type PortfolioTransaction } from "@/lib/api";
+import { useT } from "@/lib/i18n/client";
+import type { Translate } from "@/lib/i18n/core";
 import {
   holdingsPerformance,
   rangeStart,
@@ -83,6 +85,7 @@ export function PortfolioAnalyticsDashboard({
   onSelectPortfolio: (id: string) => void;
   onRefresh: () => Promise<void>;
 }) {
+  const t = useT();
   const selectedPortfolio = portfolios.find((item) => item.id === selectedId);
   const [benchmark, setBenchmark] = useState(selectedPortfolio?.benchmark ?? "SPY");
   const [customBenchmark, setCustomBenchmark] = useState("");
@@ -265,7 +268,7 @@ export function PortfolioAnalyticsDashboard({
 
   if (loading) {
     return (
-      <section className="analytics-metrics" aria-label="Loading analytics">
+      <section className="analytics-metrics" aria-label={t("Loading analytics")}>
         {Array.from({ length: 8 }).map((_, index) => (
           <div className="analytics-metric skeleton" key={index} />
         ))}
@@ -277,36 +280,35 @@ export function PortfolioAnalyticsDashboard({
     return (
       <section className="analytics-empty panel">
         <BarChart3 aria-hidden="true" />
-        <h2>Add holdings to see portfolio analytics</h2>
+        <h2>{t("Add holdings to see portfolio analytics")}</h2>
         <p>
-          Analytics will use your saved quantities, cost basis, cash, and current
-          market prices.
+          {t("Analytics will use your saved quantities, cost basis, cash, and current market prices.")}
         </p>
       </section>
     );
   }
 
   return (
-    <section className="analytics-dashboard" aria-label="Portfolio analytics">
+    <section className="analytics-dashboard" aria-label={t("Portfolio analytics")}>
       <header className="analytics-page-head">
-        <h1>Analytics</h1>
-        <nav aria-label="Jump to section">
+        <h1>{t("Analytics")}</h1>
+        <nav aria-label={t("Jump to section")}>
           {ANALYTICS_SECTIONS.map(([id, label]) => (
             <a key={id} href={`#${id}`}>
-              {label}
+              {t(label)}
             </a>
           ))}
         </nav>
       </header>
       <section className="panel analytics-module performance-module">
         <ModuleHeading
-          eyebrow="Performance"
-          title={`Portfolio vs. ${benchmark}`}
+          eyebrow={t("Performance")}
+          title={t("Portfolio vs. {benchmark}", { benchmark })}
           icon={<BarChart3 size={18} />}
         />
-        <div className="analytics-controls" role="group" aria-label="Analytics controls">
+        <div className="analytics-controls" role="group" aria-label={t("Analytics controls")}>
           <label>
-            <span>Portfolio</span>
+            <span>{t("Portfolio")}</span>
             <select
               value={selectedId}
               onChange={(event) => onSelectPortfolio(event.target.value)}
@@ -319,7 +321,7 @@ export function PortfolioAnalyticsDashboard({
             </select>
           </label>
           <label>
-            <span>Benchmark</span>
+            <span>{t("Benchmark")}</span>
             <select
               value={
                 BENCHMARKS.some((option) => option[1] === benchmark)
@@ -332,19 +334,19 @@ export function PortfolioAnalyticsDashboard({
             >
               {BENCHMARKS.map(([label, ticker]) => (
                 <option key={ticker} value={ticker}>
-                  {label}
+                  {t(label)}
                 </option>
               ))}
-              <option value="custom">Custom benchmark</option>
+              <option value="custom">{t("Custom benchmark")}</option>
             </select>
           </label>
           {!BENCHMARKS.some((option) => option[1] === benchmark) && (
             <label>
-              <span>Custom ticker</span>
+              <span>{t("Custom ticker")}</span>
               <input
                 value={customBenchmark}
                 maxLength={12}
-                placeholder="e.g. VT"
+                placeholder={t("e.g. VT")}
                 onChange={(event) => {
                   const value = event.target.value.toUpperCase();
                   setCustomBenchmark(value);
@@ -355,10 +357,9 @@ export function PortfolioAnalyticsDashboard({
           )}
           <div className="analytics-refresh">
             <span>
-              Prices as of{" "}
               {timestamp
-                ? new Date(timestamp).toLocaleString()
-                : "unavailable"}
+                ? t("Prices as of {date}", { date: new Date(timestamp).toLocaleString() })
+                : t("Prices as of unavailable")}
             </span>
             <button type="button" onClick={refresh} disabled={refreshing}>
               <RefreshCw
@@ -366,12 +367,12 @@ export function PortfolioAnalyticsDashboard({
                 aria-hidden="true"
                 className={refreshing ? "spinning" : ""}
               />
-              {refreshing ? "Refreshing" : "Refresh"}
+              {refreshing ? t("Refreshing") : t("Refresh")}
             </button>
           </div>
         </div>
         <div className="performance-toolbar">
-        <div className="chart-mode" role="group" aria-label="Performance chart mode">
+        <div className="chart-mode" role="group" aria-label={t("Performance chart mode")}>
           {CHART_MODES.map((option) => (
             <button
               type="button"
@@ -381,11 +382,11 @@ export function PortfolioAnalyticsDashboard({
               disabled={!performance?.points.length}
               onClick={() => setChartMode(option)}
             >
-              {option}
+              {t(option)}
             </button>
           ))}
         </div>
-          <div className="date-range-control" role="group" aria-label="Date range">
+          <div className="date-range-control" role="group" aria-label={t("Date range")}>
             {RANGE_OPTIONS.map((option) => (
               <button
                 type="button"
@@ -394,19 +395,22 @@ export function PortfolioAnalyticsDashboard({
                 aria-pressed={range === option}
                 onClick={() => setRange(option)}
               >
-                {option}
+                {option === "All" ? t("All") : option}
               </button>
             ))}
           </div>
         </div>
         {!historyReady ? (
-          <p className="muted">Loading price history…</p>
+          <p className="muted">{t("Loading price history…")}</p>
         ) : history?.error || !performance?.points.length ? (
           <Unavailable
-            title="Price history unavailable"
+            title={t("Price history unavailable")}
             text={
-              history?.error ??
-              `No ${range} price history was found for ${benchmark} and your holdings.`
+              (history?.error ? t(history.error) : null) ??
+              t("No {range} price history was found for {benchmark} and your holdings.", {
+                range: range === "All" ? t("All") : range,
+                benchmark,
+              })
             }
           />
         ) : (
@@ -414,12 +418,12 @@ export function PortfolioAnalyticsDashboard({
         )}
       </section>
 
-      <RiskLimits warnings={analytics.warnings} />
+      <RiskLimits warnings={analytics.warnings} t={t} />
 
       {moduleError && (
         <div className="module-error" role="alert">
           <AlertTriangle size={17} aria-hidden="true" />
-          Prices could not refresh. Existing analytics remain available. {moduleError}
+          {t("Prices could not refresh. Existing analytics remain available.")} {t(moduleError)}
         </div>
       )}
       {(analytics.missingPrices.length > 0 || stalePrices.length > 0) && (
@@ -427,31 +431,31 @@ export function PortfolioAnalyticsDashboard({
           <AlertTriangle size={17} aria-hidden="true" />
           <span>
             {analytics.missingPrices.length > 0 &&
-              `Missing market price: ${analytics.missingPrices.join(", ")}. `}
+              `${t("Missing market price: {tickers}.", { tickers: analytics.missingPrices.join(", ") })} `}
             {stalePrices.length > 0 &&
-              `Stale market price: ${stalePrices.join(", ")}.`}
-            {" "}Affected values are excluded or marked unavailable.
+              t("Stale market price: {tickers}.", { tickers: stalePrices.join(", ") })}
+            {" "}{t("Affected values are excluded or marked unavailable.")}
           </span>
         </div>
       )}
 
-      <section className="analytics-metrics" aria-label="Portfolio summary">
-        <SummaryMetric label="Portfolio value" value={money(analytics.portfolioValue)} />
+      <section className="analytics-metrics" aria-label={t("Portfolio summary")}>
+        <SummaryMetric label={t("Portfolio value")} value={money(analytics.portfolioValue)} />
         <SummaryMetric
-          label="Total cost basis"
+          label={t("Total cost basis")}
           value={money(analytics.totalCostBasis)}
           note={
             analytics.missingCostBasis.length
-              ? `Missing: ${analytics.missingCostBasis.join(", ")}`
+              ? t("Missing: {tickers}", { tickers: analytics.missingCostBasis.join(", ") })
               : undefined
           }
         />
         <SummaryMetric
-          label="Cash balance"
+          label={t("Cash balance")}
           value={`${money(cash)} / ${formatPercent(analytics.cashPercentage)}`}
         />
         <SummaryMetric
-          label="Unrealized gain/loss"
+          label={t("Unrealized gain/loss")}
           value={
             analytics.unrealizedGainLossPct == null
               ? signedMoney(analytics.unrealizedGainLoss)
@@ -460,18 +464,18 @@ export function PortfolioAnalyticsDashboard({
           tone={analytics.unrealizedGainLoss >= 0 ? "positive" : "negative"}
         />
         <SummaryMetric
-          label="Today’s gain/loss"
+          label={t("Today’s gain/loss")}
           value={
             analytics.todayGainLoss == null
-              ? "Unavailable"
+              ? t("Unavailable")
               : signedMoney(analytics.todayGainLoss)
           }
         />
         <SummaryMetric
-          label="Transaction return"
+          label={t("Transaction return")}
           value={
             analytics.transactionReturnPct == null
-              ? "Unavailable"
+              ? t("Unavailable")
               : signedPercent(analytics.transactionReturnPct)
           }
           tone={
@@ -483,24 +487,29 @@ export function PortfolioAnalyticsDashboard({
           }
           note={
             !useTransactionHistory
-              ? "Disabled in Admin settings"
+              ? t("Disabled in Admin settings")
               : analytics.transactionHistoryApplied
-                ? `Recorded buys and sells only · realized ${signedMoney(analytics.realizedGainLoss ?? 0)} · excludes dividends, fees, and external cash flows`
+                ? t(
+                    "Recorded buys and sells only · realized {amount} · excludes dividends, fees, and external cash flows",
+                    { amount: signedMoney(analytics.realizedGainLoss ?? 0) },
+                  )
                 : transactions.length === 0
-                  ? "Record your buys and sells on the Transactions page to calculate this"
-                  : "Your recorded buys and sells don't add up to your current shares yet; record the missing ones on the Transactions page"
+                  ? t("Record your buys and sells on the Transactions page to calculate this")
+                  : t(
+                      "Your recorded buys and sells don't add up to your current shares yet; record the missing ones on the Transactions page",
+                    )
           }
         />
         <SummaryMetricPair
           items={[
             {
-              label: "Benchmark return",
+              label: t("Benchmark return"),
               value: !historyReady
-                ? "Loading…"
+                ? t("Loading…")
                 : performance?.benchmarkReturn != null
                   ? signedPercent(performance.benchmarkReturn)
-                  : "Unavailable",
-              note: `${benchmark} · ${range}`,
+                  : t("Unavailable"),
+              note: `${benchmark} · ${range === "All" ? t("All") : range}`,
               tone:
                 performance?.benchmarkReturn == null
                   ? undefined
@@ -509,16 +518,18 @@ export function PortfolioAnalyticsDashboard({
                     : "negative",
             },
             {
-              label: "Portfolio vs. benchmark",
+              label: t("Portfolio vs. benchmark"),
               value:
                 performance?.portfolioReturn != null && performance.benchmarkReturn != null
-                  ? `${performance.portfolioReturn - performance.benchmarkReturn >= 0 ? "+" : ""}${(performance.portfolioReturn - performance.benchmarkReturn).toFixed(1)} pts`
+                  ? t("{value} pts", {
+                      value: `${performance.portfolioReturn - performance.benchmarkReturn >= 0 ? "+" : ""}${(performance.portfolioReturn - performance.benchmarkReturn).toFixed(1)}`,
+                    })
                   : historyReady
-                    ? "Unavailable"
-                    : "Loading…",
+                    ? t("Unavailable")
+                    : t("Loading…"),
               note:
                 performance?.portfolioReturn != null
-                  ? `Current holdings ${signedPercent(performance.portfolioReturn)}, as if held`
+                  ? t("Current holdings {value}, as if held", { value: signedPercent(performance.portfolioReturn) })
                   : undefined,
               tone:
                 performance?.portfolioReturn == null || performance.benchmarkReturn == null
@@ -530,7 +541,7 @@ export function PortfolioAnalyticsDashboard({
           ]}
         />
         <SummaryMetric
-          label="Holdings / risk warnings"
+          label={t("Holdings / risk warnings")}
           value={`${positions.length} / ${analytics.warnings.length}`}
           tone={analytics.warnings.length ? "negative" : "positive"}
         />
@@ -538,24 +549,25 @@ export function PortfolioAnalyticsDashboard({
 
       <section className="panel analytics-module analytics-anchor" id="analytics-allocation">
         <ModuleHeading
-          eyebrow="Allocation"
-          title="Portfolio allocation"
+          eyebrow={t("Allocation")}
+          title={t("Portfolio allocation")}
           icon={<BarChart3 size={18} />}
         />
 <AllocationGuide limits={limits} />
         <p className="module-note">
-          ETF and index values are shown for visibility but excluded from allocation
-          limits and concentration warnings.
+          {t(
+            "ETF and index values are shown for visibility but excluded from allocation limits and concentration warnings.",
+          )}
         </p>
         <div className="allocation-box-grid">
           {allocationGroups.map(({ dimension, label, rows }) => (
             <section className="allocation-box" key={dimension}>
-              <h3>{label}</h3>
+              <h3>{t(label)}</h3>
               <div className="allocation-table">
                 {rows.map((row) => (
                   <article className={row.warning ? "warning" : ""} key={row.key}>
                     <div>
-                      <strong>{row.label}</strong>
+                      <strong>{t(row.label)}</strong>
                       {!(
                         row.holdings.length === 1 &&
                         row.holdings[0].toUpperCase() === row.label.toUpperCase()
@@ -569,16 +581,16 @@ export function PortfolioAnalyticsDashboard({
                       <span style={{ width: `${Math.min(row.percentage * 100, 100)}%` }} />
                     </div>
                     {row.excludedFromRiskLimits ? (
-                      <small>Excluded from risk limits</small>
+                      <small>{t("Excluded from risk limits")}</small>
                     ) : row.warning && row.limit != null ? (
-                      <small>Over {formatPercent(row.limit)} limit</small>
+                      <small>{t("Over {limit} limit", { limit: formatPercent(row.limit) })}</small>
                     ) : null}
                   </article>
                 ))}
                 {!rows.length && (
                   <Unavailable
-                    title="Allocation unavailable"
-                    text="Current prices or classification data are missing."
+                    title={t("Allocation unavailable")}
+                    text={t("Current prices or classification data are missing.")}
                   />
                 )}
               </div>
@@ -589,17 +601,17 @@ export function PortfolioAnalyticsDashboard({
 
       <section className="contributors-grid analytics-anchor" id="analytics-gains-losses">
         <ContributorPanel
-          title="Gains"
+          title={t("Gains")}
           rows={topContributors}
           totalGainLoss={analytics.unrealizedGainLoss}
         />
         <ContributorPanel
-          title="Losses"
+          title={t("Losses")}
           rows={bottomContributors}
           totalGainLoss={analytics.unrealizedGainLoss}
         />
         <div className="contributor-controls">
-          <span>Show</span>
+          <span>{t("Show")}</span>
           {[5, 10, "all"].map((option) => (
             <button
               type="button"
@@ -607,7 +619,7 @@ export function PortfolioAnalyticsDashboard({
               className={contributorCount === option ? "active" : ""}
               onClick={() => setContributorCount(option as ContributorCount)}
             >
-              {option === "all" ? "All" : `Top ${option}`}
+              {option === "all" ? t("All") : t("Top {count}", { count: option })}
             </button>
           ))}
         </div>
@@ -656,22 +668,23 @@ function PerformanceChart({
   mode: ChartMode;
   benchmark: string;
 }) {
+  const t = useT();
   const width = 720;
   const height = 240;
   const pad = { left: 64, right: 16, top: 14, bottom: 30 };
   const points = performance.points;
   const series: { key: string; label: string; values: (number | null)[] }[] =
     mode === "Portfolio value"
-      ? [{ key: "portfolio", label: "Current holdings", values: points.map((p) => p.value) }]
+      ? [{ key: "portfolio", label: t("Current holdings"), values: points.map((p) => p.value) }]
       : mode === "Percentage return"
         ? [
-            { key: "portfolio", label: "Current holdings", values: points.map((p) => p.portfolioPct) },
+            { key: "portfolio", label: t("Current holdings"), values: points.map((p) => p.portfolioPct) },
             { key: "benchmark", label: benchmark, values: points.map((p) => p.benchmarkPct) },
           ]
         : [
             {
               key: "portfolio",
-              label: `Holdings minus ${benchmark}`,
+              label: t("Holdings minus {benchmark}", { benchmark }),
               values: points.map((p) =>
                 p.benchmarkPct == null ? null : p.portfolioPct - p.benchmarkPct,
               ),
@@ -698,7 +711,11 @@ function PerformanceChart({
       <svg
         viewBox={`0 0 ${width} ${height}`}
         role="img"
-        aria-label={`${mode} from ${performance.startDate} to ${performance.endDate}`}
+        aria-label={t("{mode} from {start} to {end}", {
+          mode: t(mode),
+          start: String(performance.startDate),
+          end: String(performance.endDate),
+        })}
       >
         {ticks.map((tick) => (
           <g key={tick}>
@@ -788,29 +805,33 @@ function ModuleHeading({
 
 function RiskLimits({
   warnings,
+  t,
 }: {
   warnings: ReturnType<typeof calculatePortfolioAnalytics>["warnings"];
+  t: Translate;
 }) {
   return (
     <section className="panel analytics-module">
       <ModuleHeading
-        eyebrow="Configured thresholds"
-        title="Risk limits"
+        eyebrow={t("Configured thresholds")}
+        title={t("Risk limits")}
         icon={<ShieldAlert size={18} />}
       />
       {warnings.length ? (
         <div className="risk-warning-list">
           {warnings.map((warning) => (
             <article key={warning.id} className={`risk-warning ${warning.severity}`}>
-              <span className="status-label">{capitalize(warning.severity)}</span>
+              <span className="status-label">{t(capitalize(warning.severity))}</span>
               <div>
-                <strong>{warning.title}</strong>
-                <p>{warning.explanation}</p>
+                <strong>{warningText(warning, t).title}</strong>
+                <p>{warningText(warning, t).explanation}</p>
                 <small>
-                  Current {formatPercent(warning.currentValue)} · Limit{" "}
-                  {formatPercent(warning.configuredLimit)}
+                  {t("Current {current} · Limit {limit}", {
+                    current: formatPercent(warning.currentValue),
+                    limit: formatPercent(warning.configuredLimit),
+                  })}
                   {warning.affectedHoldings.length
-                    ? ` · Holdings: ${warning.affectedHoldings.join(", ")}`
+                    ? ` · ${t("Holdings: {tickers}", { tickers: warning.affectedHoldings.join(", ") })}`
                     : ""}
                 </small>
               </div>
@@ -820,7 +841,7 @@ function RiskLimits({
       ) : (
         <div className="success-state">
           <CheckCircle2 size={18} />
-          <span>No current-allocation limits are breached.</span>
+          <span>{t("No current-allocation limits are breached.")}</span>
         </div>
       )}
     </section>
@@ -836,34 +857,36 @@ function ContributorPanel({
   rows: ReturnType<typeof calculatePortfolioAnalytics>["positions"];
   totalGainLoss: number;
 }) {
+  const t = useT();
   return (
     <section className="panel analytics-module contributor-panel">
-      <ModuleHeading eyebrow="Gains and losses" title={title} icon={<BarChart3 size={18} />} />
+      <ModuleHeading eyebrow={t("Gains and losses")} title={title} icon={<BarChart3 size={18} />} />
       <div className="contributor-list">
         {rows.map((position) => (
           <article key={position.ticker}>
             <div>
               <strong>{position.ticker}</strong>
-              <span>{position.company_name || position.name || "Company unavailable"}</span>
+              <span>{position.company_name || position.name || t("Company unavailable")}</span>
             </div>
             <div>
               <strong>{signedMoney(position.gainLoss ?? 0)}</strong>
               <span>
                 {position.gainLossPct == null
-                  ? "Cost basis unavailable"
+                  ? t("Cost basis unavailable")
                   : signedPercent(position.gainLossPct)}
               </span>
             </div>
-            <small>Weight {formatAllocationPercentage(position.weight ?? 0)}</small>
+            <small>{t("Weight {value}", { value: formatAllocationPercentage(position.weight ?? 0) })}</small>
             <small>
-              Share of unrealized gain/loss{" "}
-              {totalGainLoss
-                ? `${Math.abs(((position.gainLoss ?? 0) / totalGainLoss) * 100).toFixed(1)}%`
-                : "Unavailable"}
+              {t("Share of unrealized gain/loss {value}", {
+                value: totalGainLoss
+                  ? `${Math.abs(((position.gainLoss ?? 0) / totalGainLoss) * 100).toFixed(1)}%`
+                  : t("Unavailable"),
+              })}
             </small>
           </article>
         ))}
-        {!rows.length && <p className="muted">No matching contributors.</p>}
+        {!rows.length && <p className="muted">{t("No matching contributors.")}</p>}
       </div>
     </section>
   );
@@ -874,6 +897,7 @@ function AdvancedRisk({
 }: {
   analytics: ReturnType<typeof calculatePortfolioAnalytics>;
 }) {
+  const t = useT();
   const unavailable = [
     ["Portfolio volatility", "Daily portfolio history"],
     ["Maximum drawdown", "Historical portfolio values"],
@@ -882,19 +906,40 @@ function AdvancedRisk({
     ["Downside deviation", "Historical portfolio returns"],
     ["Highly correlated holdings", "Aligned holding return history"],
   ];
+  const concentrationTip = (count: "three" | "five") =>
+    count === "three"
+      ? t(
+          "Sum of the three largest non-fund position weights. Uses the latest available prices and is not a historical risk measure.",
+        )
+      : t(
+          "Sum of the five largest non-fund position weights. Uses the latest available prices and is not a historical risk measure.",
+        );
   return (
     <section className="panel analytics-module analytics-anchor" id="analytics-risk">
-      <ModuleHeading eyebrow="Risk" title="Risk analytics" icon={<ShieldAlert size={18} />} />
+      <ModuleHeading eyebrow={t("Risk")} title={t("Risk analytics")} icon={<ShieldAlert size={18} />} />
       <div className="risk-metric-grid">
-        <SummaryMetric label="Top-three concentration" value={formatPercent(analytics.topThreeConcentration)} note="Excludes funds and indexes" tooltip="Sum of the three largest non-fund position weights. Uses the latest available prices and is not a historical risk measure." />
-        <SummaryMetric label="Top-five concentration" value={formatPercent(analytics.topFiveConcentration)} note="Excludes funds and indexes" tooltip="Sum of the five largest non-fund position weights. Uses the latest available prices and is not a historical risk measure." />
+        <SummaryMetric
+          label={t("Top-three concentration")}
+          value={formatPercent(analytics.topThreeConcentration)}
+          note={t("Excludes funds and indexes")}
+          tooltip={concentrationTip("three")}
+        />
+        <SummaryMetric
+          label={t("Top-five concentration")}
+          value={formatPercent(analytics.topFiveConcentration)}
+          note={t("Excludes funds and indexes")}
+          tooltip={concentrationTip("five")}
+        />
         {unavailable.map(([label, requirement]) => (
           <SummaryMetric
             key={label}
-            label={label}
-            value="Not enough history"
-            note={`Requires ${requirement.toLowerCase()}.`}
-            tooltip={`${label} is calculated over the selected period. ${requirement} are required; results can be sensitive to the selected period and data quality.`}
+            label={t(label)}
+            value={t("Not enough history")}
+            note={t("Requires {requirement}.", { requirement: t(requirement).toLowerCase() })}
+            tooltip={t(
+              "{metric} is calculated over the selected period. {requirement} are required; results can be sensitive to the selected period and data quality.",
+              { metric: t(label), requirement: t(requirement) },
+            )}
           />
         ))}
       </div>
@@ -927,6 +972,81 @@ function signedPercent(value: number) {
   return `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
 }
 
+type RiskWarning = ReturnType<typeof calculatePortfolioAnalytics>["warnings"][number];
+
+/** A risk warning's title and explanation in the reader's language, rebuilt from its data
+ *  (the English text from analytics is the fallback for any warning not listed here). */
+function warningText(warning: RiskWarning, t: Translate): { title: string; explanation: string } {
+  const current = formatPercent(warning.currentValue);
+  const limit = formatPercent(warning.configuredLimit);
+  const { id } = warning;
+  if (id.startsWith("position-")) {
+    const ticker = id.slice("position-".length);
+    return {
+      title: t("{ticker} exceeds the position limit", { ticker }),
+      explanation: t("{ticker} represents {current} of portfolio value; the configured maximum is {limit}.", {
+        ticker,
+        current,
+        limit,
+      }),
+    };
+  }
+  if (id === "cash-minimum") {
+    return {
+      title: t("Cash is below the configured minimum"),
+      explanation: t("Cash represents {current} of portfolio value; the configured minimum is {limit}.", {
+        current,
+        limit,
+      }),
+    };
+  }
+  if (id === "top-three" || id === "top-five") {
+    const three = id === "top-three";
+    return {
+      title: three ? t("Top-three concentration is high") : t("Top-five concentration is high"),
+      explanation: three
+        ? t(
+            "The three largest non-fund positions represent {current} of portfolio value; the configured maximum is {limit}.",
+            { current, limit },
+          )
+        : t(
+            "The five largest non-fund positions represent {current} of portfolio value; the configured maximum is {limit}.",
+            { current, limit },
+          ),
+    };
+  }
+  if (id === "speculative") {
+    return {
+      title: t("Speculative exposure exceeds its limit"),
+      explanation: t(
+        "Speculative categories represent {current} of portfolio value; the configured maximum is {limit}.",
+        { current, limit },
+      ),
+    };
+  }
+  if (id.startsWith("sector-")) {
+    const group = t(id.slice("sector-".length));
+    return {
+      title: t("{group} exceeds the sector limit", { group }),
+      explanation: t(
+        "{group} sector exposure represents {current} of portfolio value; the configured maximum is {limit}.",
+        { group, current, limit },
+      ),
+    };
+  }
+  if (id.startsWith("asset-type-")) {
+    const group = t(id.slice("asset-type-".length));
+    return {
+      title: t("{group} exceeds the asset type limit", { group }),
+      explanation: t(
+        "{group} asset type exposure represents {current} of portfolio value; the configured maximum is {limit}.",
+        { group, current, limit },
+      ),
+    };
+  }
+  return { title: warning.title, explanation: warning.explanation };
+}
+
 function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
@@ -935,6 +1055,7 @@ function capitalize(value: string) {
 const GUIDE_OPEN_KEY = "stockbuddy.allocationGuideOpen";
 
 function AllocationGuide({ limits }: { limits: AnalyticsLimits }) {
+  const t = useT();
   // Open by default; the browser remembers if the person closes it.
   const [open, setOpen] = useState(() => {
     try {
@@ -954,49 +1075,60 @@ function AllocationGuide({ limits }: { limits: AnalyticsLimits }) {
     });
   }
   return (
-    <aside className={`allocation-guide${open ? "" : " closed"}`} aria-label="What is a normal allocation">
+    <aside className={`allocation-guide${open ? "" : " closed"}`} aria-label={t("What is a normal allocation")}>
       <button type="button" className="allocation-guide-toggle" aria-expanded={open} aria-controls="allocation-guide-body" onClick={toggle}>
         <GraduationCap size={18} aria-hidden="true" />
         <span className="allocation-guide-title">
-          <span className="allocation-guide-tag">Learn</span>
-          What&apos;s considered normal?
+          <span className="allocation-guide-tag">{t("Learn")}</span>
+          {t("What's considered normal?")}
         </span>
-        <span className="allocation-guide-action">{open ? "Hide" : "Show"}</span>
+        <span className="allocation-guide-action">{open ? t("Hide") : t("Show")}</span>
         <ChevronDown size={16} aria-hidden="true" className="allocation-guide-chevron" />
       </button>
       {open && (
       <div id="allocation-guide-body">
       <p>
-        There is no single rule, but these are widely used rules of thumb for a diversified
-        portfolio. They are general education, not advice for your situation.
+        {t(
+          "There is no single rule, but these are widely used rules of thumb for a diversified portfolio. They are general education, not advice for your situation.",
+        )}
       </p>
       <ul>
         <li>
-          <strong>One position:</strong> usually 5–10% at most. Above about 20%, one
-          company&apos;s bad news can hurt the whole portfolio. Your limit:{" "}
-          {formatPercent(limits.maxPositionPct)}.
+          <strong>{t("One position:")}</strong>{" "}
+          {t(
+            "usually 5–10% at most. Above about 20%, one company's bad news can hurt the whole portfolio. Your limit: {limit}.",
+            { limit: formatPercent(limits.maxPositionPct) },
+          )}
         </li>
         <li>
-          <strong>One sector or industry:</strong> about 20–25% at most; the S&amp;P 500&apos;s
-          largest sector (technology) is roughly 30%. Your limit:{" "}
-          {formatPercent(limits.maxSectorPct)}.
+          <strong>{t("One sector or industry:")}</strong>{" "}
+          {t(
+            "about 20–25% at most; the S&P 500's largest sector (technology) is roughly 30%. Your limit: {limit}.",
+            { limit: formatPercent(limits.maxSectorPct) },
+          )}
         </li>
         <li>
-          <strong>Asset types:</strong> a mix of stocks, bonds, and cash that fits your time
-          horizon; the classic balanced mix is 60% stocks / 40% bonds, and longer horizons
-          usually hold more stocks. Your limit per type: {formatPercent(limits.maxAssetTypePct)}.
+          <strong>{t("Asset types:")}</strong>{" "}
+          {t(
+            "a mix of stocks, bonds, and cash that fits your time horizon; the classic balanced mix is 60% stocks / 40% bonds, and longer horizons usually hold more stocks. Your limit per type: {limit}.",
+            { limit: formatPercent(limits.maxAssetTypePct) },
+          )}
         </li>
         <li>
-          <strong>Cash:</strong> 2–5% in the portfolio for opportunities, with 3–6 months of
-          expenses kept separately as an emergency fund. Your minimum:{" "}
-          {formatPercent(limits.minCashPct)}.
+          <strong>{t("Cash:")}</strong>{" "}
+          {t(
+            "2–5% in the portfolio for opportunities, with 3–6 months of expenses kept separately as an emergency fund. Your minimum: {limit}.",
+            { limit: formatPercent(limits.minCashPct) },
+          )}
         </li>
         <li>
-          <strong>Speculative holdings:</strong> 5–10% at most, money you could afford to
-          lose. Your limit: {formatPercent(limits.maxSpeculativePct)}.
+          <strong>{t("Speculative holdings:")}</strong>{" "}
+          {t("5–10% at most, money you could afford to lose. Your limit: {limit}.", {
+            limit: formatPercent(limits.maxSpeculativePct),
+          })}
         </li>
       </ul>
-      <small>ETFs and index funds are already diversified, so they don&apos;t count toward these limits.</small>
+      <small>{t("ETFs and index funds are already diversified, so they don't count toward these limits.")}</small>
       </div>
       )}
     </aside>

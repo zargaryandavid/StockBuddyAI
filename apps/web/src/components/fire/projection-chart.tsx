@@ -1,6 +1,8 @@
 "use client";
 
 import { yearsLabel, type FirePlan } from "@/lib/fire";
+import { shortMonthYear } from "@/lib/fire-views";
+import { useT } from "@/lib/i18n/client";
 import { money } from "@/lib/portfolio-metrics";
 
 function niceStep(max: number, count: number) {
@@ -42,6 +44,7 @@ export function ProjectionChart({
   currency: string;
   today: string;
 }) {
+  const t = useT();
   const width = 640;
   const height = 250;
   const pad = { left: 56, right: 16, top: 16, bottom: 44 };
@@ -86,9 +89,8 @@ export function ProjectionChart({
   const hitDate = reached
     ? new Date(Date.UTC(startYear, startMonth + (plan.hitMonth as number), 1))
     : null;
-  const hitLabel = hitDate
-    ? hitDate.toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" })
-    : null;
+  const hitLabel = hitDate ? shortMonthYear(hitDate, t) : null;
+  const timeToFire = yearsLabel(plan.hitMonth, t);
   const hitX = reached ? x(plan.hitMonth as number) : null;
   // Year labels that would sit under the centered FIRE date label are hidden.
   const nearHit = (year: number) => hitX != null && Math.abs(hitX - x(year * 12)) < 40;
@@ -105,8 +107,19 @@ export function ProjectionChart({
         role="img"
         aria-label={
           plan.hitMonth === 0
-            ? `Projected assets over the next 10 years; the ${money(plan.fireNumber, currency)} FIRE target is already reached`
-            : `Projected assets reach ${money(plan.fireNumber, currency)} in ${yearsLabel(plan.hitMonth)}${hitLabel ? `, around ${hitLabel}` : ""}`
+            ? t("Projected assets over the next 10 years; the {target} FIRE target is already reached", {
+                target: money(plan.fireNumber, currency),
+              })
+            : hitLabel
+              ? t("Projected assets reach {target} in {time}, around {date}", {
+                  target: money(plan.fireNumber, currency),
+                  time: timeToFire,
+                  date: hitLabel,
+                })
+              : t("Projected assets reach {target} in {time}", {
+                  target: money(plan.fireNumber, currency),
+                  time: timeToFire,
+                })
         }
       >
         {values.map((value) => (
@@ -123,7 +136,7 @@ export function ProjectionChart({
             {!nearHit(year) && (
               <>
                 <text x={x(year * 12)} y={plotBottom + 15} textAnchor="middle" className="fire-chart-label">
-                  {year === 0 ? "Today" : `${year}y`}
+                  {year === 0 ? t("Today") : t("{years}y", { years: year })}
                 </text>
                 <text x={x(year * 12)} y={plotBottom + 29} textAnchor="middle" className="fire-chart-label year">
                   {startYear + year}
@@ -141,7 +154,7 @@ export function ProjectionChart({
             <line x1={pad.left} x2={width - pad.right} y1={y(plan.fireNumber)} y2={y(plan.fireNumber)} className="fire-chart-target" />
             {/* Left end: the line rises through the right side once FIRE is reached. */}
             <text x={pad.left + 6} y={y(plan.fireNumber) - 6} textAnchor="start" className="fire-chart-label target strong">
-              FIRE target {compact(plan.fireNumber)}
+              {t("FIRE target {amount}", { amount: compact(plan.fireNumber) })}
             </text>
           </>
         )}
@@ -153,7 +166,7 @@ export function ProjectionChart({
               {short(atFire.total)}
             </text>
             <text x={hitX} y={plotBottom + 15} textAnchor="middle" className="fire-chart-label target strong">
-              {yearsLabel(plan.hitMonth)}
+              {timeToFire}
             </text>
             <text x={hitX} y={plotBottom + 29} textAnchor="middle" className="fire-chart-label target">
               {hitLabel}
@@ -170,20 +183,20 @@ export function ProjectionChart({
         )}
       </svg>
       <figcaption className="projection-legend">
-        {reached && <span className="legend-when">At FIRE ({hitLabel}):</span>}
+        {reached && <span className="legend-when">{t("At FIRE ({date}):", { date: hitLabel ?? "" })}</span>}
         <span className="start">
-          Starting assets <strong>{money(Math.max(0, atFire.startAssets), currency).replace(/\.\d{2}$/, "")}</strong>
+          {t("Starting assets")} <strong>{money(Math.max(0, atFire.startAssets), currency).replace(/\.\d{2}$/, "")}</strong>
         </span>
         <span className="contributions">
-          New contributions <strong>{money(atFire.contributed, currency).replace(/\.\d{2}$/, "")}</strong>
+          {t("New contributions")} <strong>{money(atFire.contributed, currency).replace(/\.\d{2}$/, "")}</strong>
         </span>
         <span className="growth">
-          Estimated growth{" "}
+          {t("Estimated growth")}{" "}
           <strong>
             {money(atFire.total - atFire.startAssets - atFire.contributed, currency).replace(/\.\d{2}$/, "")}
           </strong>
         </span>
-        <span className="target">FIRE target</span>
+        <span className="target">{t("FIRE target")}</span>
       </figcaption>
     </figure>
   );

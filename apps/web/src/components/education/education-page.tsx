@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 
 import { api } from "@/lib/api";
+import { useT } from "@/lib/i18n/client";
+import type { Translate } from "@/lib/i18n/core";
 import { BOOKS, LESSONS, type EducationArticle, type Lesson } from "@/lib/education";
 
 const LINK_ICONS = { article: BookOpen, video: PlayCircle, tool: Wrench };
@@ -42,6 +44,7 @@ type Tile =
 
 /** Financial articles from Admin, the built-in lessons, and books, as a grid of tiles. */
 export function EducationPage() {
+  const t = useT();
   const [articles, setArticles] = useState<EducationArticle[] | null>(null);
   const [reading, setReading] = useState<Tile | null>(null);
 
@@ -83,10 +86,10 @@ export function EducationPage() {
   return (
     <section className="education-page" aria-labelledby="education-title">
       <header className="education-head">
-        <h1 id="education-title">Education</h1>
+        <h1 id="education-title">{t("Education")}</h1>
       </header>
 
-      <section className="education-articles" aria-label="Articles">
+      <section className="education-articles" aria-label={t("Articles")}>
         <ul className="education-article-grid">
           {tiles.map((tile) => {
             const look = tile.kind === "lesson" ? LESSON_LOOKS[tile.lesson.id] : null;
@@ -106,7 +109,7 @@ export function EducationPage() {
                   ) : (
                     <Icon className="education-tile-icon" size={56} aria-hidden="true" />
                   )}
-                  <strong>{tile.title}</strong>
+                  <strong>{tileTitle(tile, t)}</strong>
                 </button>
               </li>
             );
@@ -119,7 +122,13 @@ export function EducationPage() {
   );
 }
 
+/** Admin articles keep the admin's own words; built-in lessons and the book list are translated. */
+function tileTitle(tile: Tile, t: Translate) {
+  return tile.kind === "article" ? tile.title : t(tile.title);
+}
+
 function Reader({ tile, onClose }: { tile: Tile; onClose: () => void }) {
+  const t = useT();
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
@@ -138,8 +147,8 @@ function Reader({ tile, onClose }: { tile: Tile; onClose: () => void }) {
     >
       <article className="add-holding-modal article-reader" role="dialog" aria-modal="true" aria-labelledby="article-reader-title">
         <div className="modal-heading">
-          <h2 id="article-reader-title">{tile.title}</h2>
-          <button type="button" aria-label="Close" onClick={onClose}>
+          <h2 id="article-reader-title">{tileTitle(tile, t)}</h2>
+          <button type="button" aria-label={t("Close")} onClick={onClose}>
             ×
           </button>
         </div>
@@ -158,20 +167,20 @@ function Reader({ tile, onClose }: { tile: Tile; onClose: () => void }) {
         )}
         {tile.kind === "lesson" && (
           <div className="article-reader-body">
-            <p className="article-reader-lead">{tile.lesson.summary}</p>
+            <p className="article-reader-lead">{t(tile.lesson.summary)}</p>
             <ul className="education-points">
               {tile.lesson.points.map((point) => (
-                <li key={point}>{point}</li>
+                <li key={point}>{t(point)}</li>
               ))}
             </ul>
             <div className="education-links">
-              <span>Read and watch</span>
+              <span>{t("Read and watch")}</span>
               {tile.lesson.links.map((link) => {
                 const LinkIcon = LINK_ICONS[link.kind];
                 return (
                   <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer">
                     <LinkIcon size={15} aria-hidden="true" />
-                    {link.label}
+                    {t(link.label)}
                     <ExternalLink size={12} aria-hidden="true" />
                   </a>
                 );
@@ -183,7 +192,7 @@ function Reader({ tile, onClose }: { tile: Tile; onClose: () => void }) {
           <ul className="education-books-list">
             {BOOKS.map((book) => (
               <li key={book.title}>
-                <strong>{book.title}</strong> <span className="muted">by {book.author}</span>
+                <strong>{book.title}</strong> <span className="muted">{t("by {author}", { author: book.author })}</span>
               </li>
             ))}
           </ul>

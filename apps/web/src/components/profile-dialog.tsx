@@ -5,6 +5,7 @@ import { Check, Copy, Link2, Trash2 } from "lucide-react";
 
 import { api } from "@/lib/api";
 import { ageOn } from "@/lib/age";
+import { useT } from "@/lib/i18n/client";
 
 export type ProfileValues = { date_of_birth: string | null; display_name: string | null };
 
@@ -39,6 +40,7 @@ export function ProfileDialog({
   onSave: (values: ProfileValues) => Promise<void>;
   onClose: () => void;
 }) {
+  const t = useT();
   const [name, setName] = useState(displayName ?? "");
   const [value, setValue] = useState(dateOfBirth ?? "");
   const [error, setError] = useState<string | null>(null);
@@ -83,8 +85,8 @@ export function ProfileDialog({
     >
       <section className="add-holding-modal profile-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-title">
         <div className="modal-heading">
-          <h2 id="profile-title">Your profile</h2>
-          <button type="button" aria-label="Close" onClick={onClose}>
+          <h2 id="profile-title">{t("Your profile")}</h2>
+          <button type="button" aria-label={t("Close")} onClick={onClose}>
             ×
           </button>
         </div>
@@ -97,17 +99,17 @@ export function ProfileDialog({
           }}
         >
           <label>
-            Name
+            {t("Name")}
             <input
               value={name}
               maxLength={80}
               autoComplete="name"
-              placeholder="Shown on pages you share"
+              placeholder={t("Shown on pages you share")}
               onChange={(event) => setName(event.target.value)}
             />
           </label>
           <label>
-            Date of birth
+            {t("Date of birth")}
             <input
               type="date"
               max={today}
@@ -118,16 +120,16 @@ export function ProfileDialog({
           </label>
           <p className="muted">
             {age != null
-              ? `You are ${age}. Your age is calculated from this date and updates on its own.`
-              : "Used to show your current age and the age you reach FIRE. Leave it blank to hide ages."}
+              ? t("You are {age}. Your age is calculated from this date and updates on its own.", { age })
+              : t("Used to show your current age and the age you reach FIRE. Leave it blank to hide ages.")}
           </p>
           {error && (
             <p className="alert" role="alert">
-              {error}
+              {t(error)}
             </p>
           )}
           <button type="submit" className="button primary" disabled={saving}>
-            {saving ? "Saving…" : "Save profile"}
+            {saving ? t("Saving…") : t("Save profile")}
           </button>
         </form>
         <ShareLinks portfolios={portfolios} currentPortfolioId={currentPortfolioId} />
@@ -145,6 +147,7 @@ function ShareLinks({
   portfolios: { id: string; name: string }[];
   currentPortfolioId: string | null;
 }) {
+  const t = useT();
   const [links, setLinks] = useState<ShareLink[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -168,10 +171,10 @@ function ShareLinks({
   }, []);
 
   const rows = [
-    { key: "fire", label: "FIRE plan", kind: "fire" as const, portfolioId: currentPortfolioId },
+    { key: "fire", label: t("FIRE plan"), kind: "fire" as const, portfolioId: currentPortfolioId },
     ...portfolios.map((portfolio) => ({
       key: `portfolio-${portfolio.id}`,
-      label: `Portfolio: ${portfolio.name}`,
+      label: t("Portfolio: {name}", { name: portfolio.name }),
       kind: "portfolio" as const,
       portfolioId: portfolio.id,
     })),
@@ -231,14 +234,15 @@ function ShareLinks({
   return (
     <section className="share-links" aria-labelledby="share-links-title">
       <h3 id="share-links-title">
-        <Link2 size={16} aria-hidden="true" /> Shareable links
+        <Link2 size={16} aria-hidden="true" /> {t("Shareable links")}
       </h3>
       <p className="muted">
-        Anyone with a link sees a read-only page with all the data, without signing in. Your
-        email and date of birth are never shown. Turn a link off to stop it working.
+        {t(
+          "Anyone with a link sees a read-only page with all the data, without signing in. Your email and date of birth are never shown. Turn a link off to stop it working.",
+        )}
       </p>
       {links === null ? (
-        <p className="muted">Loading links…</p>
+        <p className="muted">{t("Loading links…")}</p>
       ) : (
         <ul>
           {rows.map((row) => {
@@ -256,12 +260,12 @@ function ShareLinks({
                 </label>
                 {link && (
                   <div className="share-url">
-                    <input readOnly value={shareUrl(link.token)} aria-label={`${row.label} link`} onFocus={(event) => event.currentTarget.select()} />
+                    <input readOnly value={shareUrl(link.token)} aria-label={t("{label} link", { label: row.label })} onFocus={(event) => event.currentTarget.select()} />
                     <button
                       type="button"
                       className="share-copy"
-                      aria-label={copied === row.key ? "Copied" : `Copy ${row.label} link`}
-                      title="Copy link"
+                      aria-label={copied === row.key ? t("Copied") : t("Copy {label} link", { label: row.label })}
+                      title={t("Copy link")}
                       onClick={() => void copy(row.key, link.token)}
                     >
                       {copied === row.key ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
@@ -275,7 +279,7 @@ function ShareLinks({
       )}
       {error && (
         <p className="alert" role="alert">
-          {error}
+          {t(error)}
         </p>
       )}
     </section>
@@ -284,6 +288,7 @@ function ShareLinks({
 
 /** Deletes the account and all its data, after the person types "delete" to confirm. */
 function DeleteAccount({ allowed, onDeleted }: { allowed: boolean; onDeleted: () => void }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
@@ -305,29 +310,33 @@ function DeleteAccount({ allowed, onDeleted }: { allowed: boolean; onDeleted: ()
   return (
     <section className="delete-account" aria-labelledby="delete-account-title">
       <h3 id="delete-account-title">
-        <Trash2 size={16} aria-hidden="true" /> Delete my account and data
+        <Trash2 size={16} aria-hidden="true" /> {t("Delete my account and data")}
       </h3>
       {!allowed ? (
-        <p className="muted">The admin account can&apos;t be deleted here.</p>
+        <p className="muted">{t("The admin account can't be deleted here.")}</p>
       ) : !open ? (
         <>
           <p className="muted">
-            Permanently removes your account and everything in it: portfolios, FIRE plan, assets,
-            wishlist, reviews, and share links.
+            {t(
+              "Permanently removes your account and everything in it: portfolios, FIRE plan, assets, wishlist, reviews, and share links.",
+            )}
           </p>
           <button type="button" className="button danger-outline" onClick={() => setOpen(true)}>
-            Delete my account…
+            {t("Delete my account…")}
           </button>
         </>
       ) : (
         <div className="delete-account-confirm">
           <p>
-            <strong>This can&apos;t be undone.</strong> All your data is deleted right away and
-            shared links stop working.
+            <strong>{t("This can't be undone.")}</strong>{" "}
+            {t("All your data is deleted right away and shared links stop working.")}
           </p>
           <label>
             <span>
-              Type <strong>delete</strong> to confirm
+              {/* The word to type stays "delete" in every language; only the sentence around it changes. */}
+              {t("Type {word} to confirm")
+                .split(/(\{word\})/)
+                .map((part, index) => (part === "{word}" ? <strong key={index}>delete</strong> : part))}
             </span>
             <input
               value={typed}
@@ -340,7 +349,7 @@ function DeleteAccount({ allowed, onDeleted }: { allowed: boolean; onDeleted: ()
           </label>
           {error && (
             <p className="form-message error" role="alert">
-              {error}
+              {t(error)}
             </p>
           )}
           <div className="confirm-actions">
@@ -354,10 +363,10 @@ function DeleteAccount({ allowed, onDeleted }: { allowed: boolean; onDeleted: ()
                 setError(null);
               }}
             >
-              Keep my account
+              {t("Keep my account")}
             </button>
             <button type="button" className="button danger" disabled={!confirmed || busy} onClick={() => void remove()}>
-              {busy ? "Deleting…" : "Delete my account"}
+              {busy ? t("Deleting…") : t("Delete my account")}
             </button>
           </div>
         </div>

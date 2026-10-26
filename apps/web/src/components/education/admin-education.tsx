@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ImagePlus, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { api, apiUpload } from "@/lib/api";
+import { useT } from "@/lib/i18n/client";
 import { articleExcerpt, type EducationArticle } from "@/lib/education";
 
 type ArticleDraft = {
@@ -37,6 +38,7 @@ function draftFrom(article: EducationArticle): ArticleDraft {
 
 /** Admin: write the financial articles every user sees on their Education page. */
 export function AdminEducation() {
+  const t = useT();
   const [articles, setArticles] = useState<EducationArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,13 +68,13 @@ export function AdminEducation() {
   }
 
   async function remove(article: EducationArticle) {
-    if (!window.confirm(`Delete "${article.title}" for every user?`)) return;
+    if (!window.confirm(t("Delete \"{title}\" for every user?", { title: article.title }))) return;
     setError(null);
     try {
       await api(`/api/admin/education/articles/${article.id}`, { method: "DELETE" });
       setArticles((current) => current.filter((item) => item.id !== article.id));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not delete the article");
+      setError(cause instanceof Error ? cause.message : t("Could not delete the article"));
     }
   }
 
@@ -80,8 +82,8 @@ export function AdminEducation() {
     <section className="simple-page admin-page admin-education" aria-labelledby="admin-education-title">
       <div className="page-heading">
         <div>
-          <h1 id="admin-education-title">Education articles</h1>
-          <p className="page-subtitle">Published articles appear on every user&apos;s Education page.</p>
+          <h1 id="admin-education-title">{t("Education articles")}</h1>
+          <p className="page-subtitle">{t("Published articles appear on every user's Education page.")}</p>
         </div>
         <button
           type="button"
@@ -89,18 +91,19 @@ export function AdminEducation() {
           onClick={() => setDraft(emptyDraft(articles.length))}
         >
           <Plus size={16} aria-hidden="true" />
-          New article
+          {t("New article")}
         </button>
       </div>
       {error && (
         <div className="alert" role="alert">
-          {error}
+          {/* The load error is stored in English (the effect runs once), so it is translated here. */}
+          {t(error)}
         </div>
       )}
       {loading ? (
-        <p className="muted">Loading articles…</p>
+        <p className="muted">{t("Loading articles…")}</p>
       ) : articles.length === 0 ? (
-        <p className="muted">No articles yet. Add the first one with New article.</p>
+        <p className="muted">{t("No articles yet. Add the first one with New article.")}</p>
       ) : (
         <ul className="admin-article-list">
           {articles.map((article) => (
@@ -117,15 +120,15 @@ export function AdminEducation() {
               <div>
                 <strong>{article.title}</strong>
                 <span className={`admin-article-status ${article.published ? "published" : "draft"}`}>
-                  {article.published ? "Published" : "Draft"}
+                  {article.published ? t("Published") : t("Draft")}
                 </span>
                 <p>{articleExcerpt(article.body, 120)}</p>
               </div>
               <div className="fire-entry-actions">
-                <button type="button" aria-label={`Edit ${article.title}`} onClick={() => setDraft(draftFrom(article))}>
+                <button type="button" aria-label={t("Edit {title}", { title: article.title })} onClick={() => setDraft(draftFrom(article))}>
                   <Pencil size={15} aria-hidden="true" />
                 </button>
-                <button type="button" aria-label={`Delete ${article.title}`} onClick={() => void remove(article)}>
+                <button type="button" aria-label={t("Delete {title}", { title: article.title })} onClick={() => void remove(article)}>
                   <Trash2 size={15} aria-hidden="true" />
                 </button>
               </div>
@@ -164,6 +167,7 @@ function ArticleDialog({
   onClose: () => void;
   onSaved: (article: EducationArticle) => void;
 }) {
+  const t = useT();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"upload" | "save" | null>(null);
   const set = (patch: Partial<ArticleDraft>) => {
@@ -181,11 +185,11 @@ function ArticleDialog({
 
   async function upload(file: File) {
     if (!PICTURE_TYPES.includes(file.type)) {
-      setError("Use a PNG, JPEG, WebP, or GIF picture.");
+      setError(t("Use a PNG, JPEG, WebP, or GIF picture."));
       return;
     }
     if (file.size > MAX_PICTURE_BYTES) {
-      setError("Pictures can be up to 5 MB.");
+      setError(t("Pictures can be up to 5 MB."));
       return;
     }
     setBusy("upload");
@@ -196,17 +200,17 @@ function ArticleDialog({
       const stored = await apiUpload<{ image_path: string; image_url: string }>("/api/admin/education/images", form);
       onPatch(stored);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not upload the picture");
+      setError(cause instanceof Error ? cause.message : t("Could not upload the picture"));
     } finally {
       setBusy(null);
     }
   }
 
   async function save() {
-    if (!draft.title.trim()) return setError("Give the article a title.");
-    if (!draft.body.trim()) return setError("Write the article text.");
+    if (!draft.title.trim()) return setError(t("Give the article a title."));
+    if (!draft.body.trim()) return setError(t("Write the article text."));
     const position = Number(draft.position);
-    if (!Number.isInteger(position) || position < 0) return setError("Order must be a whole number, 0 or more.");
+    if (!Number.isInteger(position) || position < 0) return setError(t("Order must be a whole number, 0 or more."));
     setBusy("save");
     try {
       const saved = await api<EducationArticle>(
@@ -224,7 +228,7 @@ function ArticleDialog({
       );
       onSaved(saved);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not save the article");
+      setError(cause instanceof Error ? cause.message : t("Could not save the article"));
       setBusy(null);
     }
   }
@@ -239,8 +243,8 @@ function ArticleDialog({
     >
       <section className="add-holding-modal article-dialog" role="dialog" aria-modal="true" aria-labelledby="article-dialog-title">
         <div className="modal-heading">
-          <h2 id="article-dialog-title">{draft.id ? "Edit article" : "New article"}</h2>
-          <button type="button" aria-label="Close" onClick={onClose}>
+          <h2 id="article-dialog-title">{draft.id ? t("Edit article") : t("New article")}</h2>
+          <button type="button" aria-label={t("Close")} onClick={onClose}>
             ×
           </button>
         </div>
@@ -253,14 +257,14 @@ function ArticleDialog({
           }}
         >
           <label>
-            Title
+            {t("Title")}
             <input autoFocus maxLength={160} value={draft.title} onChange={(event) => set({ title: event.target.value })} />
           </label>
           <div className="article-picture">
-            <span>Picture (optional)</span>
+            <span>{t("Picture (optional)")}</span>
             {draft.image_url ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={draft.image_url} alt="Article picture preview" />
+              <img src={draft.image_url} alt={t("Article picture preview")} />
             ) : (
               <span className="admin-article-noimage" aria-hidden="true">
                 <ImagePlus size={22} />
@@ -268,7 +272,7 @@ function ArticleDialog({
             )}
             <div>
               <label className="button article-picture-pick">
-                {busy === "upload" ? "Uploading…" : draft.image_url ? "Replace picture" : "Upload picture"}
+                {busy === "upload" ? t("Uploading…") : draft.image_url ? t("Replace picture") : t("Upload picture")}
                 <input
                   type="file"
                   accept={PICTURE_TYPES.join(",")}
@@ -282,24 +286,24 @@ function ArticleDialog({
               </label>
               {draft.image_url && (
                 <button type="button" className="text-button" onClick={() => set({ image_path: null, image_url: null })}>
-                  Remove picture
+                  {t("Remove picture")}
                 </button>
               )}
-              <small className="muted">PNG, JPEG, WebP, or GIF, up to 5 MB.</small>
+              <small className="muted">{t("PNG, JPEG, WebP, or GIF, up to 5 MB.")}</small>
             </div>
           </div>
           <label>
-            Text
+            {t("Text")}
             <textarea rows={10} maxLength={20000} value={draft.body} onChange={(event) => set({ body: event.target.value })} />
           </label>
           <div className="fire-dialog-row">
             <label>
-              Order
+              {t("Order")}
               <input type="number" min="0" step="1" value={draft.position} onChange={(event) => set({ position: event.target.value })} />
             </label>
             <label className="article-published">
               <input type="checkbox" checked={draft.published} onChange={(event) => set({ published: event.target.checked })} />
-              Published (visible to all users)
+              {t("Published (visible to all users)")}
             </label>
           </div>
           {error && (
@@ -308,7 +312,7 @@ function ArticleDialog({
             </p>
           )}
           <button type="submit" className="button primary" disabled={busy !== null}>
-            {busy === "save" ? "Saving…" : draft.id ? "Save article" : "Add article"}
+            {busy === "save" ? t("Saving…") : draft.id ? t("Save article") : t("Add article")}
           </button>
         </form>
       </section>

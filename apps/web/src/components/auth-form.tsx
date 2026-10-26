@@ -5,25 +5,32 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { api } from "@/lib/api";
+import type { Vars } from "@/lib/i18n/core";
+import { useT } from "@/lib/i18n/client";
 import { createClient } from "@/lib/supabase/client";
 
 /** Bumped when the Terms or Privacy Policy change, and saved with each sign-up. */
 export const TERMS_VERSION = "2026-10-26";
 
+/** A message kept in English with its values, so it follows the chosen language. */
+type Message = { text: string; vars?: Vars };
+
 export function AuthForm({ notice }: { notice?: string } = {}) {
+  const t = useT();
   const router = useRouter();
   const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState(notice ?? "");
+  const [message, setMessageState] = useState<Message>({ text: notice ?? "" });
+  const setMessage = (text: string, vars?: Vars) => setMessageState({ text, vars });
   // Problems (wrong password, missing consent…) show in red; confirmations stay grey.
   const [isError, setIsError] = useState(false);
-  const fail = (text: string) => {
+  const fail = (text: string, vars?: Vars) => {
     setIsError(true);
-    setMessage(text);
+    setMessage(text, vars);
   };
-  const inform = (text: string) => {
+  const inform = (text: string, vars?: Vars) => {
     setIsError(false);
-    setMessage(text);
+    setMessage(text, vars);
   };
   // Set when the account still needs its email confirmed, so a new link can be sent.
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
@@ -40,7 +47,7 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
     setBusy(false);
     setResent(!error);
     if (error) fail(error.message);
-    else inform(`A new confirmation link was sent to ${pendingEmail}.`);
+    else inform("A new confirmation link was sent to {email}.", { email: pendingEmail });
   }
   const [showPassword, setShowPassword] = useState(false);
 
@@ -68,7 +75,7 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
       setBusy(false);
       // The same answer whether or not the account exists, so emails can't be probed.
       if (error) fail(error.status !== 429 ? error.message : "Too many requests. Wait a minute and try again.");
-      else inform(`If an account exists for ${credentials.email}, we sent a link to reset the password.`);
+      else inform("If an account exists for {email}, we sent a link to reset the password.", { email: credentials.email });
       return;
     }
     const result =
@@ -85,7 +92,7 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
     if (result.error) {
       if (result.error.code === "email_not_confirmed") {
         setPendingEmail(credentials.email);
-        inform(`Confirm your email first: open the link we sent to ${credentials.email}.`);
+        inform("Confirm your email first: open the link we sent to {email}.", { email: credentials.email });
         return;
       }
       fail(result.error.message);
@@ -93,7 +100,9 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
     }
     if (mode === "signup" && !result.data.session) {
       setPendingEmail(credentials.email);
-      inform(`Almost done. We sent a confirmation link to ${credentials.email}; open it to finish creating your account.`);
+      inform("Almost done. We sent a confirmation link to {email}; open it to finish creating your account.", {
+        email: credentials.email,
+      });
       return;
     }
     const me = await api<{ role: "admin" | "user" }>("/api/me").catch(() => null);
@@ -104,12 +113,12 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
   return (
     <form onSubmit={submit} className="auth-form">
       <label>
-        Email
+        {t("Email")}
         <input name="email" type="email" autoComplete="email" required />
       </label>
       {mode !== "reset" && (
       <label>
-        Password
+        {t("Password")}
         <span className="password-field">
           <input
             name="password"
@@ -121,9 +130,9 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
           <button
             className="password-toggle"
             type="button"
-            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-label={showPassword ? t("Hide password") : t("Show password")}
             aria-pressed={showPassword}
-            title={showPassword ? "Hide password" : "Show password"}
+            title={showPassword ? t("Hide password") : t("Show password")}
             onClick={() => setShowPassword((visible) => !visible)}
           >
             {showPassword ? <EyeOffIcon /> : <EyeIcon />}
@@ -141,31 +150,46 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
             setPendingEmail(null);
           }}
         >
-          Forgot password?
+          {t("Forgot password?")}
         </button>
       )}
       {mode === "signup" && (
         <label className="auth-consent">
           <input name="consent" type="checkbox" required />
           <span>
-            I agree to the <Link href="/terms" target="_blank">Terms</Link> and{" "}
-            <Link href="/privacy" target="_blank">Privacy Policy</Link>, and I understand StockBuddy
-            gives estimates and education, not financial advice.
+            {/* One sentence with the two links placed where each language puts them. */}
+            {t(
+              "I agree to the {terms} and {privacy}, and I understand StockBuddy gives estimates and education, not financial advice.",
+            )
+              .split(/(\{terms\}|\{privacy\})/)
+              .map((part, index) =>
+                part === "{terms}" ? (
+                  <Link key={index} href="/terms" target="_blank">
+                    {t("Terms")}
+                  </Link>
+                ) : part === "{privacy}" ? (
+                  <Link key={index} href="/privacy" target="_blank">
+                    {t("Privacy Policy")}
+                  </Link>
+                ) : (
+                  part
+                ),
+              )}
           </span>
         </label>
       )}
-      {message && (
+      {message.text && (
         <p className={`form-message${isError ? " error" : ""}`} role={isError ? "alert" : "status"}>
-          {message}
+          {t(message.text, message.vars)}
         </p>
       )}
       {pendingEmail && !resent && (
         <button className="text-button" type="button" disabled={busy} onClick={() => void resend()}>
-          Didn&apos;t get it? Resend the confirmation email
+          {t("Didn't get it? Resend the confirmation email")}
         </button>
       )}
       <button className="button primary" disabled={busy} type="submit">
-        {busy ? "Working…" : mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : "Send reset link"}
+        {busy ? t("Working…") : mode === "signin" ? t("Sign in") : mode === "signup" ? t("Create account") : t("Send reset link")}
       </button>
       <button
         className="text-button"
@@ -176,7 +200,11 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
           setPendingEmail(null);
         }}
       >
-        {mode === "signin" ? "Need an account? Sign up" : mode === "signup" ? "Already registered? Sign in" : "Back to sign in"}
+        {mode === "signin"
+          ? t("Need an account? Sign up")
+          : mode === "signup"
+            ? t("Already registered? Sign in")
+            : t("Back to sign in")}
       </button>
     </form>
   );

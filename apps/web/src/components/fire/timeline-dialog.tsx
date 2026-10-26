@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type { FireEntry, FxRates } from "@/lib/fire";
-import { cashFlowByPeriod, type Granularity } from "@/lib/fire-views";
+import { cashFlowByPeriod, shortMonthDay, shortMonthYear, type Granularity } from "@/lib/fire-views";
+import { useT } from "@/lib/i18n/client";
 import { money } from "@/lib/portfolio-metrics";
 
 const compact = (value: number) =>
@@ -12,9 +13,6 @@ const compact = (value: number) =>
     : value >= 1e3
       ? `$${(value / 1e3).toFixed(value >= 1e4 ? 0 : 1).replace(/\.0$/, "")}k`
       : `$${Math.round(value)}`;
-
-const shortDate = (date: string) =>
-  new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 
 /** When income arrives or expenses are paid, week by week or month by month. */
 export function TimelineDialog({
@@ -32,6 +30,7 @@ export function TimelineDialog({
   currency: string;
   onClose: () => void;
 }) {
+  const t = useT();
   const [granularity, setGranularity] = useState<Granularity>("month");
 
   useEffect(() => {
@@ -43,10 +42,17 @@ export function TimelineDialog({
   }, [onClose]);
 
   const periods = useMemo(
-    () => cashFlowByPeriod(entries, kind, today, rates, currency, granularity),
-    [entries, kind, today, rates, currency, granularity],
+    () => cashFlowByPeriod(entries, kind, today, rates, currency, granularity, 12, t),
+    [entries, kind, today, rates, currency, granularity, t],
   );
-  const noun = kind === "income" ? "Income" : "Expenses";
+  const title =
+    granularity === "week"
+      ? kind === "income"
+        ? t("Income by week")
+        : t("Expenses by week")
+      : kind === "income"
+        ? t("Income by month")
+        : t("Expenses by month");
   const grandTotal = periods.reduce((sum, period) => sum + period.total, 0);
   const peak = Math.max(...periods.map((period) => period.total), 1);
 
@@ -57,7 +63,12 @@ export function TimelineDialog({
   const barWidth = slot * 0.62;
   const plotBottom = height - pad.bottom;
   const barHeight = (value: number) => (value / peak) * (plotBottom - pad.top);
-  const axisLabel = (label: string) => label.replace("Week of ", "").replace(/ 20(\d\d)$/, " ’$1");
+  // Short labels under the bars: "Oct 26" for a week, "Oct ’26" for a month.
+  const axisLabel = (start: string) =>
+    granularity === "week"
+      ? shortMonthDay(start, t)
+      : shortMonthYear(start, t).replace(/ 20(\d\d)$/, " ’$1");
+  const thisPeriod = granularity === "week" ? t("This week") : t("This month");
 
   return (
     <div
@@ -74,13 +85,13 @@ export function TimelineDialog({
         aria-labelledby="timeline-title"
       >
         <div className="modal-heading">
-          <h2 id="timeline-title">{noun} by {granularity === "week" ? "week" : "month"}</h2>
-          <button type="button" aria-label="Close" onClick={onClose}>
+          <h2 id="timeline-title">{title}</h2>
+          <button type="button" aria-label={t("Close")} onClick={onClose}>
             ×
           </button>
         </div>
         <div className="timeline-toolbar">
-          <div className="segmented" role="group" aria-label="Group by">
+          <div className="segmented" role="group" aria-label={t("Group by")}>
             {(["week", "month"] as const).map((value) => (
               <button
                 key={value}
@@ -89,19 +100,24 @@ export function TimelineDialog({
                 aria-pressed={granularity === value}
                 onClick={() => setGranularity(value)}
               >
-                {value === "week" ? "Weeks" : "Months"}
+                {value === "week" ? t("Weeks") : t("Months")}
               </button>
             ))}
           </div>
           <span className="muted">
-            Next 12 {granularity === "week" ? "weeks" : "months"}:{" "}
+            {granularity === "week" ? t("Next 12 weeks:") : t("Next 12 months:")}{" "}
             <strong className={`fire-list-total ${kind}`}>{money(grandTotal, currency)}</strong>
           </span>
         </div>
         {grandTotal === 0 ? (
           <p className="muted">
-            No {kind === "income" ? "income" : "expenses"} dated in the next 12{" "}
-            {granularity === "week" ? "weeks" : "months"}.
+            {kind === "income"
+              ? granularity === "week"
+                ? t("No income dated in the next 12 weeks.")
+                : t("No income dated in the next 12 months.")
+              : granularity === "week"
+                ? t("No expenses dated in the next 12 weeks.")
+                : t("No expenses dated in the next 12 months.")}
           </p>
         ) : (
           <>
@@ -109,7 +125,7 @@ export function TimelineDialog({
               className={`timeline-chart ${kind}`}
               viewBox={`0 0 ${width} ${height}`}
               role="img"
-              aria-label={`${noun} by ${granularity}: ${periods
+              aria-label={`${title}: ${periods
                 .map((period) => `${period.label} ${money(period.total, currency)}`)
                 .join(", ")}`}
             >
@@ -119,7 +135,7 @@ export function TimelineDialog({
                 const h = barHeight(period.total);
                 return (
                   <g key={period.start} className={index === 0 ? "timeline-current" : undefined}>
-                    <title>{`${index === 0 ? (granularity === "week" ? "This week" : "This month") : period.label}: ${money(period.total, currency)}`}</title>
+                    <title>{`${index === 0 ? thisPeriod : period.label}: ${money(period.total, currency)}`}</title>
                     {period.total > 0 && (
                       <>
                         <rect
@@ -136,11 +152,11 @@ export function TimelineDialog({
                       </>
                     )}
                     <text x={center} y={plotBottom + 16} textAnchor="middle" className="fire-chart-label">
-                      {axisLabel(period.label)}
+                      {axisLabel(period.start)}
                     </text>
                     {index === 0 && (
                       <text x={center} y={plotBottom + 29} textAnchor="middle" className="fire-chart-label timeline-now">
-                        {granularity === "week" ? "This week" : "This month"}
+                        {thisPeriod}
                       </text>
                     )}
                   </g>
@@ -150,8 +166,8 @@ export function TimelineDialog({
             <table className="breakdown-table timeline-table">
               <thead>
                 <tr>
-                  <th scope="col">{granularity === "week" ? "Week" : "Month"}</th>
-                  <th scope="col">{kind === "income" ? "Income" : "Expenses"}</th>
+                  <th scope="col">{granularity === "week" ? t("Week") : t("Month")}</th>
+                  <th scope="col">{kind === "income" ? t("Income") : t("Expenses")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -164,7 +180,7 @@ export function TimelineDialog({
                           {period.label}
                           {period.items.map((item, index) => (
                             <small key={`${item.date}-${item.name}-${index}`}>
-                              {shortDate(item.date)} · {item.name} ·{" "}
+                              {shortMonthDay(item.date, t)} · {item.name} ·{" "}
                               {item.currency !== currency
                                 ? `${money(item.amount, item.currency)}${item.baseAmount != null ? ` ≈ ${money(item.baseAmount, currency)}` : ""}`
                                 : money(item.amount, currency)}

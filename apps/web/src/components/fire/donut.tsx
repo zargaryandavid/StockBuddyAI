@@ -1,4 +1,8 @@
+"use client";
+
 // Shared SVG donut used by "What you own today" and the income/expense breakdowns.
+
+import { useT } from "@/lib/i18n/client";
 
 export type DonutSlice = { key: string; label: string; share: number; color: string };
 
@@ -13,7 +17,7 @@ export function DonutRing({
   slices,
   label,
   total,
-  caption = "total",
+  caption,
 }: {
   slices: DonutSlice[];
   /** Accessible description of the chart. */
@@ -21,6 +25,7 @@ export function DonutRing({
   total: string;
   caption?: string;
 }) {
+  const t = useT();
   const radius = 15.915; // circumference ≈ 100, so dash lengths read as percentages
   // Each slice starts where the previous ones end, beginning at 12 o'clock.
   const segments = slices.map((slice, index) => ({
@@ -48,7 +53,7 @@ export function DonutRing({
         {total}
       </text>
       <text x="21" y="25" textAnchor="middle" className="fire-donut-caption">
-        {caption}
+        {caption ?? t("total")}
       </text>
     </svg>
   );

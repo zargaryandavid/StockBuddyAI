@@ -23,6 +23,15 @@ Authentication -> SMTP Settings (Supabase's built-in sender is heavily rate-limi
 only delivers to project team members). Admin access also requires the admin email to
 be confirmed.
 
+## Languages (English / Armenian)
+
+Text is written in English in the code and wrapped in `t("…")` (`useT()` in client
+components, `await getT()` in server ones). The English sentence is the key; Armenian
+lives in `apps/web/src/lib/i18n/hy/<area>.ts`, and anything missing shows in English.
+Use `{name}` placeholders for values and translate whole sentences. Keep wording in line
+with `apps/web/src/lib/i18n/GLOSSARY.md`, and put words shared by several areas in
+`hy/common.ts`. A native speaker should review the Armenian, especially Terms and Privacy.
+
 ## Branded emails
 
 `supabase/templates/confirmation.html` (sign-up) and `supabase/templates/recovery.html`

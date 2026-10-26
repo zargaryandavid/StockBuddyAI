@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 import { forPeriod, periodSuffix, type Breakdown, type Period } from "@/lib/fire-views";
+import { useT } from "@/lib/i18n/client";
 import { money } from "@/lib/portfolio-metrics";
 
 import { DonutRing, sliceColor } from "./donut";
@@ -21,6 +22,7 @@ export function BreakdownDialog({
   currency: string;
   onClose: () => void;
 }) {
+  const t = useT();
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
@@ -29,9 +31,15 @@ export function BreakdownDialog({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const noun = kind === "income" ? "Income" : "Expense";
-  const title = `${period === "annual" ? "Annual" : "Monthly"} ${noun} Breakdown`;
-  const suffix = periodSuffix(period);
+  const title =
+    period === "annual"
+      ? kind === "income"
+        ? t("Annual Income Breakdown")
+        : t("Annual Expense Breakdown")
+      : kind === "income"
+        ? t("Monthly Income Breakdown")
+        : t("Monthly Expense Breakdown");
+  const suffix = periodSuffix(period, t);
   const total = forPeriod(data.totalMonthly, period);
   const slices = data.rows.map((row, index) => ({
     key: row.key,
@@ -56,14 +64,15 @@ export function BreakdownDialog({
       >
         <div className="modal-heading">
           <h2 id="breakdown-title">{title}</h2>
-          <button type="button" aria-label="Close" onClick={onClose}>
+          <button type="button" aria-label={t("Close")} onClick={onClose}>
             ×
           </button>
         </div>
         {data.rows.length === 0 ? (
           <p className="muted">
-            No repeating {kind === "income" ? "income" : "expenses"} yet. One-time and finished
-            entries are not included.
+            {kind === "income"
+              ? t("No repeating income yet. One-time and finished entries are not included.")
+              : t("No repeating expenses yet. One-time and finished entries are not included.")}
           </p>
         ) : (
           <div className="breakdown-body">
@@ -71,14 +80,14 @@ export function BreakdownDialog({
               slices={slices}
               label={`${title}: ${data.rows.map((row) => `${row.label} ${(row.share * 100).toFixed(1)}%`).join(", ")}`}
               total={money(total, currency).replace(/\.\d{2}$/, "")}
-              caption={suffix === "/yr" ? "per year" : "per month"}
+              caption={period === "annual" ? t("per year") : t("per month")}
             />
             <table className="breakdown-table">
               <thead>
                 <tr>
-                  <th scope="col">{kind === "income" ? "Source" : "Category"}</th>
-                  <th scope="col">{period === "annual" ? "Annual" : "Monthly"}</th>
-                  <th scope="col">Share</th>
+                  <th scope="col">{kind === "income" ? t("Source") : t("Category")}</th>
+                  <th scope="col">{period === "annual" ? t("Annual") : t("Monthly")}</th>
+                  <th scope="col">{t("Share")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -102,7 +111,7 @@ export function BreakdownDialog({
               </tbody>
               <tfoot>
                 <tr>
-                  <th scope="row">Total {kind === "income" ? "income" : "expenses"}</th>
+                  <th scope="row">{kind === "income" ? t("Total income") : t("Total expenses")}</th>
                   <td>
                     {money(total, currency)}
                     {suffix}

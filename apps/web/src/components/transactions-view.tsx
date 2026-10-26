@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { History, Plus, Search } from "lucide-react";
 
 import type { Portfolio, PortfolioTransaction } from "@/lib/api";
+import { useT } from "@/lib/i18n/client";
 import { money } from "@/lib/portfolio-metrics";
 
 export type TransactionInput = {
@@ -41,6 +42,7 @@ export function TransactionsView({
   blockedReason: string | null;
   onRecord: (transaction: TransactionInput) => Promise<void>;
 }) {
+  const t = useT();
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [recording, setRecording] = useState(false);
@@ -69,16 +71,16 @@ export function TransactionsView({
     <section className="panel transactions-page" aria-labelledby="transactions-title">
       <header className="transactions-top">
         <div>
-          <h1 id="transactions-title">Transactions</h1>
+          <h1 id="transactions-title">{t("Transactions")}</h1>
           <p className="muted page-subtitle">
-            Every buy and sell updates your holdings and average cost.
+            {t("Every buy and sell updates your holdings and average cost.")}
           </p>
         </div>
         <div className="transactions-actions">
           <label>
-            Portfolio
+            {t("Portfolio")}
             <select
-              aria-label="Transaction portfolio"
+              aria-label={t("Transaction portfolio")}
               value={selectedId}
               onChange={(event) => onSelectPortfolio(event.target.value)}
             >
@@ -97,40 +99,41 @@ export function TransactionsView({
             onClick={() => setRecording(true)}
           >
             <Plus size={16} aria-hidden="true" />
-            Record transaction
+            {t("Record transaction")}
           </button>
         </div>
       </header>
       {blockedReason && <p className="notice">{blockedReason}</p>}
 
-      <div className="transactions-summary" aria-label="Transaction totals">
+      <div className="transactions-summary" aria-label={t("Transaction totals")}>
         <article className="summary-card">
-          <span>Transactions</span>
+          <span>{t("Transactions")}</span>
           <strong>{transactions.length}</strong>
         </article>
         <article className="summary-card">
-          <span>Bought</span>
+          <span>{t("Bought")}</span>
           <strong>{money(totals.bought, currency)}</strong>
         </article>
         <article className="summary-card">
-          <span>Sold</span>
+          <span>{t("Sold")}</span>
           <strong>{money(totals.sold, currency)}</strong>
         </article>
         <article className={`summary-card ${totals.net >= 0 ? "" : "negative"}`}>
-          <span>Net invested</span>
+          <span>{t("Net invested")}</span>
           <strong>{money(totals.net, currency)}</strong>
         </article>
       </div>
 
       {loading ? (
-        <p className="muted">Loading transactions…</p>
+        <p className="muted">{t("Loading transactions…")}</p>
       ) : transactions.length === 0 ? (
         <div className="transactions-empty">
           <History size={32} aria-hidden="true" />
-          <h2>No transactions yet</h2>
+          <h2>{t("No transactions yet")}</h2>
           <p>
-            Record what you bought and sold, with dates and prices. StockBuddy updates your
-            holdings and average cost for you.
+            {t(
+              "Record what you bought and sold, with dates and prices. StockBuddy updates your holdings and average cost for you.",
+            )}
           </p>
           <button
             type="button"
@@ -139,13 +142,13 @@ export function TransactionsView({
             onClick={() => setRecording(true)}
           >
             <Plus size={16} aria-hidden="true" />
-            Record your first transaction
+            {t("Record your first transaction")}
           </button>
         </div>
       ) : (
         <>
           <div className="transactions-filters">
-            <div className="segmented" role="group" aria-label="Show">
+            <div className="segmented" role="group" aria-label={t("Show")}>
               {(["all", "buy", "sell"] as const).map((option) => (
                 <button
                   type="button"
@@ -154,28 +157,28 @@ export function TransactionsView({
                   className={filter === option ? "active" : ""}
                   onClick={() => setFilter(option)}
                 >
-                  {option === "all" ? "All" : option === "buy" ? "Buys" : "Sells"}
+                  {option === "all" ? t("All") : option === "buy" ? t("Buys") : t("Sells")}
                 </button>
               ))}
             </div>
             <label className="transactions-search">
               <Search size={15} aria-hidden="true" />
               <input
-                aria-label="Filter by symbol"
-                placeholder="Filter by symbol"
+                aria-label={t("Filter by symbol")}
+                placeholder={t("Filter by symbol")}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
               />
             </label>
           </div>
-          <div className="transactions-table" role="table" aria-label="Portfolio transaction history">
+          <div className="transactions-table" role="table" aria-label={t("Portfolio transaction history")}>
             <div className="transactions-row transactions-header" role="row">
-              <span role="columnheader">Date</span>
-              <span role="columnheader">Type</span>
-              <span role="columnheader">Symbol</span>
-              <span role="columnheader">Quantity</span>
-              <span role="columnheader">Price</span>
-              <span role="columnheader">Total</span>
+              <span role="columnheader">{t("Date")}</span>
+              <span role="columnheader">{t("Type")}</span>
+              <span role="columnheader">{t("Symbol")}</span>
+              <span role="columnheader">{t("Quantity")}</span>
+              <span role="columnheader">{t("Price")}</span>
+              <span role="columnheader">{t("Total")}</span>
             </div>
             {visible.map((item) => (
               <div className="transactions-row" role="row" key={item.id}>
@@ -184,7 +187,7 @@ export function TransactionsView({
                 </time>
                 <span role="cell">
                   <span className={`transaction-kind ${item.kind}`}>
-                    {item.kind === "buy" ? "Buy" : "Sell"}
+                    {item.kind === "buy" ? t("Buy") : t("Sell")}
                   </span>
                 </span>
                 <span role="cell" className="transactions-symbol">
@@ -202,7 +205,7 @@ export function TransactionsView({
               </div>
             ))}
             {visible.length === 0 && (
-              <p className="muted transactions-none">No transactions match this filter.</p>
+              <p className="muted transactions-none">{t("No transactions match this filter.")}</p>
             )}
           </div>
         </>
@@ -237,6 +240,7 @@ function RecordDialog({
   onClose: () => void;
   onSave: (transaction: TransactionInput) => Promise<void>;
 }) {
+  const t = useT();
   const [kind, setKind] = useState<"buy" | "sell">("buy");
   const [ticker, setTicker] = useState(holdings[0]?.ticker ?? "");
   const [quantity, setQuantity] = useState("");
@@ -268,14 +272,19 @@ function RecordDialog({
     const symbol = ticker.trim().toUpperCase();
     const shares = Number(quantity);
     const each = Number(price);
-    if (!/^[A-Z0-9.-]{1,12}$/.test(symbol)) return setError("Enter a valid ticker symbol.");
-    if (!(shares > 0) || !Number.isInteger(shares)) return setError("Enter a whole number of shares above 0.");
-    if (!(each >= 0) || price === "") return setError("Enter the price per share.");
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today) return setError("Pick a date that is not in the future.");
+    if (!/^[A-Z0-9.-]{1,12}$/.test(symbol)) return setError(t("Enter a valid ticker symbol."));
+    if (!(shares > 0) || !Number.isInteger(shares)) return setError(t("Enter a whole number of shares above 0."));
+    if (!(each >= 0) || price === "") return setError(t("Enter the price per share."));
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today) return setError(t("Pick a date that is not in the future."));
     if (kind === "sell") {
-      if (!held) return setError(`You don't hold ${symbol} in this portfolio.`);
+      if (!held) return setError(t("You don't hold {ticker} in this portfolio.", { ticker: symbol }));
       if (shares > Number(held.shares)) {
-        return setError(`You hold ${Number(held.shares).toLocaleString("en-US")} ${symbol}; you can't sell more than that.`);
+        return setError(
+          t("You hold {shares} {ticker}; you can't sell more than that.", {
+            shares: Number(held.shares).toLocaleString("en-US"),
+            ticker: symbol,
+          }),
+        );
       }
     }
     setError(null);
@@ -283,7 +292,7 @@ function RecordDialog({
     try {
       await onSave({ ticker: symbol, kind, quantity: shares, price: each, transacted_at: `${date}T12:00:00Z` });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not record the transaction");
+      setError(cause instanceof Error ? t(cause.message) : t("Could not record the transaction"));
       setSaving(false);
     }
   }
@@ -298,8 +307,8 @@ function RecordDialog({
     >
       <section className="add-holding-modal" role="dialog" aria-modal="true" aria-labelledby="record-title">
         <div className="modal-heading">
-          <h2 id="record-title">Record transaction</h2>
-          <button type="button" aria-label="Close" onClick={onClose}>
+          <h2 id="record-title">{t("Record transaction")}</h2>
+          <button type="button" aria-label={t("Close")} onClick={onClose}>
             ×
           </button>
         </div>
@@ -311,7 +320,7 @@ function RecordDialog({
             void submit();
           }}
         >
-          <div className="segmented record-kind" role="group" aria-label="Transaction type">
+          <div className="segmented record-kind" role="group" aria-label={t("Transaction type")}>
             {(["buy", "sell"] as const).map((option) => (
               <button
                 type="button"
@@ -323,24 +332,27 @@ function RecordDialog({
                   if (option === "sell" && !held && holdings[0]) chooseTicker(holdings[0].ticker);
                 }}
               >
-                {option === "buy" ? "Buy" : "Sell"}
+                {option === "buy" ? t("Buy") : t("Sell")}
               </button>
             ))}
           </div>
           {kind === "sell" ? (
             <label>
-              Holding
+              {t("Holding")}
               <select value={held?.ticker ?? ""} onChange={(event) => chooseTicker(event.target.value)}>
                 {holdings.map((holding) => (
                   <option key={holding.ticker} value={holding.ticker}>
-                    {holding.ticker} · {Number(holding.shares).toLocaleString("en-US")} shares
+                    {t("{ticker} · {shares} shares", {
+                      ticker: holding.ticker,
+                      shares: Number(holding.shares).toLocaleString("en-US"),
+                    })}
                   </option>
                 ))}
               </select>
             </label>
           ) : (
             <label>
-              Symbol
+              {t("Symbol")}
               <input
                 list="record-holdings"
                 value={ticker}
@@ -356,22 +368,34 @@ function RecordDialog({
           )}
           <div className="fire-dialog-row">
             <label>
-              Quantity
+              {t("Quantity")}
               <input type="number" min="1" step="1" value={quantity} onChange={(event) => setQuantity(event.target.value)} />
             </label>
             <label>
-              Price per share ({currency})
+              {t("Price per share ({currency})", { currency })}
               <input type="number" min="0" step="0.01" value={price} onChange={(event) => setPrice(event.target.value)} />
             </label>
           </div>
           <label>
-            Date
+            {t("Date")}
             <input type="date" max={today} value={date} onChange={(event) => setDate(event.target.value)} />
           </label>
           {Number.isFinite(total) && total > 0 && (
             <p className="notice" role="status">
-              {kind === "buy" ? "Pays" : "Receives"} {money(total, currency)}
-              {held ? ` · you hold ${Number(held.shares).toLocaleString("en-US")} ${held.ticker} now` : ""}
+              {held
+                ? t(
+                    kind === "buy"
+                      ? "Pays {amount} · you hold {shares} {ticker} now"
+                      : "Receives {amount} · you hold {shares} {ticker} now",
+                    {
+                      amount: money(total, currency),
+                      shares: Number(held.shares).toLocaleString("en-US"),
+                      ticker: held.ticker,
+                    },
+                  )
+                : t(kind === "buy" ? "Pays {amount}" : "Receives {amount}", {
+                    amount: money(total, currency),
+                  })}
             </p>
           )}
           {error && (
@@ -380,7 +404,7 @@ function RecordDialog({
             </p>
           )}
           <button type="submit" className="button primary" disabled={saving}>
-            {saving ? "Saving…" : kind === "buy" ? "Record buy" : "Record sell"}
+            {saving ? t("Saving…") : kind === "buy" ? t("Record buy") : t("Record sell")}
           </button>
         </form>
       </section>

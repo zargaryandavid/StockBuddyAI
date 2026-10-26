@@ -14,6 +14,7 @@ import {
 } from "@/components/industry-icon";
 import { PersonaIcon } from "@/components/persona-icon";
 import { api } from "@/lib/api";
+import { useT } from "@/lib/i18n/client";
 import { createClient } from "@/lib/supabase/client";
 
 export type PersonaDraft = {
@@ -49,6 +50,7 @@ export type ReviewModel = { id: string; name: string; provider: string };
 
 export function AdminPanel({ email, initial }: { email: string; initial: StudioConfig }) {
   const router = useRouter();
+  const t = useT();
   const [maxPosition, setMaxPosition] = useState(percent(initial.max_position_pct));
   const [industryPosition, setIndustryPosition] = useState(
     percent(initial.max_industry_pct),
@@ -152,9 +154,9 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
       setMaxPosition(percent(saved.max_position_pct));
       setIndustryPosition(percent(saved.max_industry_pct));
       setDeepValue(percent(saved.deep_value_weight));
-      setNotice("Studio settings saved. The next review uses them.");
+      setNotice(t("Studio settings saved. The next review uses them."));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not save studio settings");
+      setError(cause instanceof Error ? cause.message : t("Could not save studio settings"));
     } finally {
       setSaving(false);
     }
@@ -165,15 +167,15 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
       <AppHeader email={email} onSignOut={signOut}>
         <Link href="/">
           <Briefcase size={16} aria-hidden="true" />
-          Portfolio
+          {t("Portfolio")}
         </Link>
         <Link className="active" href="/admin" aria-current="page">
           <ShieldCheck size={16} aria-hidden="true" />
-          Admin
+          {t("Admin")}
         </Link>
       </AppHeader>
 
-      <div className="segmented admin-sections" role="group" aria-label="Admin sections">
+      <div className="segmented admin-sections" role="group" aria-label={t("Admin sections")}>
         <button
           type="button"
           className={section === "studio" ? "active" : ""}
@@ -181,7 +183,7 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
           onClick={() => setSection("studio")}
         >
           <ShieldCheck size={15} aria-hidden="true" />
-          Studio settings
+          {t("Studio settings")}
         </button>
         <button
           type="button"
@@ -190,7 +192,7 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
           onClick={() => setSection("education")}
         >
           <GraduationCap size={15} aria-hidden="true" />
-          Education
+          {t("Education")}
         </button>
         <button
           type="button"
@@ -199,7 +201,7 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
           onClick={() => setSection("connections")}
         >
           <PlugZap size={15} aria-hidden="true" />
-          Connections
+          {t("Connections")}
         </button>
       </div>
 
@@ -215,25 +217,25 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
       <form className="simple-page admin-page" onSubmit={save}>
         <div className="page-heading">
           <div>
-            <h1>Admin studio</h1>
-            <p className="page-subtitle">Persona prompts and the limits that apply to every user.</p>
+            <h1>{t("Admin studio")}</h1>
+            <p className="page-subtitle">{t("Persona prompts and the limits that apply to every user.")}</p>
           </div>
           <button className="button primary" type="submit" disabled={saving}>
-            {saving ? "Saving…" : "Save studio"}
+            {saving ? t("Saving…") : t("Save studio")}
           </button>
         </div>
 
         <article className="panel settings-panel">
           <div className="panel-heading">
             <div>
-              <p className="step">Book settings</p>
-              <h2>Limits and model</h2>
+              <p className="step">{t("Book settings")}</p>
+              <h2>{t("Limits and model")}</h2>
             </div>
           </div>
           <div className="stack">
             <div className="settings-row">
               <label>
-                Maximum position %
+                {t("Maximum position %")}
                 <input
                   type="number"
                   min="1"
@@ -245,7 +247,7 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
                 />
               </label>
               <label>
-                Industry position %
+                {t("Industry position %")}
                 <input
                   type="number"
                   min="1"
@@ -257,7 +259,7 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
                 />
               </label>
               <label>
-                Deep value sleeve %
+                {t("Deep value sleeve %")}
                 <input
                   type="number"
                   min="5"
@@ -269,11 +271,11 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
                 />
               </label>
               <label>
-                Trajectory sleeve %
+                {t("Trajectory sleeve %")}
                 <input value={trajectory} readOnly tabIndex={-1} />
               </label>
               <label>
-                Review model
+                {t("Review model")}
                 {models.length ? (
                   <select value={model} onChange={(event) => setModel(event.target.value)} required>
                     {!models.some((item) => item.id === model) && <option value={model}>{model}</option>}
@@ -288,8 +290,8 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
                 )}
                 <small className="muted">
                   {provider
-                    ? `Uses the ${provider} key from Connections. Save to apply.`
-                    : "Uses the key for this model's provider from Connections."}
+                    ? t("Uses the {provider} key from Connections. Save to apply.", { provider })
+                    : t("Uses the key for this model's provider from Connections.")}
                 </small>
               </label>
               <label className="checkbox-setting">
@@ -298,7 +300,7 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
                   checked={useTransactionHistory}
                   onChange={(event) => setUseTransactionHistory(event.target.checked)}
                 />
-                Use transaction history in Analytics
+                {t("Use transaction history in Analytics")}
               </label>
             </div>
           </div>
@@ -307,9 +309,9 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
         <article className="panel settings-panel">
           <div className="panel-heading">
             <div>
-              <p className="step">Costs</p>
-              <h2>AI limits per person</h2>
-              <p className="muted">Ask Buddy tokens are per month and reset on the 1st; the other features reset every day. 0 turns a feature off.</p>
+              <p className="step">{t("Costs")}</p>
+              <h2>{t("AI limits per person")}</h2>
+              <p className="muted">{t("Ask Buddy tokens are per month and reset on the 1st; the other features reset every day. 0 turns a feature off.")}</p>
             </div>
           </div>
           <div className="settings-row">
@@ -321,7 +323,7 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
               ] as const
             ).map(([key, label]) => (
               <label key={key}>
-                {label}
+                {t(label)}
                 <input
                   type="number"
                   min="0"
@@ -340,24 +342,24 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
         <article className="panel settings-panel">
           <div className="panel-heading">
             <div>
-              <p className="step">Sectors</p>
-              <h2>Industry list</h2>
+              <p className="step">{t("Sectors")}</p>
+              <h2>{t("Industry list")}</h2>
             </div>
             <button className="text-button" type="button" onClick={addIndustry}>
-              + Add industry
+              {t("+ Add industry")}
             </button>
           </div>
-          <div className="industry-scroller" aria-label="Industry list">
+          <div className="industry-scroller" aria-label={t("Industry list")}>
             {industries.map((industry, index) => (
               <div className="industry-card" key={index}>
                 <span className="industry-icon" aria-hidden="true">
                   <IndustryIcon icon={industry.icon} />
                 </span>
                 <label className="industry-name">
-                  <span className="sr-only">Industry name {index + 1}</span>
+                  <span className="sr-only">{t("Industry name {number}", { number: index + 1 })}</span>
                   <input
-                    aria-label={`Industry name ${index + 1}`}
-                    placeholder="Industry name"
+                    aria-label={t("Industry name {number}", { number: index + 1 })}
+                    placeholder={t("Industry name")}
                     value={industry.name}
                     onChange={(event) =>
                       updateIndustryName(index, event.target.value)
@@ -368,7 +370,11 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
                 <button
                   className="industry-remove"
                   type="button"
-                  aria-label={`Remove ${industry.name || `industry ${index + 1}`}`}
+                  aria-label={
+                    industry.name
+                      ? t("Remove {name}", { name: industry.name })
+                      : t("Remove industry {number}", { number: index + 1 })
+                  }
                   disabled={industries.length === 1}
                   onClick={() => removeIndustry(index)}
                 >
@@ -379,7 +385,7 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
           </div>
         </article>
 
-        <div className="persona-scroller" aria-label="Persona prompts">
+        <div className="persona-scroller" aria-label={t("Persona prompts")}>
           {personas.map((persona) => (
             <article className="panel persona-card" key={persona.persona}>
               <div className="prompt-heading">
@@ -388,7 +394,7 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
                     <PersonaIcon persona={persona.persona} />
                   </span>
                   <div>
-                    <p className="step">{persona.strategy}</p>
+                    <p className="step">{t(persona.strategy)}</p>
                     <h2>{persona.display_name}</h2>
                   </div>
                 </div>
@@ -397,11 +403,11 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
                   type="button"
                   onClick={() => updatePrompt(persona.persona, persona.default_prompt)}
                 >
-                  Restore built-in
+                  {t("Restore built-in")}
                 </button>
               </div>
               <label>
-                System prompt
+                {t("System prompt")}
                 <textarea
                   value={persona.prompt}
                   onChange={(event) => updatePrompt(persona.persona, event.target.value)}
@@ -441,6 +447,7 @@ function limitsFrom(config: StudioConfig) {
 
 /** Testing aid: gives the signed-in admin today's full AI allowance again. */
 function ResetMyTokens() {
+  const t = useT();
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -450,22 +457,22 @@ function ResetMyTokens() {
     try {
       await api<{ reset: number }>("/api/admin/ai-usage/reset", { method: "POST" });
       setState("done");
-      setMessage("Done. Your AI tokens are full again.");
+      setMessage(t("Done. Your AI tokens are full again."));
     } catch (cause) {
       setState("error");
-      setMessage(cause instanceof Error ? cause.message : "Could not reset your tokens");
+      setMessage(cause instanceof Error ? cause.message : t("Could not reset your tokens"));
     }
   }
 
   return (
     <div className="reset-tokens">
       <div>
-        <p className="reset-tokens-title">Testing</p>
-        <p className="muted">Clears this month&apos;s Ask Buddy tokens and today&apos;s other AI use, for your own account only.</p>
+        <p className="reset-tokens-title">{t("Testing")}</p>
+        <p className="muted">{t("Clears this month's Ask Buddy tokens and today's other AI use, for your own account only.")}</p>
       </div>
       <button type="button" className="button" disabled={state === "busy"} onClick={() => void reset()}>
         <RotateCcw size={15} aria-hidden="true" />
-        {state === "busy" ? "Resetting…" : "Reset my tokens"}
+        {state === "busy" ? t("Resetting…") : t("Reset my tokens")}
       </button>
       {message && (
         <p className={state === "error" ? "alert" : "notice"} role={state === "error" ? "alert" : "status"}>
