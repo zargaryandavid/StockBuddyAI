@@ -39,3 +39,16 @@ describe("i18n", () => {
     expect(document.documentElement.lang).toBe("hy");
   });
 });
+
+describe("choosing the first language", () => {
+  it("prefers the clicked flag, then Armenia, then the browser language, else English", async () => {
+    const { chooseLocale } = await import("./server");
+    expect(chooseLocale({ cookie: "en", country: "AM", acceptLanguage: "hy" })).toBe("en");
+    expect(chooseLocale({ cookie: "hy", country: "US" })).toBe("hy");
+    expect(chooseLocale({ country: "AM", acceptLanguage: "en-US,en;q=0.9" })).toBe("hy");
+    expect(chooseLocale({ country: "US", acceptLanguage: "hy-AM,hy;q=0.9,en;q=0.8" })).toBe("hy");
+    expect(chooseLocale({ country: "US", acceptLanguage: "en-US,hy;q=0.5" })).toBe("en");
+    expect(chooseLocale({ cookie: "fr", country: "FR", acceptLanguage: "fr-FR" })).toBe("en");
+    expect(chooseLocale({})).toBe("en");
+  });
+});

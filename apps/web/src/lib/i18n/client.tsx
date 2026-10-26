@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 import { DEFAULT_LOCALE, LOCALE_COOKIE, translator, type Locale, type Translate } from "./core";
@@ -26,6 +26,10 @@ export function I18nProvider({ locale: initial, children }: { locale: Locale; ch
     },
     [router],
   );
+  // The server may pick Armenian without a cookie (country or browser language).
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
   const value = useMemo(() => ({ locale, t: translator(locale), setLocale }), [locale, setLocale]);
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

@@ -3226,14 +3226,17 @@ textarea {
 .button.danger-outline { color: var(--danger); border-color: #fecaca; background: #fff; }
 
 /* Language switcher: US / ARM flags */
-.language-switcher { display: inline-flex; gap: 0.25rem; padding: 0.2rem; border-radius: 999px; background: rgba(255, 255, 255, 0.1); }
-.language-switcher button { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.25rem 0.5rem; border: 0; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; opacity: 0.7; }
+/* Sized in em, so the flags and labels scale together with the space they get. */
+.language-switcher { display: inline-flex; max-width: 100%; gap: 0.2em; padding: 0.2em; border-radius: 999px; background: rgba(255, 255, 255, 0.1); font-size: clamp(0.66rem, 2.4vw, 0.78rem); }
+.language-switcher button { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 0.35em; padding: 0.35em 0.7em; border: 0; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-weight: 700; letter-spacing: 0.03em; line-height: 1; white-space: nowrap; cursor: pointer; opacity: 0.75; }
 .language-switcher button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.92); color: #1f4d32; opacity: 1; }
 .language-switcher button:hover { opacity: 1; }
-.language-switcher svg { width: 18px; height: 12px; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15); flex: none; }
+.language-switcher svg { width: 1.6em; height: 1.07em; flex: none; border-radius: 0.15em; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15); }
+.language-switcher span { overflow: hidden; text-overflow: clip; }
+@media (max-width: 360px) { .language-switcher span { display: none; } }
 .language-switcher.on-light { background: #eef3ec; color: #374151; }
 .language-switcher.on-light button[aria-pressed="true"] { background: #1f4d32; color: #fff; }
 .page-language { position: fixed; top: 0.9rem; right: 1rem; z-index: 50; }
 .sidebar-language { padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--sidebar-divider); }
 .sidebar-language .language-switcher { display: flex; width: 100%; }
-.sidebar-language .language-switcher button { flex: 1; justify-content: center; }
+.sidebar-language .language-switcher button { flex: 1 1 0; min-width: 0; justify-content: center; }

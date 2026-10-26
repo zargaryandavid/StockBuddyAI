@@ -33,7 +33,7 @@ export function LanguageSwitcher({ className = "" }: { className?: string }) {
 
 function UsFlag() {
   return (
-    <svg viewBox="0 0 19 10" aria-hidden="true">
+    <svg viewBox="0 0 19 10" preserveAspectRatio="none" aria-hidden="true">
       <rect width="19" height="10" fill="#b22234" />
       {[1, 3, 5, 7, 9].map((row) => (
         <rect key={row} y={(row * 10) / 13} width="19" height={10 / 13} fill="#fff" />
@@ -49,7 +49,7 @@ function UsFlag() {
 
 function ArmeniaFlag() {
   return (
-    <svg viewBox="0 0 18 9" aria-hidden="true">
+    <svg viewBox="0 0 18 9" preserveAspectRatio="none" aria-hidden="true">
       <rect width="18" height="3" fill="#d90012" />
       <rect y="3" width="18" height="3" fill="#0033a0" />
       <rect y="6" width="18" height="3" fill="#f2a800" />

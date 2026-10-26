@@ -9,7 +9,9 @@ All notable project changes and user-visible functionality are recorded here.
 - English / Armenian. US and ARM flag buttons at the top of the side menu (and the
   top-right of the sign-in, password, legal, and shared pages) switch the whole app; the
   choice is kept in a `lang` cookie for a year, so pages render in that language straight
-  away. Every screen, the built-in lessons, the legal pages, and the API's fixed messages
+  away. Without a choice, visitors in Armenia (Vercel's country header) or whose browser
+  prefers Armenian start in Armenian; everyone else starts in English. The flag buttons
+  scale with the space they get. Every screen, the built-in lessons, the legal pages, and the API's fixed messages
   are translated (~1,300 phrases). Admin-written articles, wishes, AI review text, and
   brand names stay as they are; untranslated text falls back to English. Noto Sans
   Armenian is loaded for Armenian letters. Translations live in `apps/web/src/lib/i18n/hy/`
