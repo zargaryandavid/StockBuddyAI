@@ -1,6 +1,6 @@
 """Vercel entry point for the StockBuddyAI API.
 
-Vercel finds `app` here and sends every request to it (settings in vercel.json). The
+Vercel loads `app` from here (see the api service in the root vercel.json). The
 package lives in src/; putting it first on the import path keeps file paths such as
 mandates/ pointing at this folder.
 """

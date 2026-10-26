@@ -6,7 +6,9 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Added
 
-- The API runs on Vercel as its own project (`apps/api/index.py`, `apps/api/vercel.json`).
+- The API runs on Vercel next to the website in the same project, as Vercel Services
+  (root `vercel.json`: `/api/...` and `/health` go to `apps/api/index.py`, the rest to
+  `apps/web`).
   On Vercel an Ask Buddy review finishes inside its request (the page shows "Reviewing…"
   until it answers), report reminders come from a daily Vercel Cron call to
   `/api/cron/reminders` checked with `CRON_SECRET`, and caches use `/tmp`. Unused

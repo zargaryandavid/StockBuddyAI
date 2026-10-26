@@ -123,20 +123,22 @@ migration histories after pushing.
 
 ## Hosting (Vercel + Supabase)
 
-Two Vercel projects from this one repository, plus the hosted Supabase project.
+One Vercel project (`stock-buddy-ai`) runs both parts as Vercel Services, configured in
+the root `vercel.json`: the website (`apps/web`, Next.js) and the API (`apps/api`,
+FastAPI, loaded from `apps/api/index.py`). Requests to `/api/...` and `/health` go to the
+API, everything else to the website, all on the same address. In the project settings,
+Root Directory is `./` and Framework Preset is Services.
 
-- **Web** (`stock-buddy-ai`): Root Directory `apps/web`, framework Next.js. Variables:
-  `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_API_URL`
-  (the API project's address), `NEXT_PUBLIC_CONTACT_EMAIL`. They are baked in at build
-  time, so redeploy after changing them. Never give it the service role key or AI keys.
-- **API** (second project): Root Directory `apps/api`, framework FastAPI. Vercel installs
-  from `pyproject.toml` + `uv.lock` with uv and loads `app` from `apps/api/index.py`;
-  `apps/api/vercel.json` allows 300 s per request and schedules the reminder job.
-  Variables: `WEB_ORIGIN` (the web address), `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`,
-  `SUPABASE_SERVICE_ROLE_KEY` (the same one as before, or keys saved in Admin ->
-  Connections can't be decrypted), `SEC_USER_AGENT` (must contain an email or the API
-  won't start), `ADMIN_LOGIN_EMAIL`, `OPENAI_API_KEY` and/or `ANTHROPIC_API_KEY`, and
-  `CRON_SECRET` (any long random text).
+- **Variables** (one list for the whole project): `NEXT_PUBLIC_SUPABASE_URL`,
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_CONTACT_EMAIL`, and
+  `NEXT_PUBLIC_API_URL` = the site's own address; for the API `WEB_ORIGIN` = the same
+  address, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (the same
+  one as before, or keys saved in Admin -> Connections can't be decrypted),
+  `SEC_USER_AGENT` (must contain an email or the API won't start), `ADMIN_LOGIN_EMAIL`,
+  `OPENAI_API_KEY` and/or `ANTHROPIC_API_KEY`, and `CRON_SECRET`. Only `NEXT_PUBLIC_` ones
+  reach the browser; they are baked in at build time, so redeploy after changing them.
+- **Install:** Vercel installs the API from `pyproject.toml` + `uv.lock` with uv, and a
+  review may run up to 300 s.
 - **How Vercel changes behaviour** (`VERCEL=1` turns on `serverless`): nothing runs after
   a response, so an Ask Buddy review runs inside its request and answers when finished
   (the page shows "Reviewing…" meanwhile); report reminders are sent by Vercel Cron
