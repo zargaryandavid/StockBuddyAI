@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 
 import { AuthForm } from "@/components/auth-form";
-import { HundredBill } from "@/components/hundred-bill";
+import Image from "next/image";
 
 const CONFIRM_NOTICES: Record<string, string> = {
   done: "Your email is confirmed. Sign in to continue.",
@@ -10,6 +10,8 @@ const CONFIRM_NOTICES: Record<string, string> = {
   "reset-expired": "That password reset link has expired or was already used. Ask for a new one below.",
   "reset-browser": "Open the password reset link in the same browser you asked for it from, or ask for a new one below.",
 };
+
+const BILL = "/login/hundred-dollar-bill.webp";
 
 type SearchParams = Promise<{ confirm?: string }>;
 
@@ -38,8 +40,9 @@ export default function LoginPage({ searchParams }: { searchParams: SearchParams
           <span>Transparent analytics</span>
         </div>
         <div className="login-bills" aria-hidden="true">
-          <HundredBill className="login-bill back" />
-          <HundredBill className="login-bill front" />
+          {/* A real note, shown front only, small and low-resolution as US rules ask. */}
+          <Image className="login-bill back" src={BILL} alt="" width={520} height={226} priority />
+          <Image className="login-bill front" src={BILL} alt="" width={520} height={226} priority />
         </div>
       </section>
       <section className="login-panel">

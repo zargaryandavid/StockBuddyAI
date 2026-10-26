@@ -19,7 +19,7 @@
   --mint: #eaf0fb;
   --row-alt: #f8f7f4;
   --row-hover: #eaf0fb;
-  --sidebar: #32373f;
+  --sidebar: #1f4d32; /* US-dollar green, matches the sign-in panel */
   --sidebar-text: #ffffff;
   --sidebar-muted: rgba(255, 255, 255, 0.55);
   --sidebar-faint: rgba(255, 255, 255, 0.35);
@@ -3194,3 +3194,15 @@ textarea {
 
 /* Sign-in problems (wrong password…) in red */
 .form-message.error { color: var(--danger); font-weight: 600; }
+
+/* Sign-in panel in US-dollar green: deep note green with a lighter green glow */
+.login-copy {
+  background:
+    radial-gradient(ellipse at 85% 90%, rgba(133, 187, 101, 0.28), transparent 55%),
+    linear-gradient(160deg, #1f4d32 0%, #17402a 55%, #10301f 100%);
+}
+.login-copy > p { color: #d7e6d2; }
+.principles span { border-color: #5f8f6b; color: #eef6ea; }
+
+/* Real-note photo: rounded paper corners; never wider than about 58% of a real bill */
+.login-bill { border-radius: 4px; max-width: 340px; }
