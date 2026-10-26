@@ -3191,3 +3191,6 @@ textarea {
 @media (max-width: 1160px) {
   .login-bills { position: relative; right: auto; bottom: auto; width: min(320px, 80%); margin-top: 2.5rem; }
 }
+
+/* Sign-in problems (wrong password…) in red */
+.form-message.error { color: var(--danger); font-weight: 600; }

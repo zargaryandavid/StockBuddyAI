@@ -15,6 +15,16 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
   const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(notice ?? "");
+  // Problems (wrong password, missing consent…) show in red; confirmations stay grey.
+  const [isError, setIsError] = useState(false);
+  const fail = (text: string) => {
+    setIsError(true);
+    setMessage(text);
+  };
+  const inform = (text: string) => {
+    setIsError(false);
+    setMessage(text);
+  };
   // Set when the account still needs its email confirmed, so a new link can be sent.
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [resent, setResent] = useState(false);
@@ -29,14 +39,15 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
     });
     setBusy(false);
     setResent(!error);
-    setMessage(error ? error.message : `A new confirmation link was sent to ${pendingEmail}.`);
+    if (error) fail(error.message);
+    else inform(`A new confirmation link was sent to ${pendingEmail}.`);
   }
   const [showPassword, setShowPassword] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
-    setMessage("");
+    inform("");
     setPendingEmail(null);
     setResent(false);
     const data = new FormData(event.currentTarget);
@@ -46,7 +57,7 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
     };
     if (mode === "signup" && !data.get("consent")) {
       setBusy(false);
-      setMessage("Please agree to the Terms and Privacy Policy to create an account.");
+      fail("Please agree to the Terms and Privacy Policy to create an account.");
       return;
     }
     const supabase = createClient();
@@ -56,13 +67,8 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
       });
       setBusy(false);
       // The same answer whether or not the account exists, so emails can't be probed.
-      setMessage(
-        error && error.status !== 429
-          ? error.message
-          : error
-            ? "Too many requests. Wait a minute and try again."
-            : `If an account exists for ${credentials.email}, we sent a link to reset the password.`,
-      );
+      if (error) fail(error.status !== 429 ? error.message : "Too many requests. Wait a minute and try again.");
+      else inform(`If an account exists for ${credentials.email}, we sent a link to reset the password.`);
       return;
     }
     const result =
@@ -79,15 +85,15 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
     if (result.error) {
       if (result.error.code === "email_not_confirmed") {
         setPendingEmail(credentials.email);
-        setMessage(`Confirm your email first: open the link we sent to ${credentials.email}.`);
+        inform(`Confirm your email first: open the link we sent to ${credentials.email}.`);
         return;
       }
-      setMessage(result.error.message);
+      fail(result.error.message);
       return;
     }
     if (mode === "signup" && !result.data.session) {
       setPendingEmail(credentials.email);
-      setMessage(`Almost done. We sent a confirmation link to ${credentials.email}; open it to finish creating your account.`);
+      inform(`Almost done. We sent a confirmation link to ${credentials.email}; open it to finish creating your account.`);
       return;
     }
     const me = await api<{ role: "admin" | "user" }>("/api/me").catch(() => null);
@@ -149,7 +155,7 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
         </label>
       )}
       {message && (
-        <p className="form-message" role="status">
+        <p className={`form-message${isError ? " error" : ""}`} role={isError ? "alert" : "status"}>
           {message}
         </p>
       )}

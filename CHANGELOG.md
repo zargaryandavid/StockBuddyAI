@@ -145,6 +145,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Changed
 
+- Sign-in, sign-up, and password-reset problems (e.g. "Invalid login credentials") show
+  in red as an alert; confirmations such as "We sent a link" stay grey.
 - Ask Buddy tokens are a monthly allowance that resets on the 1st (UTC) instead of every
   day. The token card says "This month's free tokens" and shows the reset date, and
   `GET /api/ai-usage` adds `period` and `resets_on`. Admin's limit is now "Ask Buddy tokens per

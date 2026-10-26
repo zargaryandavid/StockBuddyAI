@@ -127,3 +127,34 @@ describe("AuthForm terms and password reset", () => {
     expect(screen.getByRole("button", { name: "Sign in" })).toBeTruthy();
   });
 });
+
+describe("AuthForm message colours", () => {
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it("shows a wrong password as a red alert and a sent link in grey", async () => {
+    auth.signInWithPassword.mockResolvedValue({
+      data: { session: null },
+      error: { message: "Invalid login credentials", code: "invalid_credentials" },
+    });
+    render(<AuthForm />);
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "me@example.com" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "wrong-password" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toBe("Invalid login credentials");
+    expect(alert.className).toContain("error");
+
+    auth.resetPasswordForEmail.mockResolvedValue({ error: null });
+    fireEvent.click(screen.getByRole("button", { name: "Forgot password?" }));
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "me@example.com" } });
+    fireEvent.submit(screen.getByLabelText("Email").closest("form")!);
+
+    const status = await screen.findByText(/we sent a link to reset the password/);
+    expect(status.className).not.toContain("error");
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+});
