@@ -3162,11 +3162,13 @@ textarea {
 .reset-tokens > p { flex: 1 1 100%; }
 
 /* Support us */
-.simple-page.support-shell { width: 100%; }
-.support-page { display: grid; gap: 1.25rem; max-width: 60rem; }
-.support-hero { display: grid; gap: 0.5rem; }
+/* Support us sits in the middle of the page area, across and down. */
+.simple-page.support-shell { display: grid; place-items: center; width: 100%; min-height: calc(100vh - 8.5rem); }
+.support-page { display: grid; gap: 1.25rem; width: 100%; max-width: 60rem; }
+.support-hero { display: grid; justify-items: center; gap: 0.5rem; text-align: center; }
 .support-hero h1 { margin: 0; }
 .support-hero p { margin: 0; max-width: 44rem; font-size: 1.05rem; }
+@media (max-width: 640px) { .simple-page.support-shell { min-height: 0; } }
 .support-heart { color: #e11d48; }
 .support-promises { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.75rem; }
 .support-promises li { display: grid; gap: 0.25rem; padding: 0.9rem 1rem; border: 1px solid var(--line); border-radius: 12px; background: #fff; }

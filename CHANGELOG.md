@@ -162,6 +162,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Fixed
 
+- Support us: the page is centered in the area to the right of the menu, across and down, with the heading and intro centered.
+
 - Today: the chart shows today's net worth even before it is saved, a failed save is tried again next time, and "Reports coming up" uses the fresh filing dates. Portfolio: the Cash field shows its currency sign ($, €, ֏…) inside the box.
 
 - Speed: a portfolio's market data now loads in one request (`POST /api/securities/resolve-batch`) instead of one per holding; SEC downloads no longer wait for each other (still rate limited) and a file is downloaded once even when several lookups need it; Analytics price history loads tickers side by side; the API remembers who a token belongs to for 30 seconds; and the web app keeps page data for a minute (market data for five), cleared by any change, so going back to a page is instant.
