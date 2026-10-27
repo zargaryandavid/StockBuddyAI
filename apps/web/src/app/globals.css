@@ -3264,3 +3264,9 @@ textarea {
 .login-copy h1 { line-height: 1.04; }
 html:lang(hy) .login-copy h1 { line-height: 1.22; letter-spacing: -0.03em; }
 html:lang(hy) .hero h1 { line-height: 1.22; letter-spacing: -0.03em; }
+
+/* Cash balance label with its (i) for the cash target. */
+.cash-label { display: inline-flex; align-items: center; gap: 0.3rem; }
+.cash-info { display: inline-flex; color: var(--muted); cursor: help; border-radius: 50%; }
+.cash-info:focus-visible { outline: 2px solid var(--accent, #1f4d32); outline-offset: 2px; }
+.summary-card.short > small, .analytics-metric.short > small { color: #a23d35; }

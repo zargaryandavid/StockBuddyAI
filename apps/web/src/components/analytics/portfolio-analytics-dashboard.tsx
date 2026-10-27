@@ -16,11 +16,14 @@ import { useEffect, useMemo, useState } from "react";
 import {
   buildAllocations,
   calculatePortfolioAnalytics,
+  cashShortfall,
+  cashTarget,
   formatAllocationPercentage,
   formatPercent,
   isFund,
   type AnalyticsLimits,
 } from "@/lib/analytics";
+import { CashLabel, cashTargetNote } from "@/components/cash-target";
 import { api, type Portfolio, type PortfolioTransaction } from "@/lib/api";
 import { useT } from "@/lib/i18n/client";
 import type { Translate } from "@/lib/i18n/core";
@@ -146,7 +149,7 @@ export function PortfolioAnalyticsDashboard({
     maxPositionPct: suppliedLimits.maxPositionPct ?? 0.25,
     maxSectorPct: suppliedLimits.maxSectorPct ?? 0.25,
     maxAssetTypePct: suppliedLimits.maxAssetTypePct ?? 0.8,
-    minCashPct: suppliedLimits.minCashPct ?? 0.05,
+    minCashPct: cashTarget(suppliedLimits.minCashPct),
     maxSpeculativePct: suppliedLimits.maxSpeculativePct ?? 0.2,
     maxTopThreePct: suppliedLimits.maxTopThreePct ?? 0.7,
     maxTopFivePct: suppliedLimits.maxTopFivePct ?? 0.85,
@@ -451,8 +454,10 @@ export function PortfolioAnalyticsDashboard({
           }
         />
         <SummaryMetric
-          label={t("Cash balance")}
+          label={<CashLabel target={limits.minCashPct} t={t} />}
           value={`${money(cash)} / ${formatPercent(analytics.cashPercentage)}`}
+          note={cashTargetNote(cash, analytics.portfolioValue, limits.minCashPct, money, t)}
+          short={cashShortfall(cash, analytics.portfolioValue, limits.minCashPct) > 0.005}
         />
         <SummaryMetric
           label={t("Unrealized gain/loss")}
@@ -636,16 +641,18 @@ function SummaryMetric({
   note,
   tone,
   tooltip,
+  short = false,
 }: {
-  label: string;
+  label: React.ReactNode;
   value: string;
   note?: string;
   tone?: "positive" | "negative";
   tooltip?: string;
+  short?: boolean;
 }) {
   return (
     <article
-      className={`analytics-metric ${tone ?? ""}`}
+      className={`analytics-metric ${tone ?? ""}${short ? " short" : ""}`}
       title={tooltip}
       aria-label={tooltip ? `${label}. ${tooltip}` : undefined}
     >

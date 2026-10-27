@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
+import type React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -23,6 +24,8 @@ import { WishlistPage } from "@/components/wishlist/wishlist-page";
 import { ProfileDialog, type ProfileValues } from "@/components/profile-dialog";
 import { notEnoughData, RunTest } from "@/components/run-test";
 import { SupportPage } from "@/components/support-page";
+import { CashLabel, cashTargetNote } from "@/components/cash-target";
+import { cashShortfall, cashTarget, DEFAULT_CASH_TARGET } from "@/lib/analytics";
 import { ReportReminderDialog } from "@/components/report-reminder-dialog";
 import { TransactionsView, type TransactionInput } from "@/components/transactions-view";
 import {
@@ -243,6 +246,7 @@ export function Dashboard({
     () => calculatePortfolioMetrics(positions, cash),
     [positions, cash],
   );
+  const cashGoal = cashTarget(minCash);
   const marketValue = metrics.holdingsValue;
   const costBasis = metrics.totalCostBasis;
   const allocationPositions = useMemo(
@@ -1171,11 +1175,10 @@ export function Dashboard({
                       tone={metrics.dayAmount >= 0 ? "positive" : "negative"}
                     />
                     <SummaryCard
-                      label={t("Cash balance")}
-                      value={money(cash, baseCurrency)}
-                      note={t("{percent}% cash", {
-                        percent: ((metrics.cashPercentage ?? 0) * 100).toFixed(1),
-                      })}
+                      label={<CashLabel target={cashGoal} t={t} />}
+                      value={`${money(cash, baseCurrency)} / ${((metrics.cashPercentage ?? 0) * 100).toFixed(1)}%`}
+                      note={cashTargetNote(cash, metrics.totalValue, cashGoal, (value) => money(value, baseCurrency), t)}
+                      short={cashShortfall(cash, metrics.totalValue, cashGoal) > 0.005}
                     />
                     <SummaryCard
                       label={t("Number of holdings")}
@@ -1242,7 +1245,7 @@ export function Dashboard({
                     </label>
                     <PercentSetting label={t("Max position (%)")} value={maxPosition} fallback={book.max_position_pct} onChange={(value) => { setMaxPosition(value); setDirty(true); }} />
                     <PercentSetting label={t("Max sector (%)")} value={maxSector} fallback={book.max_industry_pct} onChange={(value) => { setMaxSector(value); setDirty(true); }} />
-                    <PercentSetting label={t("Min cash (%)")} value={minCash} onChange={(value) => { setMinCash(value ?? 0); setDirty(true); }} />
+                    <PercentSetting label={t("Min cash (%)")} value={minCash || null} fallback={DEFAULT_CASH_TARGET} onChange={(value) => { setMinCash(value ?? 0); setDirty(true); }} />
                     <label>
                       {t("Time horizon")}
                       <select value={timeHorizon} onChange={(event) => { setTimeHorizon(event.target.value as typeof timeHorizon); setDirty(true); }}>
@@ -1612,7 +1615,7 @@ export function Dashboard({
                     selected?.max_position_pct ?? book.max_position_pct,
                   maxSectorPct:
                     selected?.max_sector_pct ?? book.max_industry_pct,
-                  minCashPct: selected?.min_cash_pct,
+                  minCashPct: cashTarget(selected?.min_cash_pct),
                   rebalancingThresholdPct:
                     selected?.rebalancing_threshold_pct,
                 }}
@@ -2301,15 +2304,17 @@ function SummaryCard({
   note,
   tone,
   emphasis = false,
+  short = false,
 }: {
-  label: string;
+  label: React.ReactNode;
   value: string;
   note?: string;
   tone?: "positive" | "negative";
   emphasis?: boolean;
+  short?: boolean;
 }) {
   return (
-    <article className={`summary-card ${tone ?? ""}`}>
+    <article className={`summary-card ${tone ?? ""}${short ? " short" : ""}`}>
       <span>{label}</span>
       <strong className={emphasis ? "emphasis" : undefined}>{value}</strong>
       {note && <small>{note}</small>}

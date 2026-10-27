@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  cashShortfall,
+  cashTarget,
   buildAllocations,
   calculatePortfolioAnalytics,
   formatAllocationPercentage,
@@ -226,5 +228,19 @@ describe("portfolio analytics", () => {
 
     expect(sectors.map((row) => row.label).sort()).toEqual(["ETF/Index", "Energy"]);
     expect(industries.find((row) => row.holdings.includes("VOO"))?.label).toBe("ETF/Index");
+  });
+});
+
+describe("cash target", () => {
+  it("uses the portfolio's own minimum, or 5% when it has none", () => {
+    expect(cashTarget(0)).toBe(0.05);
+    expect(cashTarget(null)).toBe(0.05);
+    expect(cashTarget(0.1)).toBe(0.1);
+  });
+
+  it("says how much cash is missing for the target", () => {
+    expect(cashShortfall(0, 100_000, 0.05)).toBe(5000);
+    expect(cashShortfall(2000, 100_000, 0.05)).toBe(3000);
+    expect(cashShortfall(6000, 100_000, 0.05)).toBe(0);
   });
 });

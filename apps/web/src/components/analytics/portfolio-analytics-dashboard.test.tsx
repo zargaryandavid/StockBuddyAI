@@ -83,6 +83,10 @@ describe("PortfolioAnalyticsDashboard", () => {
       screen.getByRole("region", { name: "Portfolio summary" }).children,
     ).toHaveLength(8);
     expect(screen.getByText("Cash balance")).toBeTruthy();
+    expect(screen.getByText(/^Target 5% · (\$[\d,.]+ to add|met)$/)).toBeTruthy();
+    expect(
+      screen.getByRole("img", { name: /at least 5% of your portfolio in cash/ }),
+    ).toBeTruthy();
     expect(screen.queryByText("Cash Percentage")).toBeNull();
     expect(screen.queryByText("Unrealized gain/loss %")).toBeNull();
     expect(

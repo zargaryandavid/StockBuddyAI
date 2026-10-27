@@ -353,6 +353,10 @@ const portfolio: Record<string, string> = {
   "Could not cancel the reminder": "Չհաջողվեց չեղարկել հիշեցումը",
   "Scheduled reminders for {ticker}": "{ticker}-ի պլանավորված հիշեցումները",
   "Cancel reminder": "Չեղարկել հիշեցումը",
+  "We suggest keeping at least {target}% of your portfolio in cash for emergencies and buying chances. Change it in Portfolio settings under Min cash (%).":
+    "Խորհուրդ ենք տալիս պորտֆելի առնվազն {target}%-ը պահել կանխիկով՝ անսպասելի ծախսերի և գնման հնարավորությունների համար։ Կարող եք փոխել Պորտֆելի կարգավորումներում՝ «Կանխիկի նվազագույն չափ (%)» դաշտում։",
+  "Target {target}% · {amount} to add": "Թիրախ՝ {target}% · պակասում է {amount}",
+  "Target {target}% · met": "Թիրախ՝ {target}% · կատարված է",
 };
 
 export default portfolio;

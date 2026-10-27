@@ -486,3 +486,16 @@ export function formatAllocationPercentage(value: number) {
 export function formatPercent(value: number) {
   return `${(value * 100).toFixed(1)}%`;
 }
+
+/** Cash StockBuddy suggests keeping when a portfolio has no minimum of its own. */
+export const DEFAULT_CASH_TARGET = 0.05;
+
+/** The portfolio's own minimum cash share, or the 5% default when it has none. */
+export function cashTarget(minCashPct?: number | null) {
+  return minCashPct && minCashPct > 0 ? minCashPct : DEFAULT_CASH_TARGET;
+}
+
+/** Cash still needed for `target` of today's total value; 0 once it is met. */
+export function cashShortfall(cash: number, totalValue: number, target: number) {
+  return Math.max(0, target * totalValue - (Number(cash) || 0));
+}
