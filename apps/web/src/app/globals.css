@@ -3185,7 +3185,7 @@ textarea {
 /* Sign-in: drawn $100 bills in the navy panel, and the copyright line */
 .login-copy { position: relative; overflow: hidden; }
 .login-copy > :not(.login-bills) { position: relative; z-index: 1; }
-.login-bills { position: absolute; right: 2rem; bottom: 1.25rem; width: clamp(220px, 22vw, 340px); aspect-ratio: 520 / 300; pointer-events: none; }
+.login-bills { position: absolute; right: 2rem; bottom: calc(1.25rem + 20%); width: clamp(220px, 22vw, 340px); aspect-ratio: 520 / 300; pointer-events: none; }
 .login-bill { position: absolute; width: 100%; height: auto; filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.35)); }
 .login-bill.back { top: 0; right: 6%; transform: rotate(9deg); opacity: 0.55; }
 .login-bill.front { bottom: 0; right: 0; transform: rotate(-7deg); }
