@@ -294,6 +294,14 @@ const analysis: Record<string, string> = {
   "ETFs and index funds are already diversified, so they don't count toward these limits.":
     "ETF-ները և ինդեքսային ֆոնդերն արդեն դիվերսիֆիկացված են, ուստի չեն հաշվվում այս սահմանաչափերում։",
 
+  // Fund look-through in the allocation view
+  "Fund exposure": "Ֆոնդերի միջոցով ներդրումներ",
+  "Direct holdings": "Ուղղակի դիրքեր",
+  "Include fund holdings": "Ներառել ֆոնդերի դիրքերը",
+  "Funds count through their top 10 holdings and sector weights; the rest of each fund is shown as “other holdings”.":
+    "Ֆոնդերը հաշվվում են իրենց 10 խոշորագույն դիրքերով և ոլորտային կշիռներով, իսկ յուրաքանչյուր ֆոնդի մնացած մասը ցույց է տրվում որպես «այլ դիրքեր»։",
+  "{fund} · other holdings": "{fund} · այլ դիրքեր",
+
   // Support us
   "Support StockBuddy": "Աջակցեք StockBuddy-ին",
   "We build StockBuddy for you, and only for you. There are no sponsors, no ads, and we never sell your data. To keep it that way, we need your help.":

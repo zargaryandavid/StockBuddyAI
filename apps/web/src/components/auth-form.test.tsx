@@ -13,7 +13,7 @@ const auth = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/supabase/client", () => ({ createClient: () => ({ auth }) }));
-vi.mock("@/lib/api", () => ({ api: vi.fn() }));
+vi.mock("@/lib/api", () => ({ api: vi.fn().mockResolvedValue({ role: "user" }) }));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),

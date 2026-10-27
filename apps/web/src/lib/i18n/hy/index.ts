@@ -6,6 +6,7 @@ import common from "./common";
 import education from "./education";
 import fire from "./fire";
 import portfolio from "./portfolio";
+import today from "./today";
 
 /** All Armenian text, merged from one file per area of the app. */
 export const hy: Record<string, string> = {
@@ -17,4 +18,5 @@ export const hy: Record<string, string> = {
   ...admin,
   ...education,
   ...api,
+  ...today,
 };

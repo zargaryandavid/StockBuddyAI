@@ -22,6 +22,7 @@ import {
   formatPercent,
   isFund,
   type AnalyticsLimits,
+  type FundHoldingsMap,
 } from "@/lib/analytics";
 import { CashLabel, cashTargetNote } from "@/components/cash-target";
 import { api, type Portfolio, type PortfolioTransaction } from "@/lib/api";
@@ -42,6 +43,12 @@ type AllocationDimension =
   | "sector"
   | "industry";
 type ContributorCount = 5 | 10 | "all";
+type AllocationExposure = "direct" | "look-through";
+
+const EXPOSURE_OPTIONS: [AllocationExposure, string][] = [
+  ["direct", "Direct holdings"],
+  ["look-through", "Include fund holdings"],
+];
 
 const RANGE_OPTIONS: DateRange[] = ["1M", "3M", "6M", "YTD", "1Y", "3Y", "All"];
 const BENCHMARKS = [
@@ -103,6 +110,47 @@ export function PortfolioAnalyticsDashboard({
     error: string | null;
   } | null>(null);
   const [chartMode, setChartMode] = useState<ChartMode>("Percentage return");
+  // null until the person picks one; then fund holdings are included whenever known.
+  const [exposureChoice, setExposureChoice] = useState<AllocationExposure | null>(null);
+  const [fundData, setFundData] = useState<{ key: string; funds: FundHoldingsMap } | null>(
+    null,
+  );
+
+  const fundTickers = useMemo(
+    () =>
+      [
+        ...new Set(
+          positions
+            .filter((position) => Number(position.shares) > 0 && isFund(position))
+            .map((position) => position.ticker.toUpperCase()),
+        ),
+      ]
+        .sort()
+        .join(","),
+    [positions],
+  );
+  useEffect(() => {
+    if (!fundTickers) return;
+    let active = true;
+    api<FundHoldingsMap>(`/api/funds/holdings?tickers=${encodeURIComponent(fundTickers)}`)
+      .then((funds) => {
+        if (active) setFundData({ key: fundTickers, funds: usableFunds(funds) });
+      })
+      .catch(() => {
+        // Without fund data the allocation shows each fund as one row, as before.
+        if (active) setFundData({ key: fundTickers, funds: {} });
+      });
+    return () => {
+      active = false;
+    };
+  }, [fundTickers]);
+  const funds = useMemo<FundHoldingsMap>(
+    () => (fundTickers && fundData?.key === fundTickers ? fundData.funds : {}),
+    [fundData, fundTickers],
+  );
+  const hasFundData = Object.keys(funds).length > 0;
+  const exposure: AllocationExposure =
+    hasFundData && exposureChoice !== "direct" ? "look-through" : "direct";
 
   const historyTickers = useMemo(
     () =>
@@ -197,15 +245,20 @@ export function PortfolioAnalyticsDashboard({
           analytics.positions,
           analytics.portfolioValue,
           dimension,
-          "direct",
+          exposure,
           limit,
+          funds,
         ).map((row) => {
-          const excludedFromRiskLimits = row.holdings.every((ticker) => {
-            const position = analytics.positions.find(
-              (candidate) => candidate.ticker === ticker,
-            );
-            return position ? isFund(position) : false;
-          });
+          // A fund's "other holdings" basket, or a row held only through funds as a whole.
+          const excludedFromRiskLimits =
+            Boolean(row.fund) ||
+            (!row.lookThrough &&
+              row.holdings.every((ticker) => {
+                const position = analytics.positions.find(
+                  (candidate) => candidate.ticker === ticker,
+                );
+                return position ? isFund(position) : false;
+              }));
           return {
             ...row,
             excludedFromRiskLimits,
@@ -222,6 +275,8 @@ export function PortfolioAnalyticsDashboard({
     [
       analytics.portfolioValue,
       analytics.positions,
+      exposure,
+      funds,
       limits.maxAssetTypePct,
       limits.maxPositionPct,
       limits.maxSectorPct,
@@ -564,6 +619,29 @@ export function PortfolioAnalyticsDashboard({
             "ETF and index values are shown for visibility but excluded from allocation limits and concentration warnings.",
           )}
         </p>
+        {fundTickers && (
+          <div className="chart-mode allocation-exposure" role="group" aria-label={t("Fund exposure")}>
+            {EXPOSURE_OPTIONS.map(([option, label]) => (
+              <button
+                type="button"
+                key={option}
+                className={exposure === option ? "active" : ""}
+                aria-pressed={exposure === option}
+                disabled={option === "look-through" && !hasFundData}
+                onClick={() => setExposureChoice(option)}
+              >
+                {t(label)}
+              </button>
+            ))}
+          </div>
+        )}
+        {exposure === "look-through" && (
+          <p className="module-note">
+            {t(
+              "Funds count through their top 10 holdings and sector weights; the rest of each fund is shown as “other holdings”.",
+            )}
+          </p>
+        )}
         <div className="allocation-box-grid">
           {allocationGroups.map(({ dimension, label, rows }) => (
             <section className="allocation-box" key={dimension}>
@@ -572,8 +650,12 @@ export function PortfolioAnalyticsDashboard({
                 {rows.map((row) => (
                   <article className={row.warning ? "warning" : ""} key={row.key}>
                     <div>
-                      <strong>{t(row.label)}</strong>
-                      {!(
+                      <strong>
+                        {row.fund
+                          ? t("{fund} · other holdings", { fund: row.fund })
+                          : t(row.label)}
+                      </strong>
+                      {!row.fund && !(
                         row.holdings.length === 1 &&
                         row.holdings[0].toUpperCase() === row.label.toUpperCase()
                       ) && <span>{row.holdings.join(", ")}</span>}
@@ -1059,6 +1141,21 @@ function capitalize(value: string) {
 }
 
 /** Common rules of thumb for diversification, next to the limits configured in Admin. */
+/** Keeps only well-formed fund entries, so an odd answer never breaks the allocation view. */
+function usableFunds(value: unknown): FundHoldingsMap {
+  if (!value || typeof value !== "object") return {};
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).filter(
+      ([, fund]) =>
+        Boolean(fund) &&
+        typeof fund === "object" &&
+        Array.isArray((fund as { holdings?: unknown }).holdings) &&
+        typeof (fund as { sectors?: unknown }).sectors === "object" &&
+        (fund as { sectors?: unknown }).sectors !== null,
+    ),
+  ) as FundHoldingsMap;
+}
+
 const GUIDE_OPEN_KEY = "stockbuddy.allocationGuideOpen";
 
 function AllocationGuide({ limits }: { limits: AnalyticsLimits }) {

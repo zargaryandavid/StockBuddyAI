@@ -10,7 +10,18 @@ vi.mock("@/lib/api", async (importOriginal) => {
   const original = await importOriginal<typeof import("@/lib/api")>();
   return {
     ...original,
-    api: vi.fn(async () => ({
+    api: vi.fn(async (path: string) =>
+      path.startsWith("/api/funds/holdings")
+        ? {
+            VOO: {
+              holdings: [
+                { ticker: "AAPL", name: "Apple Inc", weight: 0.07 },
+                { ticker: "NVDA", name: "NVIDIA Corp", weight: 0.08 },
+              ],
+              sectors: { "Information Technology": 0.4, "Health Care": 0.6 },
+            },
+          }
+        : {
       SPY: [
         { date: "2025-10-23", close: 100 },
         { date: "2026-10-23", close: 110 },
@@ -23,7 +34,8 @@ vi.mock("@/lib/api", async (importOriginal) => {
         { date: "2025-10-23", close: 450 },
         { date: "2026-10-23", close: 500 },
       ],
-    })),
+          },
+    ),
   };
 });
 
@@ -133,7 +145,9 @@ describe("PortfolioAnalyticsDashboard", () => {
     expect(benchmarkCard?.textContent).toContain("pts");
     expect(screen.queryByText(/current holdings as if held/)).toBeNull();
     expect(screen.getByRole("img", { name: /Percentage return from 2025-10-23 to 2026-10-23/ })).toBeTruthy();
-    expect(vi.mocked(api).mock.calls[0][0]).toContain("/api/prices/history?tickers=");
+    expect(
+      vi.mocked(api).mock.calls.some(([path]) => path.startsWith("/api/prices/history?tickers=")),
+    ).toBe(true);
     expect(
       screen.getAllByText(/AAPL represents 80.0% of portfolio value/).length,
     ).toBeGreaterThan(0);
@@ -168,6 +182,43 @@ describe("PortfolioAnalyticsDashboard", () => {
       expect(within(jump).getByRole("link", { name }).getAttribute("href")).toBe(`#${id}`);
       expect(document.getElementById(id)).toBeTruthy();
     }
+  });
+
+  it("counts funds through their top holdings and lets the person switch to direct holdings", async () => {
+    render(
+      <PortfolioAnalyticsDashboard
+        portfolios={[]}
+        selectedId=""
+        positions={positions}
+        cash={0}
+        asOfDate="2026-10-23"
+        limits={{ maxPositionPct: 0.5 }}
+        onSelectPortfolio={vi.fn()}
+        onRefresh={vi.fn()}
+      />,
+    );
+
+    expect(
+      vi.mocked(api).mock.calls.some(([path]) => path === "/api/funds/holdings?tickers=VOO"),
+    ).toBe(true);
+    const include = await screen.findByRole("button", { name: "Include fund holdings" });
+    await waitFor(() => expect(include.getAttribute("aria-pressed")).toBe("true"));
+    expect(screen.getByText(/Funds count through their top 10 holdings/)).toBeTruthy();
+    const positionsBox = screen.getByRole("heading", { name: "Positions" }).closest("section")!;
+    // AAPL is held directly and through VOO; NVDA only through VOO.
+    expect(within(positionsBox).getByText("AAPL, VOO")).toBeTruthy();
+    expect(within(positionsBox).getByText("NVDA")).toBeTruthy();
+    expect(within(positionsBox).getByText("VOO · other holdings")).toBeTruthy();
+    const sectorsBox = screen.getByRole("heading", { name: "Sectors" }).closest("section")!;
+    expect(within(sectorsBox).getByText("Health Care")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Direct holdings" }));
+    expect(
+      screen.getByRole("button", { name: "Direct holdings" }).getAttribute("aria-pressed"),
+    ).toBe("true");
+    expect(within(positionsBox).queryByText("VOO · other holdings")).toBeNull();
+    expect(within(positionsBox).queryByText("NVDA")).toBeNull();
+    expect(screen.queryByText(/Funds count through their top 10 holdings/)).toBeNull();
   });
 
   it("shows the empty portfolio and refreshing states", async () => {

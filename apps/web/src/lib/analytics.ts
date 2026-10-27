@@ -49,7 +49,22 @@ export type AllocationRow = {
   limit: number | null;
   warning: boolean;
   holdings: string[];
+  /** Set on a fund's "other holdings" row: the part of the fund outside its top holdings. */
+  fund?: string;
+  /** True when part of this row's value comes from inside a fund (look-through view). */
+  lookThrough?: boolean;
 };
+
+/** What a fund holds, from `/api/funds/holdings`: top holdings (usually 10) and sector weights. */
+export type FundLookThrough = {
+  holdings: { ticker: string; name: string; weight: number }[];
+  sectors: Record<string, number>;
+};
+export type FundHoldingsMap = Record<string, FundLookThrough>;
+
+export function fundOtherLabel(fund: string) {
+  return `${fund} · other holdings`;
+}
 
 export type PortfolioAnalytics = {
   positions: EnrichedPosition[];
@@ -416,37 +431,104 @@ export function buildAllocations(
     | "currency",
   exposure: ExposureView,
   limit: number | null,
+  funds: FundHoldingsMap = {},
 ): AllocationRow[] {
   const included =
     exposure === "exclude-funds"
       ? positions.filter((position) => !isFund(position))
       : positions;
-  const values = new Map<string, { value: number; holdings: string[] }>();
+  type Bucket = {
+    label: string;
+    value: number;
+    direct: string[];
+    via: string[];
+    fund?: string;
+    lookThrough?: boolean;
+  };
+  const values = new Map<string, Bucket>();
+  const add = (
+    key: string,
+    value: number,
+    holding: string,
+    extra: Partial<Bucket> = {},
+  ) => {
+    const row = values.get(key) ?? { label: key, value: 0, direct: [], via: [] };
+    row.value += value;
+    // Directly held tickers come first, then the funds the rest comes through.
+    const list = extra.lookThrough ? row.via : row.direct;
+    if (!list.includes(holding)) list.push(holding);
+    Object.assign(row, extra);
+    values.set(key, row);
+  };
   for (const position of included) {
     if (position.marketValue == null) continue;
+    const ticker = position.ticker.toUpperCase();
+    const split =
+      exposure === "look-through" && isFund(position)
+        ? lookThroughParts(funds[ticker], dimension)
+        : null;
+    if (split) {
+      let covered = 0;
+      for (const [key, weight] of split) {
+        covered += weight;
+        add(key, position.marketValue * weight, ticker, { lookThrough: true });
+      }
+      const rest = position.marketValue * Math.max(0, 1 - covered);
+      // Rounding in the source data leaves crumbs; they are not worth a row.
+      if (rest > position.marketValue * 0.0005) {
+        add(`${ticker}::other`, rest, ticker, {
+          label: fundOtherLabel(ticker),
+          fund: ticker,
+        });
+      }
+      continue;
+    }
     const label =
-      dimension === "position"
-        ? position.ticker
-        : allocationLabel(position, dimension);
-    const row = values.get(label) ?? { value: 0, holdings: [] };
-    row.value += position.marketValue;
-    row.holdings.push(position.ticker);
-    values.set(label, row);
+      dimension === "position" ? ticker : allocationLabel(position, dimension);
+    add(label, position.marketValue, position.ticker);
   }
   return [...values.entries()]
     .map(([key, row]) => {
       const percentage = portfolioValue ? row.value / portfolioValue : 0;
+      // A fund's "other holdings" is a basket of many companies, not one exposure.
+      const rowLimit = row.fund ? null : limit;
       return {
         key,
-        label: key,
+        label: row.label,
         value: row.value,
         percentage,
-        limit,
-        warning: limit != null && percentage > limit,
-        holdings: row.holdings,
+        limit: rowLimit,
+        warning: rowLimit != null && percentage > rowLimit,
+        holdings: [...row.direct, ...row.via],
+        ...(row.fund ? { fund: row.fund } : {}),
+        ...(row.lookThrough ? { lookThrough: true } : {}),
       };
     })
     .sort((left, right) => right.value - left.value);
+}
+
+/** A fund's value split into [row key, share of the fund], or null to keep it as one row. */
+function lookThroughParts(
+  fund: FundLookThrough | undefined,
+  dimension: Parameters<typeof buildAllocations>[2],
+): [string, number][] | null {
+  if (!fund) return null;
+  const parts =
+    dimension === "position"
+      ? fund.holdings.map((holding): [string, number] => [
+          holding.ticker.toUpperCase(),
+          holding.weight,
+        ])
+      : dimension === "sector"
+        ? Object.entries(fund.sectors)
+        : [];
+  const valid = parts.filter(([, weight]) => Number.isFinite(weight) && weight > 0);
+  const total = valid.reduce((sum, [, weight]) => sum + weight, 0);
+  if (!valid.length) return null;
+  // Weights that overshoot 100% are scaled down so the fund is never counted twice.
+  return total > 1
+    ? valid.map(([key, weight]) => [key, weight / total])
+    : valid;
 }
 
 function allocationLabel(

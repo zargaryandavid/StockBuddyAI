@@ -6,6 +6,12 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Added
 
+- **Today** is the new first page after sign-in: net worth (all portfolios + savings, CDs and bonds + other owned assets) with today's market move and the change since the last reading, FIRE progress, cash against its target, limits that are broken (a company above its maximum position, cash below target), and company reports expected in the next 30 days (about three months after each last report).
+- **Net worth over time:** one reading per person per day is saved when Today loads (`net_worth_snapshots`, `GET /api/net-worth`, `PUT /api/net-worth/today`), drawn as a line with 1M / 6M / 1Y / All ranges. Needs migration `20261027130000_net_worth_snapshots.sql`.
+- **Setup guide** on Today for new accounts: add income and expenses, add a portfolio, add savings and other assets; each step ticks itself off, and it can be skipped.
+- **Broker file import:** the Portfolio CSV import now reads positions exports from Fidelity, Schwab, Vanguard, E*TRADE, Robinhood, Interactive Brokers and Webull (titles, totals, cash rows, `$1,234.56`, several accounts merged). Fractional shares are rounded down, and the preview says so; cash in the file is shown, not imported.
+- **Fund look-through** in Analytics allocations: an ETF such as VOO counts through its top 10 holdings (so VOO's NVIDIA share adds to a direct NVIDIA holding) and its sector weights, with the rest shown as "VOO · other holdings" (`GET /api/funds/holdings`). A switch goes back to direct holdings.
+
 - Portfolio page: the Cash field shows the cash amount and share, the target and its dollar amount (for example "$0.00 / 0.0% · Target 5%: $4,980.17"), with an (i) explaining it.
 
 - Admin studio: "Minimum cash %" in Limits and model (default 5%). Portfolios without their own Min cash use it as their cash target. Needs migration 20261027120000_min_cash_default.sql.

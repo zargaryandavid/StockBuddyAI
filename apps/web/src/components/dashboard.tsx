@@ -24,6 +24,8 @@ import { WishlistPage } from "@/components/wishlist/wishlist-page";
 import { ProfileDialog, type ProfileValues } from "@/components/profile-dialog";
 import { notEnoughData, RunTest } from "@/components/run-test";
 import { SupportPage } from "@/components/support-page";
+import { TodayPage, type TodayDestination } from "@/components/today/today-page";
+import { parseBrokerCsv } from "@/lib/broker-csv";
 import { CashLabel, CashSummary, cashTargetNote } from "@/components/cash-target";
 import { cashShortfall, cashTarget, DEFAULT_CASH_TARGET } from "@/lib/analytics";
 import { ReportReminderDialog } from "@/components/report-reminder-dialog";
@@ -40,6 +42,7 @@ import {
   Eye,
   EyeOff,
   Flame,
+  Home,
   Heart,
   GripVertical,
   History,
@@ -79,7 +82,7 @@ import { useT } from "@/lib/i18n/client";
 import { createClient } from "@/lib/supabase/client";
 import { defaultBook, type BookSettings, type Role } from "@/lib/workspace";
 
-type MainTab = "test" | "portfolio" | "fire" | "assets" | "wishlist" | "education" | "support";
+type MainTab = "today" | "test" | "portfolio" | "fire" | "assets" | "wishlist" | "education" | "support";
 type PortfolioView = "current" | "transactions" | "analytics";
 type ImportMode = "manual" | "csv" | "picture";
 type SortKey =
@@ -101,7 +104,7 @@ export function Dashboard({
   today,
   role = "user",
   book = defaultBook,
-  initialTab = "fire",
+  initialTab = "today",
 }: {
   email: string;
   today: string;
@@ -456,7 +459,7 @@ export function Dashboard({
           failure = cause instanceof Error ? cause.message : "";
         }
       }
-      const byQuery = new Map(results.map((item) => [item.query, item]));
+      const byQuery = new Map((Array.isArray(results) ? results : []).map((item) => [item.query, item]));
       setPositions(
         rows.map((row) => {
           const query = row.ticker.trim();
@@ -504,6 +507,15 @@ export function Dashboard({
     },
     [enrichPositions],
   );
+
+  function openFromToday(destination: TodayDestination) {
+    if (destination === "analytics") {
+      openAnalytics();
+      return;
+    }
+    if (destination === "portfolio") setPortfolioView("current");
+    setActiveTab(destination);
+  }
 
   function startNewPortfolio() {
     setEditingId("");
@@ -927,6 +939,15 @@ export function Dashboard({
       <AppHeader email={email} onSignOut={signOut} onOpenProfile={() => setShowProfile(true)}>
         <button
           type="button"
+          className={activeTab === "today" ? "active" : ""}
+          aria-current={activeTab === "today" ? "page" : undefined}
+          onClick={() => setActiveTab("today")}
+        >
+          <Home size={16} aria-hidden="true" />
+          {t("Today")}
+        </button>
+        <button
+          type="button"
           className={activeTab === "fire" ? "active" : ""}
           aria-current={activeTab === "fire" ? "page" : undefined}
           onClick={() => setActiveTab("fire")}
@@ -1062,7 +1083,17 @@ export function Dashboard({
       {error && <div className="alert page-message" role="alert">{t(error)}</div>}
       {notice && <div className="notice page-message">{t(notice)}</div>}
 
-      {activeTab === "wishlist" ? (
+      {activeTab === "today" ? (
+        <section className="simple-page today-shell">
+          <TodayPage
+            portfolios={portfolios}
+            loadingPortfolios={loadingPortfolios}
+            book={book}
+            today={today}
+            onOpen={openFromToday}
+          />
+        </section>
+      ) : activeTab === "wishlist" ? (
         <section className="simple-page wishlist-shell">
           <WishlistPage />
         </section>
@@ -1929,8 +1960,10 @@ export function Dashboard({
 
                 {importMode === "csv" && (
                   <label className="file-drop compact-drop">
-                    <span>{t("Choose portfolio.csv")}</span>
-                    <small>{t("Required headers: ticker,shares")}</small>
+                    <span>{t("Choose a CSV file")}</span>
+                    <small>
+                      {t("A positions export from Fidelity, Schwab, Vanguard, E*TRADE, Interactive Brokers and others, or any file with ticker and shares columns.")}
+                    </small>
                     <input
                       type="file"
                       accept=".csv,text/csv"
@@ -1942,6 +1975,64 @@ export function Dashboard({
                           const firstPass = parsePortfolioCsvPreview(text);
                           const mapping = defaultColumnMap(firstPass.headers);
                           const preview = parsePortfolioCsvPreview(text, mapping);
+                          // Broker exports (titles, totals, cash rows, "$1,234.56") read better
+                          // with the broker reader; a plain ticker,shares file keeps the simple one.
+                          const broker = parseBrokerCsv(text);
+                          if (
+                            broker.rows.length > preview.positions.length ||
+                            (broker.rows.length > 0 && preview.errors.length > 0)
+                          ) {
+                            setCsvText("");
+                            // StockBuddy keeps whole shares; say so when a file has fractions.
+                            const rounded = broker.rows.filter((row) => !Number.isInteger(row.shares));
+                            setImportPreview({
+                              positions: broker.rows
+                                .filter((row) => Math.floor(row.shares) > 0)
+                                .map((row) => {
+                                  // Class shares are BRK-B at Yahoo and the SEC.
+                                  const ticker = /^[A-Z]+\.[A-Z]$/.test(row.ticker) ? row.ticker.replace(".", "-") : row.ticker;
+                                  const shares = Math.floor(row.shares);
+                                  return row.purchase_price == null
+                                    ? { ticker, shares }
+                                    : { ticker, shares, purchase_price: row.purchase_price };
+                                }),
+                              errors: [
+                                ...rounded.map((row) =>
+                                  t("{ticker}: {shares} shares rounded down to {whole}; StockBuddy keeps whole shares.", {
+                                    ticker: row.ticker,
+                                    shares: row.shares,
+                                    whole: Math.floor(row.shares),
+                                  }),
+                                ),
+                                ...broker.skipped.map((line) =>
+                                t("Line {line}: {reason}", {
+                                  line: line.line,
+                                  reason: line.symbol ? `${line.symbol} · ${t(line.reason)}` : t(line.reason),
+                                }),
+                                ),
+                              ],
+                              headers: [],
+                              duplicateTickers: [],
+                            });
+                            setError("");
+                            setNotice(
+                              [
+                                broker.broker
+                                  ? t("Read as a {broker} export. Confirm the preview before importing.", {
+                                      broker: broker.broker,
+                                    })
+                                  : t("CSV parsed. Confirm the preview before importing."),
+                                broker.cash != null
+                                  ? t("The file also lists {amount} in cash; set Cash above if you want it included.", {
+                                      amount: money(broker.cash, baseCurrency),
+                                    })
+                                  : "",
+                              ]
+                                .filter(Boolean)
+                                .join(" "),
+                            );
+                            return;
+                          }
                           setCsvText(text);
                           setColumnMap(mapping);
                           setImportPreview(preview);

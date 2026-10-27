@@ -7,6 +7,7 @@ import {
   calculatePortfolioAnalytics,
   formatAllocationPercentage,
   type AnalyticsLimits,
+  type FundHoldingsMap,
 } from "./analytics";
 import type { Position } from "./portfolio";
 
@@ -125,6 +126,120 @@ describe("portfolio analytics", () => {
     ).toBe(1);
     expect(rows[0].warning).toBe(true);
     expect(formatAllocationPercentage(0.0005)).toBe("<0.1%");
+  });
+
+  describe("fund look-through", () => {
+    const owned: Position[] = [
+      {
+        ticker: "NVDA",
+        shares: 1,
+        price: 100,
+        sector: "Information Technology",
+        asset_type: "Common Stock",
+      },
+      {
+        ticker: "VOO",
+        shares: 1,
+        price: 1000,
+        asset_type: "ETF",
+        is_etf_index: true,
+      },
+      { ticker: "BND", shares: 1, price: 400, asset_type: "ETF" },
+    ];
+    const funds: FundHoldingsMap = {
+      VOO: {
+        holdings: [
+          { ticker: "NVDA", name: "NVIDIA Corp", weight: 0.08 },
+          { ticker: "AAPL", name: "Apple Inc", weight: 0.07 },
+        ],
+        sectors: { "Information Technology": 0.4, "Health Care": 0.1, Financials: 0.5 },
+      },
+    };
+    const analytics = () => calculatePortfolioAnalytics(owned, 500, limits);
+
+    it("merges a fund's share of a company with the direct holding", () => {
+      const result = analytics();
+      const rows = buildAllocations(
+        result.positions,
+        result.portfolioValue,
+        "position",
+        "look-through",
+        0.1,
+        funds,
+      );
+      const nvda = rows.find((row) => row.key === "NVDA");
+      expect(nvda?.value).toBeCloseTo(180);
+      expect(nvda?.holdings).toEqual(["NVDA", "VOO"]);
+      expect(nvda?.lookThrough).toBe(true);
+      expect(rows.find((row) => row.key === "AAPL")?.holdings).toEqual(["VOO"]);
+      expect(rows.reduce((total, row) => total + row.value, 0)).toBeCloseTo(1500);
+    });
+
+    it("shows the rest of the fund as one other-holdings row without a limit", () => {
+      const result = analytics();
+      const rows = buildAllocations(
+        result.positions,
+        result.portfolioValue,
+        "position",
+        "look-through",
+        0.1,
+        funds,
+      );
+      const other = rows.find((row) => row.fund === "VOO");
+      expect(other?.label).toBe("VOO · other holdings");
+      expect(other?.value).toBeCloseTo(850);
+      expect(other?.limit).toBeNull();
+      expect(other?.warning).toBe(false);
+      // A fund without data stays as one row.
+      expect(rows.find((row) => row.key === "BND")?.value).toBe(400);
+      expect(rows.find((row) => row.key === "VOO")).toBeUndefined();
+    });
+
+    it("keeps limit warnings on the combined numbers", () => {
+      const result = analytics();
+      const rows = buildAllocations(
+        result.positions,
+        result.portfolioValue,
+        "position",
+        "look-through",
+        0.08,
+        funds,
+      );
+      // NVDA alone is 5% of 2000; with VOO's share it is 9%.
+      expect(rows.find((row) => row.key === "NVDA")?.warning).toBe(true);
+    });
+
+    it("splits a fund by its sector weights", () => {
+      const result = analytics();
+      const rows = buildAllocations(
+        result.positions,
+        result.portfolioValue,
+        "sector",
+        "look-through",
+        0.5,
+        funds,
+      );
+      const tech = rows.find((row) => row.key === "Information Technology");
+      expect(tech?.value).toBeCloseTo(500);
+      expect(tech?.holdings).toEqual(["NVDA", "VOO"]);
+      expect(rows.find((row) => row.key === "Financials")?.value).toBeCloseTo(500);
+      expect(rows.find((row) => row.key === "Health Care")?.value).toBeCloseTo(100);
+      expect(rows.find((row) => row.key === "ETF/Index")?.holdings).toEqual(["BND"]);
+      expect(rows.some((row) => row.fund)).toBe(false);
+    });
+
+    it("keeps the direct view unchanged when fund data is supplied", () => {
+      const result = analytics();
+      const rows = buildAllocations(
+        result.positions,
+        result.portfolioValue,
+        "position",
+        "direct",
+        null,
+        funds,
+      );
+      expect(rows.map((row) => row.key)).toEqual(["VOO", "BND", "NVDA"]);
+    });
   });
 
   it("reports sector and asset-type limit violations with affected holdings", () => {

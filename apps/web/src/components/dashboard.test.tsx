@@ -44,14 +44,17 @@ describe("Dashboard navigation", () => {
     vi.mocked(api).mockResolvedValue([]);
   });
 
-  it("opens on the FIRE page after sign-in", async () => {
+  it("opens on the Today page after sign-in, with the setup guide for a new account", async () => {
     render(<Dashboard email="owner@example.com" today="2026-10-23" />);
 
+    expect(await screen.findByRole("heading", { name: "Today" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Today" }).getAttribute("aria-current")).toBe("page");
+    expect(await screen.findByRole("heading", { name: "Set up StockBuddy in three steps" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /Open FIRE/ }));
     expect(await screen.findByRole("heading", { name: "FIRE plan" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "FIRE" }).getAttribute("aria-current")).toBe("page");
   });
 
-  it("puts FIRE first, then Portfolio with its tools, then Settings", () => {
+  it("puts Today first, then FIRE, then Portfolio with its tools, then Settings", () => {
     render(<Dashboard initialTab="portfolio" email="owner@example.com" today="2026-10-23" />);
 
     const nav = screen.getByRole("navigation", { name: "Main navigation" });
@@ -59,6 +62,7 @@ describe("Dashboard navigation", () => {
       item.textContent?.trim(),
     );
     expect(labels).toEqual([
+      "Today",
       "FIRE",
       "Portfolio",
       "Analytics",

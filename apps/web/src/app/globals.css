@@ -3285,3 +3285,77 @@ html:lang(hy) .hero h1 { line-height: 1.22; letter-spacing: -0.03em; }
 .cash-field-label { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.25rem 0.75rem; }
 .cash-summary { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--muted); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
 .cash-summary.short { color: #a23d35; }
+
+/* Today: the first page after sign-in. */
+.simple-page.today-shell { width: 100%; padding-top: 0.5rem; }
+.today-page { display: grid; gap: 1rem; padding-top: 1.25rem; }
+.today-heading h1 { margin: 0 0 0.2rem; }
+.today-heading p { margin: 0; }
+.today-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; }
+.today-card {
+  display: grid; align-content: start; gap: 0.3rem; min-width: 0; padding: 1rem 1.1rem;
+  border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink);
+  font: inherit; text-align: left;
+}
+button.today-card { cursor: pointer; }
+button.today-card:hover { border-color: #cbd5e1; background: #fcfcfd; }
+.today-card-label { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--label); font-size: var(--text-sm); font-weight: 600; }
+.today-card > strong { font-size: var(--text-xl); font-variant-numeric: tabular-nums; }
+.today-card small { font-size: var(--text-sm); }
+.today-card .positive, .net-worth-summary .positive { color: #1f7048; }
+.today-card .negative, .net-worth-summary .negative { color: #a23d35; }
+.today-progress { display: block; height: 6px; border-radius: 999px; background: #eef2f7; overflow: hidden; }
+.today-progress span { display: block; height: 100%; background: var(--sidebar); border-radius: inherit; }
+.today-section-heading h2, .today-list h2 { display: flex; align-items: center; gap: 0.45rem; margin: 0 0 0.6rem; font-size: var(--text-md); }
+.panel.today-chart, .panel.today-list, .panel.setup-guide { min-height: 0; }
+.today-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+.today-list ul { display: grid; gap: 0.35rem; margin: 0; padding: 0; list-style: none; }
+.today-row {
+  display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); gap: 0.6rem; width: 100%;
+  padding: 0.5rem 0.6rem; border: 0; border-radius: 8px; background: transparent;
+  color: var(--ink); font: inherit; font-size: var(--text-sm); text-align: left;
+}
+button.today-row { cursor: pointer; }
+button.today-row:hover { background: var(--row-hover); }
+.today-row span { color: var(--label); }
+.today-note { margin: 0.6rem 0 0; font-size: var(--text-xs); }
+.net-worth-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; margin-bottom: 0.5rem; }
+.net-worth-summary > div:first-child { display: grid; }
+.net-worth-summary strong { font-size: var(--text-lg); font-variant-numeric: tabular-nums; }
+.net-worth-summary .segmented { margin-left: auto; }
+.net-worth-summary .segmented button { min-width: 2.8rem; padding: 0.25rem 0.6rem; }
+.net-worth-plot { position: relative; }
+.net-worth-chart svg { display: block; width: 100%; height: 190px; touch-action: pan-y; }
+.net-worth-line { fill: none; stroke: var(--sidebar); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.net-worth-area { fill: rgba(31, 77, 50, 0.08); }
+.net-worth-dot { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border: 2px solid var(--sidebar); border-radius: 50%; background: #fff; pointer-events: none; }
+.net-worth-axis { display: flex; justify-content: space-between; margin-top: 0.35rem; color: var(--muted); font-size: var(--text-xs); }
+.net-worth-empty { display: grid; gap: 0.3rem; padding: 1.25rem 0; }
+.net-worth-empty p { margin: 0; }
+.setup-guide { border-color: #c7dccd; background: #f5faf6; }
+.setup-guide-heading { display: flex; justify-content: space-between; align-items: start; gap: 1rem; }
+.setup-guide-heading h2 { margin: 0; font-size: var(--text-md); }
+.setup-guide-heading p { margin: 0.2rem 0 0; }
+.setup-steps { display: grid; gap: 0.5rem; margin: 0.9rem 0 0; padding: 0; list-style: none; }
+.setup-steps li {
+  display: grid; grid-template-columns: 1.75rem minmax(0, 1fr) auto; align-items: center; gap: 0.75rem;
+  padding: 0.7rem 0.8rem; border: 1px solid var(--line); border-radius: 10px; background: #fff;
+}
+.setup-steps li > div { display: grid; gap: 0.15rem; }
+.setup-steps li .muted { font-size: var(--text-sm); }
+.setup-step-mark {
+  display: inline-grid; place-items: center; width: 1.75rem; height: 1.75rem; border-radius: 50%;
+  background: #eef2f7; color: var(--label); font-weight: 700; font-size: var(--text-sm);
+}
+.setup-steps li.done .setup-step-mark { background: var(--sidebar); color: #fff; }
+.setup-steps li.done strong { color: var(--muted); }
+.setup-step-done { color: #1f7048; font-weight: 600; font-size: var(--text-sm); }
+.setup-steps .button { display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap; }
+@media (max-width: 900px) {
+  .today-cards { grid-template-columns: minmax(0, 1fr); }
+  .today-columns { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .setup-steps li { grid-template-columns: 1.75rem minmax(0, 1fr); }
+  .setup-steps li > :last-child { grid-column: 2; justify-self: start; }
+}

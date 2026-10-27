@@ -72,7 +72,12 @@ const PAGE_DATA = [
   "/api/share-links",
   "/api/reminders",
 ];
-const MARKET_DATA = ["/api/prices/history", "/api/fx", "/api/securities/resolve-batch"];
+const MARKET_DATA = [
+  "/api/prices/history",
+  "/api/fx",
+  "/api/securities/resolve-batch",
+  "/api/funds/holdings",
+];
 const PAGE_TTL_MS = 60_000;
 const MARKET_TTL_MS = 5 * 60_000;
 const answers = new Map<string, { at: number; ttl: number; value: Promise<unknown> }>();

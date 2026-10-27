@@ -30,6 +30,7 @@ from stockbuddy.config import get_settings
 from stockbuddy.connections import ConnectionSetupError, ConnectionsService
 from stockbuddy.controls import normalize_settings
 from stockbuddy.market import SecurityNotFoundError, SecurityOverviewService
+from stockbuddy.net_worth import router as net_worth_router
 from stockbuddy.personas import builtin_prompts
 from stockbuddy.portfolio_image import PortfolioImageError, PortfolioImageExtractor
 from stockbuddy.providers import EdgarClient, YahooPriceClient, YahooPriceError
@@ -143,6 +144,7 @@ async def _deliver_reminders(app: FastAPI) -> None:
 
 
 app = FastAPI(title="StockBuddyAI API", version="0.1.0", lifespan=lifespan)
+app.include_router(net_worth_router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[get_settings().web_origin],
@@ -846,6 +848,7 @@ async def resolve_security(
 
 
 MAX_HISTORY_TICKERS = 40
+MAX_FUND_TICKERS = 30
 MAX_RESOLVE_BATCH = 60
 
 
@@ -904,6 +907,47 @@ async def price_history(
     if start < earliest or start > date.today():
         raise HTTPException(status_code=422, detail="Pick a start date within the last 10 years")
     return await asyncio.to_thread(request.app.state.market.close_history, symbols, start)
+
+
+@app.get("/api/funds/holdings")
+async def fund_holdings(
+    request: Request,
+    _user_id: Annotated[UUID, Depends(current_user)],
+    tickers: Annotated[str, Query(min_length=1, max_length=400)],
+):
+    """Top holdings and sector weights per fund, for look-through allocations.
+
+    Tickers that are not funds, or whose data is unavailable, are left out.
+    """
+    try:
+        symbols = sorted(
+            {
+                PositionInput(ticker=item, shares=0).ticker
+                for item in tickers.split(",")
+                if item.strip()
+            }
+        )
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail="One of the tickers is not valid") from exc
+    if not symbols or len(symbols) > MAX_FUND_TICKERS:
+        raise HTTPException(
+            status_code=422, detail=f"Ask for between 1 and {MAX_FUND_TICKERS} tickers"
+        )
+    lookup = getattr(request.app.state.market.prices, "fund_holdings", None)
+    if lookup is None:
+        return {}
+    limit = asyncio.Semaphore(8)
+
+    async def one(symbol: str):
+        async with limit:
+            try:
+                return await asyncio.to_thread(lookup, symbol)
+            except Exception:  # one bad fund must not hide the others
+                logger.exception("Fund holdings lookup failed for %s", symbol)
+                return None
+
+    results = await asyncio.gather(*(one(symbol) for symbol in symbols))
+    return {symbol: data for symbol, data in zip(symbols, results, strict=True) if data}
 
 
 @app.get("/api/fx")
