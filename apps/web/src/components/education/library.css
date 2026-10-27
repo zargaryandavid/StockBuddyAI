@@ -125,3 +125,18 @@
   .admin-library-tag { grid-template-columns: minmax(0, 1fr); }
 }
 .admin-library-tag > .button { justify-self: start; align-self: start; width: auto; margin-top: 1.4rem; }
+
+/* Stars light up to the one under the pointer, and the chosen one gives a small bounce. */
+.library-star-input label { transition: color 0.12s ease, transform 0.12s ease; }
+.library-star-input:hover label { color: var(--gold); }
+.library-star-input label:hover ~ label { color: var(--line); }
+.library-star-input label:hover { transform: scale(1.15); }
+.library-star-input label.on svg { animation: star-pop 0.35s ease-out; }
+@keyframes star-pop { 40% { transform: scale(1.35); } }
+.library-card { transition: transform 0.18s ease, box-shadow 0.18s ease; }
+.library-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08); }
+@media (prefers-reduced-motion: reduce) {
+  .library-star-input label, .library-card { transition: none; }
+  .library-star-input label:hover, .library-card:hover { transform: none; }
+  .library-star-input label.on svg { animation: none; }
+}

@@ -1,6 +1,7 @@
 /** Today page, net worth chart, setup guide and broker file import. */
 const today: Record<string, string> = {
   Today: "Այսօր",
+  Loading: "Բեռնվում է",
   "Your money at a glance, and what needs a look.": "Ձեր գումարները մեկ հայացքով, և այն, ինչին պետք է ուշադրություն դարձնել։",
   "Set up StockBuddy in three steps": "Կարգավորեք StockBuddy-ն երեք քայլով",
   "{done} of 3 done": "Արված է {done}-ը 3-ից",

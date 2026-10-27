@@ -7,6 +7,7 @@ import { fireProgress } from "@/lib/fire-views";
 import { useT } from "@/lib/i18n/client";
 import type { Translate } from "@/lib/i18n/core";
 import { money } from "@/lib/portfolio-metrics";
+import { AnimatedNumber } from "@/components/animated-number";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -49,7 +50,10 @@ export function FireProgressPanel({
         ) : (
           <>
             <p className="fire-progress-percent">
-              <strong>{progress.percent.toFixed(1)}%</strong> {t("funded")}
+              <strong>
+                <AnimatedNumber value={progress.percent} format={(n) => `${n.toFixed(1)}%`} />
+              </strong>{" "}
+              {t("funded")}
             </p>
             <div
               className="fire-progress-bar"

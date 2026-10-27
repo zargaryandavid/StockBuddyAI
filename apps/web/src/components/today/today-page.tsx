@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatedNumber } from "@/components/animated-number";
 import { AlertTriangle, ArrowRight, CalendarClock, Check, Flame, Info, PiggyBank, Wallet } from "lucide-react";
 
 import { cashTarget } from "@/lib/analytics";
 import { api, type Portfolio } from "@/lib/api";
 import { buildPlan, yearsLabel, type FireAsset, type FireEntry, type FireSettings, type FxRates } from "@/lib/fire";
 import { useT } from "@/lib/i18n/client";
+import { ShimmerLines } from "@/components/shimmer";
 import { money, signedMoney } from "@/lib/portfolio-metrics";
 import {
   attentionItems,
@@ -367,7 +369,7 @@ export function TodayPage({
             <Wallet size={16} aria-hidden="true" />
             {t("Net worth")}
           </span>
-          <strong>{ready ? m(netWorth) : "…"}</strong>
+          <strong>{ready ? <AnimatedNumber value={netWorth} format={m} /> : <span className="shimmer shimmer-value" aria-label={t("Loading")} />}</strong>
           {ready && (
             <small className={dayChange >= 0 ? "positive" : "negative"}>
               {t("Markets today: {amount}", { amount: signedMoney(dayChange, currency) })}
@@ -396,7 +398,7 @@ export function TodayPage({
             <Flame size={16} aria-hidden="true" />
             {t("FIRE progress")}
           </span>
-          <strong>{progress == null ? "—" : `${(progress * 100).toFixed(1)}%`}</strong>
+          <strong>{progress == null ? "—" : <AnimatedNumber value={progress * 100} format={(n) => `${n.toFixed(1)}%`} />}</strong>
           {progress != null && (
             <span className="today-progress" aria-hidden="true">
               <span style={{ width: `${progress * 100}%` }} />
@@ -440,7 +442,7 @@ export function TodayPage({
               )}
             </span>
           </span>
-          <strong>{ready ? m(totalCash) : "…"}</strong>
+          <strong>{ready ? <AnimatedNumber value={totalCash} format={m} /> : <span className="shimmer shimmer-value" aria-label={t("Loading")} />}</strong>
           {ready && portfolios.length > 0 && (
             <>
               <small className="muted">
@@ -486,7 +488,7 @@ export function TodayPage({
             {t("Needs a look")}
           </h2>
           {!ready ? (
-            <p className="muted">{t("Checking your limits…")}</p>
+            <ShimmerLines label={t("Checking your limits…")} lines={2} />
           ) : attention.length === 0 ? (
             <p className="muted">
               {portfolios.length ? t("Everything is within your limits.") : t("Add a portfolio to check its limits.")}

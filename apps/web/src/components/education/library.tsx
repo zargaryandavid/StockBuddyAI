@@ -15,6 +15,7 @@ import {
   type ReaderComment,
 } from "@/lib/books";
 import { useT } from "@/lib/i18n/client";
+import { ShimmerLines } from "@/components/shimmer";
 
 import "./library.css";
 
@@ -157,7 +158,7 @@ export function Library() {
       {!booksFailed && ratingsFailed && <p className="alert library-alert">{t("Ratings are unavailable right now.")}</p>}
 
       {books === null ? (
-        <p className="muted">{t("Loading books…")}</p>
+        <ShimmerLines label={t("Loading books…")} lines={4} card />
       ) : books.length === 0 ? (
         !booksFailed && <p className="muted">{t("No books yet.")}</p>
       ) : (

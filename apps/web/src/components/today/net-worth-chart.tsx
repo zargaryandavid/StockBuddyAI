@@ -136,8 +136,9 @@ export function NetWorthChart({
           setHover(nearest);
         }}
       >
-        <path d={area} className="net-worth-area" />
-        <path d={line} className="net-worth-line" />
+        {/* Keyed by range so the line draws itself again when the range changes. */}
+        <path key={`area-${range}`} d={area} className="net-worth-area" />
+        <path key={`line-${range}`} d={line} className="net-worth-line" pathLength={1} />
       </svg>
       {hover != null && (
         // Drawn outside the stretched chart so it stays round.

@@ -72,6 +72,8 @@ import { breakdown, currencyView, forPeriod, periodSuffix, type Period } from "@
 import { BreakdownDialog } from "./breakdown-dialog";
 import { TimelineDialog } from "./timeline-dialog";
 import { DonutRing } from "./donut";
+import { AnimatedNumber } from "@/components/animated-number";
+
 import { FireProgressPanel } from "./fire-progress";
 import { ProjectionChart } from "./projection-chart";
 
@@ -601,12 +603,12 @@ export function FireDashboard({
         />
         <SummaryTile
           label={t("Current assets")}
-          value={money(plan.currentAssets, currency)}
+          value={<AnimatedNumber value={plan.currentAssets} format={(n) => money(n, currency)} />}
           note={t("Portfolio + savings")}
         />
         <SummaryTile
           label={t("FIRE number")}
-          value={plan.fireNumber ? money(plan.fireNumber, currency) : "—"}
+          value={plan.fireNumber ? <AnimatedNumber value={plan.fireNumber} format={(n) => money(n, currency)} /> : "—"}
           note={t("{multiple}× yearly spending", {
             multiple: Math.round(100 / previewSettings.withdrawal_rate_pct),
           })}
@@ -1046,7 +1048,7 @@ function SummaryTile({
   tone,
 }: {
   label: string;
-  value: string;
+  value: ReactNode;
   note?: string;
   tone?: "positive" | "negative";
 }) {

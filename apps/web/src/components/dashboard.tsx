@@ -27,6 +27,7 @@ import { SupportPage } from "@/components/support-page";
 import { TodayPage, type TodayDestination } from "@/components/today/today-page";
 import { parseBrokerCsv } from "@/lib/broker-csv";
 import { AmountInput } from "@/components/amount-input";
+import { AnimatedNumber } from "@/components/animated-number";
 import { BondsSection, useBondHoldings } from "@/components/bonds-section";
 import { CashLabel, CashSummary, cashTargetNote } from "@/components/cash-target";
 import { cashShortfall, cashTarget, DEFAULT_CASH_TARGET } from "@/lib/analytics";
@@ -1383,7 +1384,7 @@ export function Dashboard({
                   <section className="portfolio-summary-grid" aria-label={t("Portfolio summary")}>
                     <SummaryCard
                       label={t("Total portfolio value")}
-                      value={money(metrics.totalValue, baseCurrency)}
+                      value={<AnimatedNumber value={metrics.totalValue} format={(n) => money(n, baseCurrency)} />}
                     />
                     <SummaryCard
                       label={t("Total cost basis")}
@@ -1720,7 +1721,7 @@ export function Dashboard({
                 </div>
 
                 <button
-                  className="button primary"
+                  className={`button primary${saveConfirmation ? " is-saved" : ""}`}
                   type="submit"
                   disabled={extracting || !positions.length}
                 >
@@ -2655,7 +2656,7 @@ function SummaryCard({
   short = false,
 }: {
   label: React.ReactNode;
-  value: string;
+  value: React.ReactNode;
   note?: string;
   tone?: "positive" | "negative";
   emphasis?: boolean;

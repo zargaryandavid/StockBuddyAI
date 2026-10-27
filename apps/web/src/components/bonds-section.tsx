@@ -6,6 +6,7 @@ import { ArrowRight, ScrollText } from "lucide-react";
 import { api } from "@/lib/api";
 import { bondHoldings, type BondHolding, type FireEntry, type FxRates } from "@/lib/fire";
 import { useT } from "@/lib/i18n/client";
+import { ShimmerLines } from "@/components/shimmer";
 import { money } from "@/lib/portfolio-metrics";
 
 /**
@@ -122,7 +123,7 @@ export function BondsSection({
         </button>
       </div>
       {loading ? (
-        <p className="muted">{t("Loading bonds…")}</p>
+        <ShimmerLines label={t("Loading bonds…")} lines={2} />
       ) : bonds.length === 0 ? (
         <p className="muted">{t("No bonds yet. Add one in FIRE as income of the type Bond.")}</p>
       ) : (
