@@ -43,6 +43,8 @@ import {
   EyeOff,
   Flame,
   Home,
+  Plus,
+  X,
   Heart,
   GripVertical,
   History,
@@ -135,6 +137,9 @@ export function Dashboard({
   const [portfolioName, setPortfolioName] = useState("My portfolio");
   const [cash, setCash] = useState(0);
   const [baseCurrency, setBaseCurrency] = useState("USD");
+  // Cash in other currencies, beside the cash in the portfolio's own currency.
+  const [otherCash, setOtherCash] = useState<CashBalance[]>([]);
+  const [cashRates, setCashRates] = useState<Record<string, number>>({});
   const [benchmark, setBenchmark] = useState("SPY");
   const [maxPosition, setMaxPosition] = useState<number | null>(null);
   const [maxSector, setMaxSector] = useState<number | null>(null);
@@ -245,9 +250,44 @@ export function Dashboard({
     () => portfolios.find((portfolio) => portfolio.id === selectedId),
     [portfolios, selectedId],
   );
+  // Rates for cash held in other currencies (cached for a few minutes by the API helper).
+  const otherCurrencies = useMemo(
+    () => [...new Set(otherCash.map((item) => item.currency).filter((code) => code !== baseCurrency))].sort().join(","),
+    [otherCash, baseCurrency],
+  );
+  useEffect(() => {
+    if (!otherCurrencies) return;
+    let active = true;
+    Promise.allSettled(
+      otherCurrencies.split(",").map((code) =>
+        api<{ rate: number }>(`/api/fx?from=${encodeURIComponent(code)}&to=${encodeURIComponent(baseCurrency)}`).then(
+          (result) => [code, result.rate] as const,
+        ),
+      ),
+    ).then((results) => {
+      if (!active) return;
+      const next: Record<string, number> = {};
+      for (const result of results) if (result.status === "fulfilled") next[result.value[0]] = result.value[1];
+      setCashRates(next);
+    });
+    return () => {
+      active = false;
+    };
+  }, [otherCurrencies, baseCurrency]);
+  /** All cash in the portfolio's own currency; amounts without a rate are left out. */
+  const totalCash = useMemo(
+    () =>
+      Number(cash || 0) +
+      otherCash.reduce((sum, item) => {
+        if (item.currency === baseCurrency) return sum + Number(item.amount || 0);
+        const rate = cashRates[item.currency];
+        return rate ? sum + Number(item.amount || 0) * rate : sum;
+      }, 0),
+    [cash, otherCash, cashRates, baseCurrency],
+  );
   const metrics = useMemo(
-    () => calculatePortfolioMetrics(positions, cash),
-    [positions, cash],
+    () => calculatePortfolioMetrics(positions, totalCash),
+    [positions, totalCash],
   );
   const cashGoal = cashTarget(minCash, book.min_cash_pct);
   const marketValue = metrics.holdingsValue;
@@ -491,6 +531,7 @@ export function Dashboard({
       setPortfolioName(portfolio.name);
       setCash(Number(portfolio.cash));
       setBaseCurrency(portfolio.base_currency ?? "USD");
+      setOtherCash(Array.isArray(portfolio.other_cash) ? portfolio.other_cash : []);
       setBenchmark(portfolio.benchmark ?? "SPY");
       setMaxPosition(portfolio.max_position_pct ?? null);
       setMaxSector(portfolio.max_sector_pct ?? null);
@@ -523,6 +564,7 @@ export function Dashboard({
     setPortfolioName("My portfolio");
     setCash(0);
     setBaseCurrency("USD");
+    setOtherCash([]);
     setBenchmark("SPY");
     setMaxPosition(null);
     setMaxSector(null);
@@ -873,6 +915,7 @@ export function Dashboard({
           name: portfolioName,
           cash,
           base_currency: baseCurrency,
+          other_cash: otherCash.filter((item) => item.currency !== baseCurrency && Number(item.amount) > 0),
           benchmark,
           max_position_pct: maxPosition,
           max_sector_pct: maxSector,
@@ -1113,7 +1156,7 @@ export function Dashboard({
         <section className="simple-page fire-shell">
           <FireDashboard
             portfolioValue={metrics.totalValue}
-            cash={Number(cash || 0)}
+            cash={totalCash}
             reports={positions
               .filter((position) => !position.is_etf_index && position.report_date)
               .map((position) => ({
@@ -1159,7 +1202,7 @@ export function Dashboard({
                     <span className="cash-field-label">
                       {t("Cash")}
                       <CashSummary
-                        cash={cash}
+                        cash={totalCash}
                         share={metrics.cashPercentage ?? 0}
                         totalValue={metrics.totalValue}
                         target={cashGoal}
@@ -1167,24 +1210,105 @@ export function Dashboard({
                         t={t}
                       />
                     </span>
-                    <span className="money-input">
-                      <span className="money-input-sign" aria-hidden="true">
-                        {currencySign(baseCurrency)}
+                    <span className="cash-inputs">
+                      <span className="money-input">
+                        <select
+                          aria-label={t("Portfolio currency")}
+                          value={baseCurrency}
+                          onChange={(event) => {
+                            setBaseCurrency(event.target.value);
+                            setSaveConfirmation(null);
+                            setDirty(true);
+                          }}
+                        >
+                          {[...new Set([baseCurrency, ...PORTFOLIO_CURRENCIES])].map((code) => (
+                            <option key={code} value={code}>
+                              {currencySign(code)} {code}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          aria-label={t("Cash")}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={cash}
+                          onChange={(event) => {
+                            setCash(Number(event.target.value));
+                            setSaveConfirmation(null);
+                            setDirty(true);
+                          }}
+                          required
+                        />
                       </span>
-                      <input
-                        aria-label={t("Cash")}
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={cash}
-                        onChange={(event) => {
-                          setCash(Number(event.target.value));
-                          setSaveConfirmation(null);
-                          setDirty(true);
-                        }}
-                        required
-                      />
+                      {otherCash.map((item, index) => (
+                        <span className="money-input" key={index}>
+                          <select
+                            aria-label={t("Currency of extra cash {number}", { number: index + 1 })}
+                            value={item.currency}
+                            onChange={(event) => {
+                              const currency = event.target.value;
+                              setOtherCash((current) =>
+                                current.map((row, at) => (at === index ? { ...row, currency } : row)),
+                              );
+                              setDirty(true);
+                            }}
+                          >
+                            {[...new Set([item.currency, ...PORTFOLIO_CURRENCIES])]
+                              .filter((code) => code !== baseCurrency || code === item.currency)
+                              .map((code) => (
+                                <option key={code} value={code}>
+                                  {currencySign(code)} {code}
+                                </option>
+                              ))}
+                          </select>
+                          <input
+                            aria-label={t("Extra cash {number}", { number: index + 1 })}
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.amount}
+                            onChange={(event) => {
+                              const amount = Number(event.target.value);
+                              setOtherCash((current) =>
+                                current.map((row, at) => (at === index ? { ...row, amount } : row)),
+                              );
+                              setDirty(true);
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className="money-input-remove"
+                            aria-label={t("Remove {currency} cash", { currency: item.currency })}
+                            onClick={() => {
+                              setOtherCash((current) => current.filter((_, at) => at !== index));
+                              setDirty(true);
+                            }}
+                          >
+                            <X size={14} aria-hidden="true" />
+                          </button>
+                        </span>
+                      ))}
+                      {otherCash.length < 10 && (
+                        <button
+                          type="button"
+                          className="cash-add"
+                          aria-label={t("Add cash in another currency")}
+                          title={t("Add cash in another currency")}
+                          onClick={() => {
+                            const used = new Set([baseCurrency, ...otherCash.map((item) => item.currency)]);
+                            const currency = PORTFOLIO_CURRENCIES.find((code) => !used.has(code)) ?? "EUR";
+                            setOtherCash((current) => [...current, { currency, amount: 0 }]);
+                            setDirty(true);
+                          }}
+                        >
+                          <Plus size={16} aria-hidden="true" />
+                        </button>
+                      )}
                     </span>
+                    {otherCash.some((item) => item.currency !== baseCurrency && !cashRates[item.currency]) && (
+                      <small className="muted">{t("Loading exchange rates…")}</small>
+                    )}
                   </label>
                 </div>
 
@@ -1220,9 +1344,9 @@ export function Dashboard({
                     />
                     <SummaryCard
                       label={<CashLabel target={cashGoal} t={t} />}
-                      value={`${money(cash, baseCurrency)} / ${((metrics.cashPercentage ?? 0) * 100).toFixed(1)}%`}
-                      note={cashTargetNote(cash, metrics.totalValue, cashGoal, (value) => money(value, baseCurrency), t)}
-                      short={cashShortfall(cash, metrics.totalValue, cashGoal) > 0.005}
+                      value={`${money(totalCash, baseCurrency)} / ${((metrics.cashPercentage ?? 0) * 100).toFixed(1)}%`}
+                      note={cashTargetNote(totalCash, metrics.totalValue, cashGoal, (value) => money(value, baseCurrency), t)}
+                      short={cashShortfall(totalCash, metrics.totalValue, cashGoal) > 0.005}
                     />
                     <SummaryCard
                       label={t("Number of holdings")}
@@ -1267,7 +1391,7 @@ export function Dashboard({
                           setDirty(true);
                         }}
                       >
-                        {["USD", "EUR", "GBP", "CAD", "AUD", "JPY"].map((currency) => (
+                        {[...new Set([baseCurrency, ...PORTFOLIO_CURRENCIES])].map((currency) => (
                           <option key={currency}>{currency}</option>
                         ))}
                       </select>
@@ -1649,7 +1773,7 @@ export function Dashboard({
                 portfolios={portfolios}
                 selectedId={selectedId}
                 positions={positions}
-                cash={cash}
+                cash={totalCash}
                 transactions={transactions}
                 useTransactionHistory={book.use_transaction_history_analytics}
                 loading={loadingPortfolios}
@@ -2403,6 +2527,9 @@ function Metric({ label, value }: { label: string; value: string }) {
 }
 
 type ResolveResult = { query: string; data?: Omit<Position, "shares">; error?: string };
+type CashBalance = { currency: string; amount: number };
+
+const PORTFOLIO_CURRENCIES = ["USD", "AMD", "EUR", "GBP", "RUB", "CAD", "CHF", "AUD", "JPY"];
 
 /** "$", "€", "֏"… for a currency code, or the code itself when it has no sign. */
 function currencySign(currency: string) {

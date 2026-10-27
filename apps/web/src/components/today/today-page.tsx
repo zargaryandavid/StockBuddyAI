@@ -87,10 +87,17 @@ export function TodayPage({
   // Exchange rates for income, expenses and assets kept in another currency.
   const foreign = useMemo(
     () =>
-      [...new Set([...(entries ?? []), ...(assets ?? [])].map((item) => item.currency).filter((code) => code && code !== currency))]
+      [
+        ...new Set(
+          [
+            ...[...(entries ?? []), ...(assets ?? [])].map((item) => item.currency),
+            ...portfolios.flatMap((portfolio) => (portfolio.other_cash ?? []).map((item) => item.currency)),
+          ].filter((code) => code && code !== currency),
+        ),
+      ]
         .sort()
         .join(","),
-    [entries, assets, currency],
+    [entries, assets, portfolios, currency],
   );
   useEffect(() => {
     if (!foreign) return;
@@ -156,8 +163,8 @@ export function TodayPage({
   }, [tickerKey, loadingPortfolios]);
 
   const snapshots = useMemo(
-    () => (quotes ? portfolios.map((portfolio) => portfolioSnapshot(portfolio, quotes)) : []),
-    [portfolios, quotes],
+    () => (quotes ? portfolios.map((portfolio) => portfolioSnapshot(portfolio, quotes, rates)) : []),
+    [portfolios, quotes, rates],
   );
   const investments = snapshots.reduce((sum, snapshot) => sum + snapshot.total, 0);
   const dayChange = snapshots.reduce((sum, snapshot) => sum + snapshot.dayChange, 0);

@@ -358,6 +358,12 @@ const portfolio: Record<string, string> = {
   "Target {target}% · {amount} to add": "Թիրախ՝ {target}% · պակասում է {amount}",
   "Target {target}%: {amount}": "Թիրախ՝ {target}%՝ {amount}",
   "Target {target}% · met": "Թիրախ՝ {target}% · կատարված է",
+  "Portfolio currency": "Պորտֆելի արժույթ",
+  "Currency of extra cash {number}": "Լրացուցիչ կանխիկի արժույթ {number}",
+  "Extra cash {number}": "Լրացուցիչ կանխիկ {number}",
+  "Remove {currency} cash": "Հեռացնել {currency} կանխիկը",
+  "Add cash in another currency": "Ավելացնել կանխիկ այլ արժույթով",
+  "Loading exchange rates…": "Բեռնում ենք փոխարժեքները…",
 };
 
 export default portfolio;

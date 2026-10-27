@@ -19,8 +19,19 @@ export type PortfolioSnapshot = {
 };
 
 /** What one portfolio is worth today, from its holdings, their quotes and its cash. */
-export function portfolioSnapshot(portfolio: Portfolio, quotes: Map<string, Quote>): PortfolioSnapshot {
-  const cash = Number(portfolio.cash) || 0;
+export function portfolioSnapshot(
+  portfolio: Portfolio,
+  quotes: Map<string, Quote>,
+  /** Exchange rates into the portfolio's currency, for cash held in other currencies. */
+  rates: Record<string, number> = {},
+): PortfolioSnapshot {
+  const own = portfolio.base_currency ?? "USD";
+  const cash =
+    (Number(portfolio.cash) || 0) +
+    (portfolio.other_cash ?? []).reduce((sum, item) => {
+      const rate = item.currency === own ? 1 : rates[item.currency];
+      return rate ? sum + (Number(item.amount) || 0) * rate : sum;
+    }, 0);
   const unpriced: string[] = [];
   const priced = portfolio.portfolio_positions.flatMap((position) => {
     const ticker = position.ticker.trim().toUpperCase();

@@ -6,6 +6,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Added
 
+- Portfolio: Cash has a currency picker (the portfolio's own currency), and "+" adds cash in other currencies on the same line (for example ֏500,000 beside $1,000). It is converted at today's rate into the portfolio's currency for every total, the cash target, FIRE and Today. The name field is shorter so everything fits on one line. Needs migration `20261027140000_portfolio_other_cash.sql`.
+
 - **Today** is the new first page after sign-in: net worth (all portfolios + savings, CDs and bonds + other owned assets) with today's market move and the change since the last reading, FIRE progress, cash against its target, limits that are broken (a company above its maximum position, cash below target), and company reports expected in the next 30 days (about three months after each last report).
 - **Net worth over time:** one reading per person per day is saved when Today loads (`net_worth_snapshots`, `GET /api/net-worth`, `PUT /api/net-worth/today`), drawn as a line with 1M / 6M / 1Y / All ranges. Needs migration `20261027130000_net_worth_snapshots.sql`.
 - **Setup guide** on Today for new accounts: add income and expenses, add a portfolio, add savings and other assets; each step ticks itself off, and it can be skipped.
@@ -621,6 +623,8 @@ All notable project changes and user-visible functionality are recorded here.
 - Added a compact ticker-symbol list beneath every industry allocation.
 
 ### Added
+
+- Portfolio: Cash has a currency picker (the portfolio's own currency), and "+" adds cash in other currencies on the same line (for example ֏500,000 beside $1,000). It is converted at today's rate into the portfolio's currency for every total, the cash target, FIRE and Today. The name field is shorter so everything fits on one line. Needs migration `20261027140000_portfolio_other_cash.sql`.
 
 - Separate user book and admin studio. The admin account can edit all five persona
   prompts, the position cap, the deep-value and trajectory sleeve weights, and the

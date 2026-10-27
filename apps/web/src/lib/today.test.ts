@@ -54,3 +54,17 @@ describe("Today numbers", () => {
     expect(changeSinceLast([], "2026-10-27", 1000)).toBeNull();
   });
 });
+
+describe("cash in other currencies", () => {
+  it("adds it at today's rate and leaves out a currency without one", () => {
+    const mixed: Portfolio = {
+      ...portfolio,
+      cash: 100,
+      other_cash: [
+        { currency: "AMD", amount: 40000 },
+        { currency: "EUR", amount: 10 },
+      ],
+    };
+    expect(portfolioSnapshot(mixed, quotes, { AMD: 0.0025 }).cash).toBe(200);
+  });
+});

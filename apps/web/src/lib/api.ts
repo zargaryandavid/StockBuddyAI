@@ -10,6 +10,8 @@ export type Portfolio = {
   max_position_pct?: number | null;
   max_sector_pct?: number | null;
   min_cash_pct?: number;
+  /** Cash in currencies other than base_currency. */
+  other_cash?: { currency: string; amount: number }[];
   time_horizon?: "Short Term" | "Medium Term" | "Long Term";
   rebalancing_threshold_pct?: number;
   portfolio_positions: import("@/lib/portfolio").Position[];

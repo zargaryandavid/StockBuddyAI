@@ -59,7 +59,8 @@ class Repository:
             token=token,
             json=_portfolio_rpc_payload(payload),
         )
-        return rows[0] if isinstance(rows, list) else rows
+        row = rows[0] if isinstance(rows, list) else rows
+        return await self._save_other_cash(token, row, payload)
 
     async def update_portfolio(
         self, token: str, portfolio_id: UUID, payload: PortfolioCreate
@@ -70,7 +71,30 @@ class Repository:
             token=token,
             json={"target_id": str(portfolio_id), **_portfolio_rpc_payload(payload)},
         )
-        return rows[0] if isinstance(rows, list) and rows else None
+        row = rows[0] if isinstance(rows, list) and rows else None
+        return await self._save_other_cash(token, row, payload) if row else None
+
+    async def _save_other_cash(
+        self, token: str, row: dict[str, Any], payload: PortfolioCreate
+    ) -> dict[str, Any]:
+        """Cash in other currencies is kept beside the portfolio, saved as the owner."""
+        other_cash = [
+            item.model_dump(mode="json")
+            for item in payload.other_cash
+            if item.currency != payload.base_currency
+        ]
+        if not isinstance(row, dict) or "id" not in row:
+            return row
+        if other_cash or row.get("other_cash"):
+            await self.db.rest(
+                "PATCH",
+                "portfolios",
+                token=token,
+                params={"id": f"eq.{row['id']}"},
+                json={"other_cash": other_cash},
+                prefer="return=minimal",
+            )
+        return {**row, "other_cash": other_cash}
 
     async def delete_portfolio(self, token: str, portfolio_id: UUID) -> bool:
         rows = await self.db.rest(

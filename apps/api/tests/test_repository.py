@@ -155,3 +155,26 @@ def test_rental_income_with_a_new_asset_creates_the_asset_first_and_links_it():
     assert (entry_method, entry_path) == ("POST", "fire_entries")
     assert entry_call["json"]["asset_id"] == "10000000-0000-0000-0000-000000000001"
     assert "new_asset" not in entry_call["json"]
+
+
+def test_cash_in_other_currencies_is_saved_beside_the_portfolio_as_its_owner():
+    gateway = Gateway()
+    repository = Repository(gateway)
+    payload = PortfolioCreate(
+        name="Mixed cash",
+        cash=1000,
+        base_currency="USD",
+        other_cash=[
+            {"currency": "amd", "amount": 500000},
+            {"currency": "USD", "amount": 5},  # its own currency belongs in "cash"
+        ],
+    )
+
+    saved = asyncio.run(repository.create_portfolio("user-token", payload))
+
+    method, path, kwargs = gateway.calls[-1]
+    assert (method, path) == ("PATCH", "portfolios")
+    assert kwargs["token"] == "user-token"
+    assert kwargs["params"] == {"id": "eq.10000000-0000-0000-0000-000000000001"}
+    assert kwargs["json"] == {"other_cash": [{"currency": "AMD", "amount": 500000.0}]}
+    assert saved["other_cash"] == [{"currency": "AMD", "amount": 500000.0}]

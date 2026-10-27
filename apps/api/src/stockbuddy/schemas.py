@@ -77,10 +77,26 @@ class PositionInput(BaseModel):
         return currency
 
 
+class CashBalance(BaseModel):
+    """Cash in a currency other than the portfolio's own."""
+
+    currency: str = Field(min_length=3, max_length=3)
+    amount: float = Field(ge=0, le=1e15)
+
+    @field_validator("currency")
+    @classmethod
+    def normalize_currency(cls, value: str) -> str:
+        currency = value.strip().upper()
+        if len(currency) != 3 or not currency.isalpha():
+            raise ValueError("currency must be a three-letter code")
+        return currency
+
+
 class PortfolioCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     cash: float = Field(ge=0)
     base_currency: str = Field(default="USD", min_length=3, max_length=3)
+    other_cash: list[CashBalance] = Field(default_factory=list, max_length=10)
     benchmark: str = Field(default="SPY", min_length=1, max_length=20)
     max_position_pct: float | None = Field(default=None, ge=0, le=1)
     max_sector_pct: float | None = Field(default=None, ge=0, le=1)
