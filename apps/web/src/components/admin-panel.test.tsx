@@ -122,6 +122,19 @@ describe("AdminPanel industry catalog", () => {
     await waitFor(() => expect(toggle).toHaveProperty("checked", false));
   });
 
+  it("saves the Amazon affiliate tag for the Library", async () => {
+    apiMock.mockResolvedValue({ ...initial, amazon_affiliate_tag: "stockbuddy-20" });
+    render(<AdminPanel email="admin@example.com" initial={initial} />);
+    const field = screen.getByLabelText(/Amazon affiliate tag/);
+    fireEvent.change(field, { target: { value: "stockbuddy-20" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save studio" }));
+
+    await waitFor(() => expect(apiMock).toHaveBeenCalledOnce());
+    const body = JSON.parse(String((apiMock.mock.calls[0][1] as RequestInit).body));
+    expect(body.amazon_affiliate_tag).toBe("stockbuddy-20");
+    await waitFor(() => expect(field).toHaveProperty("value", "stockbuddy-20"));
+  });
+
   it("resets the admin's own AI tokens for today without saving the studio", async () => {
     apiMock.mockResolvedValue({ reset: 1 });
     render(<AdminPanel email="admin@example.com" initial={initial} />);

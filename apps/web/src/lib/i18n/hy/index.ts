@@ -5,6 +5,7 @@ import api from "./api";
 import common from "./common";
 import education from "./education";
 import fire from "./fire";
+import library from "./library";
 import portfolio from "./portfolio";
 import today from "./today";
 
@@ -17,6 +18,7 @@ export const hy: Record<string, string> = {
   ...account,
   ...admin,
   ...education,
+  ...library,
   ...api,
   ...today,
 };

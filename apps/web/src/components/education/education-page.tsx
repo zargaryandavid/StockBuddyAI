@@ -8,7 +8,6 @@ import {
   Flame,
   Landmark,
   Layers,
-  Library,
   PiggyBank,
   PlayCircle,
   Shield,
@@ -20,7 +19,9 @@ import {
 import { api } from "@/lib/api";
 import { useT } from "@/lib/i18n/client";
 import type { Translate } from "@/lib/i18n/core";
-import { BOOKS, LESSONS, type EducationArticle, type Lesson } from "@/lib/education";
+import { LESSONS, type EducationArticle, type Lesson } from "@/lib/education";
+
+import { Library } from "./library";
 
 const LINK_ICONS = { article: BookOpen, video: PlayCircle, tool: Wrench };
 
@@ -36,13 +37,12 @@ const LESSON_LOOKS: Record<string, { icon: LucideIcon; color: string }> = {
   "bonds-savings": { icon: Landmark, color: "#5a5a2a" },
 };
 
-/** One tile of the article grid: an admin article, a built-in lesson, or the book list. */
+/** One tile of the article grid: an admin article or a built-in lesson. */
 type Tile =
   | { key: string; kind: "article"; title: string; image: string | null; article: EducationArticle }
-  | { key: string; kind: "lesson"; title: string; image: null; lesson: Lesson }
-  | { key: string; kind: "books"; title: string; image: null };
+  | { key: string; kind: "lesson"; title: string; image: null; lesson: Lesson };
 
-/** Financial articles from Admin, the built-in lessons, and books, as a grid of tiles. */
+/** Financial articles from Admin and the built-in lessons as a grid of tiles, then the Library. */
 export function EducationPage() {
   const t = useT();
   const [articles, setArticles] = useState<EducationArticle[] | null>(null);
@@ -78,7 +78,6 @@ export function EducationPage() {
         image: null,
         lesson,
       })),
-      { key: "books", kind: "books" as const, title: "Books worth reading", image: null },
     ],
     [articles],
   );
@@ -93,7 +92,7 @@ export function EducationPage() {
         <ul className="education-article-grid">
           {tiles.map((tile) => {
             const look = tile.kind === "lesson" ? LESSON_LOOKS[tile.lesson.id] : null;
-            const Icon = look?.icon ?? (tile.kind === "books" ? Library : BookOpen);
+            const Icon = look?.icon ?? BookOpen;
             return (
               <li key={tile.key}>
                 <button
@@ -117,12 +116,14 @@ export function EducationPage() {
         </ul>
       </section>
 
+      <Library />
+
       {reading && <Reader tile={reading} onClose={() => setReading(null)} />}
     </section>
   );
 }
 
-/** Admin articles keep the admin's own words; built-in lessons and the book list are translated. */
+/** Admin articles keep the admin's own words; built-in lessons are translated. */
 function tileTitle(tile: Tile, t: Translate) {
   return tile.kind === "article" ? tile.title : t(tile.title);
 }
@@ -187,15 +188,6 @@ function Reader({ tile, onClose }: { tile: Tile; onClose: () => void }) {
               })}
             </div>
           </div>
-        )}
-        {tile.kind === "books" && (
-          <ul className="education-books-list">
-            {BOOKS.map((book) => (
-              <li key={book.title}>
-                <strong>{book.title}</strong> <span className="muted">{t("by {author}", { author: book.author })}</span>
-              </li>
-            ))}
-          </ul>
         )}
       </article>
     </div>

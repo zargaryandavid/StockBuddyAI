@@ -34,6 +34,9 @@ ticker symbols, currency codes.
 | Assets | Ակտիվներ |
 | Wishlist | Ցանկությունների ցուցակ |
 | Education | Կրթություն |
+| Library (Education books) | Գրադարան |
+| rating (stars) | գնահատական |
+| reader | ընթերցող |
 | Shop | Խանութ |
 | Settings | Կարգավորումներ |
 | Support us | Աջակցեք մեզ |

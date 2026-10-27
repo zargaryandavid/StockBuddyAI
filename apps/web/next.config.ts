@@ -14,12 +14,14 @@ function origin(url: string) {
 }
 
 // What the browser may load. The app talks only to its own API and Supabase, shows
-// article pictures from Supabase Storage, and may never be framed by another site.
+// article pictures from Supabase Storage and Library book covers from Open Library (which
+// redirects many covers to archive.org), and may never be framed by another site.
+const bookCovers = "https://covers.openlibrary.org https://archive.org https://*.archive.org";
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' blob: data: ${origin(supabaseUrl)}`,
+  `img-src 'self' blob: data: ${origin(supabaseUrl)} ${bookCovers}`,
   "font-src 'self'",
   `connect-src 'self' ${origin(apiUrl)} ${origin(supabaseUrl)} ${origin(supabaseUrl).replace(/^http/, "ws")}`,
   "object-src 'none'",

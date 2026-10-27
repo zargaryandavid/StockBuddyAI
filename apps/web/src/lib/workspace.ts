@@ -13,6 +13,8 @@ export type BookSettings = {
   use_transaction_history_analytics: boolean;
   /** Cash share portfolios without their own Min cash should keep. */
   min_cash_pct?: number;
+  /** Amazon Associates tag for the Library's book links; "" means plain links. */
+  amazon_affiliate_tag?: string;
   email_reminders_enabled?: boolean;
   /** Daily AI review limit per user, from the admin AI limits. */
   daily_ai_reviews?: number;
@@ -32,6 +34,7 @@ export const defaultBook: BookSettings = {
   trajectory_weight: 0.3,
   use_transaction_history_analytics: true,
   min_cash_pct: 0.05,
+  amazon_affiliate_tag: "",
   industries: [
     { name: "Communication Services", icon: "message-circle" },
     { name: "Consumer Discretionary", icon: "shopping-bag" },

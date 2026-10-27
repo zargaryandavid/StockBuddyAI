@@ -130,13 +130,6 @@ export const LESSONS: Lesson[] = [
   },
 ];
 
-export const BOOKS = [
-  { title: "The Simple Path to Wealth", author: "JL Collins" },
-  { title: "Your Money or Your Life", author: "Vicki Robin and Joe Dominguez" },
-  { title: "The Little Book of Common Sense Investing", author: "John C. Bogle" },
-  { title: "A Random Walk Down Wall Street", author: "Burton G. Malkiel" },
-];
-
 /** A financial article written in Admin and shown to every user. */
 export type EducationArticle = {
   id: string;

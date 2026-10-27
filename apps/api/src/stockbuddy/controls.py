@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -9,6 +10,9 @@ from hedge_fund.signals import ALPHA_MODEL_REGISTRY, LLMAgent
 
 from stockbuddy.industries import DEFAULT_INDUSTRIES, suggest_industry_icon
 from stockbuddy.personas import PERSONA_BY_NAME, PERSONAS, prompt_is_usable
+
+# An Amazon Associates tracking id such as "stockbuddy-20"; empty turns tagging off.
+AFFILIATE_TAG = re.compile(r"[A-Za-z0-9-]{0,64}")
 
 
 @dataclass(frozen=True)
@@ -39,6 +43,8 @@ class StudioSettings:
     use_transaction_history_analytics: bool = True
     # Cash share portfolios without their own Min cash should keep.
     min_cash_pct: float = 0.05
+    # Amazon Associates tag for the Library's book links; "" sends plain links.
+    amazon_affiliate_tag: str = ""
     # Uses per person per day of each AI feature; 0 turns the feature off.
     daily_wish_checks: int = 100
     daily_screenshot_imports: int = 20
@@ -112,6 +118,7 @@ def normalize_settings(
     llm_model: str,
     use_transaction_history_analytics: bool = True,
     min_cash_pct: float = 0.05,
+    amazon_affiliate_tag: str = "",
     prompts: dict[str, str],
     defaults: dict[str, str],
     industries: list[tuple[str, str]] | None = None,
@@ -130,6 +137,9 @@ def normalize_settings(
     industry_cap = _percent(max_industry_pct, "Industry position")
     if not 0 <= min_cash_pct <= 1:
         raise ValueError("Minimum cash must be between 0% and 100%")
+    affiliate_tag = amazon_affiliate_tag.strip()
+    if not AFFILIATE_TAG.fullmatch(affiliate_tag):
+        raise ValueError("Amazon affiliate tag must be at most 64 letters, digits, or hyphens")
     deep, trajectory = split_sleeve_weights(deep_value_weight)
     model = llm_model.strip()
     if not model or len(model) > 80 or any(character.isspace() for character in model):
@@ -169,6 +179,7 @@ def normalize_settings(
         llm_model=model,
         use_transaction_history_analytics=use_transaction_history_analytics,
         min_cash_pct=float(min_cash_pct),
+        amazon_affiliate_tag=affiliate_tag,
         daily_wish_checks=daily_wish_checks,
         daily_screenshot_imports=daily_screenshot_imports,
         daily_ai_reviews=daily_ai_reviews,

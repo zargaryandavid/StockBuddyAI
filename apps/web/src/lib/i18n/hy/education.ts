@@ -5,7 +5,6 @@ const education: Record<string, string> = {
   Articles: "Հոդվածներ",
   Close: "Փակել",
   "Read and watch": "Կարդացեք և դիտեք",
-  "Books worth reading": "Կարդալու արժանի գրքեր",
   "by {author}": "հեղինակ՝ {author}",
 
   // ── Built-in lessons ────────────────────────────────────────────────────────

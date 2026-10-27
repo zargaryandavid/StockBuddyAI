@@ -31,7 +31,7 @@ describe("EducationPage", () => {
   });
   afterEach(cleanup);
 
-  it("shows admin articles first, then lessons and books, as picture tiles that open to read", async () => {
+  it("shows admin articles first, then lessons, as picture tiles that open to read, then the Library", async () => {
     render(<EducationPage />);
 
     expect(screen.queryByRole("region", { name: "Tips for you" })).toBeNull();
@@ -39,20 +39,15 @@ describe("EducationPage", () => {
     expect(await within(grid).findByRole("button", { name: "Why index funds win" })).toBeTruthy();
     const titles = within(grid).getAllByRole("button").map((tile) => tile.textContent);
     expect(titles.slice(0, 3)).toEqual(["Why index funds win", "Saving 50%", "What FIRE is"]);
-    expect(titles).toHaveLength(2 + LESSONS.length + 1);
-    expect(titles.at(-1)).toBe("Books worth reading");
+    expect(titles).toHaveLength(2 + LESSONS.length);
+    expect(screen.getByRole("region", { name: "Library" })).toBeTruthy();
     expect(within(grid).getByRole("button", { name: "Why index funds win" }).querySelector("img")?.getAttribute("src")).toBe(
       "https://storage.test/education/articles/a1.png",
     );
 
     fireEvent.click(within(grid).getByRole("button", { name: "Why index funds win" }));
-    let reader = screen.getByRole("dialog", { name: "Why index funds win" });
+    const reader = screen.getByRole("dialog", { name: "Why index funds win" });
     expect(within(reader).getByText("Over decades, fees matter a lot.")).toBeTruthy();
-    fireEvent.click(within(reader).getByRole("button", { name: "Close" }));
-
-    fireEvent.click(within(grid).getByRole("button", { name: "Books worth reading" }));
-    reader = screen.getByRole("dialog", { name: "Books worth reading" });
-    expect(reader.textContent).toContain("The Simple Path to Wealth");
     fireEvent.click(within(reader).getByRole("button", { name: "Close" }));
     expect(screen.queryByRole("dialog")).toBeNull();
   });

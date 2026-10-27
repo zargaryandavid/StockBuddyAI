@@ -37,6 +37,7 @@ export type StudioConfig = {
   llm_model: string;
   use_transaction_history_analytics: boolean;
   min_cash_pct?: number;
+  amazon_affiliate_tag?: string;
   daily_wish_checks?: number;
   daily_screenshot_imports?: number;
   daily_ai_reviews?: number;
@@ -56,6 +57,7 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
   );
   const [deepValue, setDeepValue] = useState(percent(initial.deep_value_weight));
   const [minCash, setMinCash] = useState(percent(initial.min_cash_pct ?? 0.05));
+  const [affiliateTag, setAffiliateTag] = useState(initial.amazon_affiliate_tag ?? "");
   const [model, setModel] = useState(initial.llm_model);
   const models = initial.models ?? [];
   const provider = models.find((item) => item.id === model)?.provider;
@@ -135,6 +137,7 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
           llm_model: model.trim(),
           use_transaction_history_analytics: useTransactionHistory,
           min_cash_pct: Number(minCash) / 100,
+          amazon_affiliate_tag: affiliateTag.trim(),
           daily_wish_checks: Number(limits.daily_wish_checks),
           daily_screenshot_imports: Number(limits.daily_screenshot_imports),
           daily_ai_reviews: Number(limits.daily_ai_reviews),
@@ -157,6 +160,7 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
       setIndustryPosition(percent(saved.max_industry_pct));
       setDeepValue(percent(saved.deep_value_weight));
       setMinCash(percent(saved.min_cash_pct ?? 0.05));
+      setAffiliateTag(saved.amazon_affiliate_tag ?? "");
       setNotice(t("Studio settings saved. The next review uses them."));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : t("Could not save studio settings"));
@@ -319,6 +323,30 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
                 {t("Use transaction history in Analytics")}
               </label>
             </div>
+          </div>
+        </article>
+
+        <article className="panel settings-panel">
+          <div className="panel-heading">
+            <div>
+              <p className="step">{t("Education")}</p>
+              <h2>{t("Library")}</h2>
+            </div>
+          </div>
+          <div className="settings-row">
+            <label>
+              {t("Amazon affiliate tag")}
+              <input
+                value={affiliateTag}
+                onChange={(event) => setAffiliateTag(event.target.value)}
+                maxLength={64}
+                pattern="[A-Za-z0-9\-]*"
+                placeholder="stockbuddy-20"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <small className="muted">{t("Added to the Library's Buy on Amazon links. Leave empty for plain links.")}</small>
+            </label>
           </div>
         </article>
 

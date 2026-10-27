@@ -6,6 +6,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Added
 
+- Education **Library**: 15 investing and personal-finance books with covers, short descriptions and "Buy on Amazon" links using the affiliate tag set in Admin (new Library panel), with the Amazon Associates disclosure. Readers can rate a book 1–5 stars with an optional comment, see other readers' comments (no names), and a Top 5 by readers' ratings, filled with our picks until there are enough. Needs migrations `20261027150000_amazon_affiliate_tag.sql` and `20261027160000_book_reviews.sql`.
+
 - Bonds on the Portfolio page: the bonds entered in FIRE are listed under the holdings (face value, coupon, how often it pays, maturity, income a year, total) with "Edit in FIRE". They are entered only in FIRE, so they are never counted twice, and load when the section scrolls into view. Analytics adds **Your mix**: stocks, funds and ETFs, bonds and cash as shares of everything invested.
 
 - Portfolio: Cash has a currency picker (the portfolio's own currency), and "+" adds cash in other currencies on the same line (for example ֏500,000 beside $1,000). It is converted at today's rate into the portfolio's currency for every total, the cash target, FIRE and Today. The name field is shorter so everything fits on one line. Needs migration `20261027140000_portfolio_other_cash.sql`.
@@ -635,6 +637,8 @@ All notable project changes and user-visible functionality are recorded here.
 - Added a compact ticker-symbol list beneath every industry allocation.
 
 ### Added
+
+- Education **Library**: 15 investing and personal-finance books with covers, short descriptions and "Buy on Amazon" links using the affiliate tag set in Admin (new Library panel), with the Amazon Associates disclosure. Readers can rate a book 1–5 stars with an optional comment, see other readers' comments (no names), and a Top 5 by readers' ratings, filled with our picks until there are enough. Needs migrations `20261027150000_amazon_affiliate_tag.sql` and `20261027160000_book_reviews.sql`.
 
 - Bonds on the Portfolio page: the bonds entered in FIRE are listed under the holdings (face value, coupon, how often it pays, maturity, income a year, total) with "Edit in FIRE". They are entered only in FIRE, so they are never counted twice, and load when the section scrolls into view. Analytics adds **Your mix**: stocks, funds and ETFs, bonds and cash as shares of everything invested.
 

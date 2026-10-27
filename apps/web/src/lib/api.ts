@@ -71,6 +71,7 @@ const PAGE_DATA = [
   "/api/fire/",
   "/api/wishes",
   "/api/education/articles",
+  "/api/books/ratings",
   "/api/share-links",
   "/api/reminders",
 ];

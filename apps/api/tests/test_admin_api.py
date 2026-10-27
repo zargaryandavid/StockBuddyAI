@@ -80,6 +80,7 @@ def test_admin_can_save_prompts_and_book_settings():
                 "deep_value_weight": 0.6,
                 "llm_model": "claude-opus-5-5",
                 "min_cash_pct": 0.08,
+                "amazon_affiliate_tag": " stockbuddy-20 ",
                 "industries": [
                     {"name": item.name, "icon": item.icon} for item in DEFAULT_INDUSTRIES
                 ],
@@ -104,6 +105,35 @@ def test_admin_can_save_prompts_and_book_settings():
     assert repository.saved.use_transaction_history_analytics is True
     assert body["min_cash_pct"] == 0.08
     assert repository.saved.min_cash_pct == 0.08
+    assert body["amazon_affiliate_tag"] == "stockbuddy-20"
+    assert repository.saved.amazon_affiliate_tag == "stockbuddy-20"
+
+
+def test_admin_affiliate_tag_allows_only_letters_digits_and_hyphens():
+    repository = Repository()
+    prompts = builtin_prompts()
+    with TestClient(app) as client:
+        app.state.gateway = Gateway()
+        app.state.repository = repository
+        response = client.put(
+            "/api/admin/config",
+            headers={"Authorization": "Bearer admin"},
+            json={
+                "max_position_pct": 0.25,
+                "max_industry_pct": 0.25,
+                "deep_value_weight": 0.7,
+                "llm_model": "claude-opus-5-5",
+                "amazon_affiliate_tag": "tag&evil=1",
+                "industries": [
+                    {"name": item.name, "icon": item.icon} for item in DEFAULT_INDUSTRIES
+                ],
+                "prompts": [
+                    {"persona": name, "prompt": prompt} for name, prompt in prompts.items()
+                ],
+            },
+        )
+    assert response.status_code == 422
+    assert repository.saved is None
 
 
 def test_admin_can_disable_transaction_history_analytics():
