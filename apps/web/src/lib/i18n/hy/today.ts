@@ -101,6 +101,12 @@ const today: Record<string, string> = {
   "Funds and ETFs": "Ֆոնդեր և ETF-ներ",
   "Your mix": "Ձեր բաշխումը",
   "Bonds are the ones entered in FIRE, at face value.": "Պարտատոմսերը FIRE-ում մուտքագրվածներն են՝ անվանական արժեքով։",
+  "your Min cash": "ձեր նվազագույն կանխիկը",
+  "{share} of your portfolios · target {target} = {amount}": "Ձեր պորտֆելների {share}-ը · թիրախ՝ {target} = {amount}",
+  "{amount} to add to reach the target": "Թիրախին հասնելու համար պակասում է {amount}",
+  "Target met · {amount} above it": "Թիրախը կատարված է · {amount}-ով ավելի",
+  "Why: cash kept aside covers emergencies and lets you buy when prices drop, without selling. Change the target with Min cash (%) in Portfolio settings, or for everyone in Admin.":
+    "Ինչու՝ մի կողմ դրված կանխիկը ծածկում է անսպասելի ծախսերը և թույլ է տալիս գնել, երբ գները իջնում են, առանց վաճառելու։ Թիրախը փոխեք Պորտֆելի կարգավորումներում՝ «Կանխիկի նվազագույն չափ (%)», կամ բոլորի համար՝ Ադմինում։",
 };
 
 export default today;

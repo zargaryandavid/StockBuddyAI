@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ArrowRight, CalendarClock, Check, Flame, PiggyBank, Wallet } from "lucide-react";
 
+import { cashTarget } from "@/lib/analytics";
 import { api, type Portfolio } from "@/lib/api";
 import { buildPlan, yearsLabel, type FireAsset, type FireEntry, type FireSettings, type FxRates } from "@/lib/fire";
 import { useT } from "@/lib/i18n/client";
@@ -239,6 +240,16 @@ export function TodayPage({
   );
   const unpriced = [...new Set(snapshots.flatMap((snapshot) => snapshot.unpriced))];
   const progress = plan.fireNumber ? Math.min(1, plan.currentAssets / plan.fireNumber) : null;
+  // The cash each portfolio should keep (its Min cash, or the book default of 5%), added up.
+  const cashTargets = snapshots.map((snapshot) => {
+    const portfolio = portfolios.find((item) => item.id === snapshot.id);
+    return { pct: cashTarget(portfolio?.min_cash_pct, book.min_cash_pct), total: snapshot.total };
+  });
+  const cashTargetAmount = cashTargets.reduce((sum, item) => sum + item.pct * item.total, 0);
+  const targetPcts = [...new Set(cashTargets.map((item) => item.pct))];
+  const targetLabel =
+    targetPcts.length === 1 ? `${Number((targetPcts[0] * 100).toFixed(1))}%` : t("your Min cash");
+  const cashShare = investments ? totalCash / investments : 0;
   const cashGoal = snapshots.reduce((sum, snapshot) => {
     const item = attention.find((entry) => entry.kind === "cash" && entry.portfolio === snapshot.name);
     return sum + (item && item.kind === "cash" ? item.missing : 0);
@@ -398,15 +409,36 @@ export function TodayPage({
             {t("Cash")}
           </span>
           <strong>{ready ? m(totalCash) : "…"}</strong>
-          <small className={cashGoal > 0.005 ? "negative" : "muted"}>
+          {ready && portfolios.length > 0 && (
+            <>
+              <small className="muted">
+                {t("{share} of your portfolios · target {target} = {amount}", {
+                  share: `${(cashShare * 100).toFixed(1)}%`,
+                  target: targetLabel,
+                  amount: m(cashTargetAmount),
+                })}
+              </small>
+              <span className="today-progress cash" aria-hidden="true">
+                <span style={{ width: `${cashTargetAmount ? Math.min(100, (totalCash / cashTargetAmount) * 100) : 100}%` }} />
+              </span>
+            </>
+          )}
+          <small className={cashGoal > 0.005 ? "negative" : "positive"}>
             {!ready
               ? ""
               : !portfolios.length
                 ? t("No portfolio yet")
                 : cashGoal > 0.005
-                  ? t("{amount} below your cash target", { amount: m(cashGoal) })
-                  : t("At or above your cash target")}
+                  ? t("{amount} to add to reach the target", { amount: m(cashGoal) })
+                  : t("Target met · {amount} above it", { amount: m(Math.max(0, totalCash - cashTargetAmount)) })}
           </small>
+          {ready && portfolios.length > 0 && (
+            <small className="muted today-card-help">
+              {t(
+                "Why: cash kept aside covers emergencies and lets you buy when prices drop, without selling. Change the target with Min cash (%) in Portfolio settings, or for everyone in Admin.",
+              )}
+            </small>
+          )}
         </button>
       </div>
 

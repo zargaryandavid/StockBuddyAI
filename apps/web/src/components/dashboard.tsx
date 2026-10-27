@@ -1183,6 +1183,8 @@ export function Dashboard({
       {error && <div className="alert page-message" role="alert">{t(error)}</div>}
       {notice && <div className="notice page-message">{t(notice)}</div>}
 
+      {/* Restarts on every page change: a thin bar across the top while the page opens. */}
+      <div className="page-progress" key={`${activeTab}-${portfolioView}`} aria-hidden="true" />
       {activeTab === "today" ? (
         <section className="simple-page today-shell">
           <TodayPage

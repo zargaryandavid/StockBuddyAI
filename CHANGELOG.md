@@ -166,6 +166,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Fixed
 
+- Today Cash card: shows the cash share of your portfolios, the target and what it means in dollars ("7.7% of your portfolios · target 5% = $5,397"), a progress bar, how much is missing or above the target, and why the target exists and where to change it. Switching pages now shows a short loading bar at the top and the new page fades in (off for reduced motion).
+
 - Today: the net worth breakdown reads Portfolio · Reserved cash · Savings · Bonds (plus Property and other assets when there are any), instead of Investments · Savings · Other.
 
 - Today: the open portfolio is shown as it is on screen, so cash or holdings changed but not saved yet count straight away, with a note and an "Open Portfolio to save" button. The setup steps now match where things are entered: savings accounts, CDs and bonds in FIRE; homes, rental and commercial property, land, vehicles and equipment in Assets.
