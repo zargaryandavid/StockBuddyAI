@@ -296,6 +296,23 @@ export function Dashboard({
       }, 0),
     [cash, cashCurrency, otherCash, cashRates, baseCurrency],
   );
+  // Today shows the open portfolio as it is on screen, including changes not saved yet.
+  const todayPortfolios = useMemo(
+    () =>
+      dirty && editingId
+        ? portfolios.map((portfolio) =>
+            portfolio.id === editingId
+              ? {
+                  ...portfolio,
+                  ...savedCash([{ currency: cashCurrency, amount: Number(cash || 0) }, ...otherCash], baseCurrency),
+                  base_currency: baseCurrency,
+                  portfolio_positions: positions.filter((position) => position.ticker.trim()),
+                }
+              : portfolio,
+          )
+        : portfolios,
+    [dirty, editingId, portfolios, cashCurrency, cash, otherCash, baseCurrency, positions],
+  );
   const metrics = useMemo(
     () => calculatePortfolioMetrics(positions, totalCash),
     [positions, totalCash],
@@ -1160,7 +1177,8 @@ export function Dashboard({
       {activeTab === "today" ? (
         <section className="simple-page today-shell">
           <TodayPage
-            portfolios={portfolios}
+            portfolios={todayPortfolios}
+            unsavedPortfolio={dirty && editingId ? portfolioName || t("My portfolio") : null}
             loadingPortfolios={loadingPortfolios}
             book={book}
             today={today}

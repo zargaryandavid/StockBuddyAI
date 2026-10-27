@@ -212,6 +212,20 @@ describe("Holdings table", () => {
     });
   });
 
+  it("shows cash typed on Portfolio on Today before it is saved, and says so", async () => {
+    render(<Dashboard initialTab="portfolio" email="owner@example.com" today="2026-10-23" />);
+    await screen.findByText("18.2");
+    const amount = screen.getByRole("textbox", { name: "Cash" });
+    fireEvent.focus(amount);
+    fireEvent.change(amount, { target: { value: "1000" } });
+    fireEvent.blur(amount);
+
+    fireEvent.click(screen.getByRole("button", { name: "Today" }));
+    expect(await screen.findByText(/changes to .* that are not saved yet/)).toBeTruthy();
+    const card = (await screen.findAllByText("Cash")).map((node) => node.closest(".today-card")).find(Boolean);
+    await waitFor(() => expect(card?.textContent).toContain("$1,000.00"));
+  });
+
   it("moves a row with the arrow keys on its handle", async () => {
     render(<Dashboard initialTab="portfolio" email="owner@example.com" today="2026-10-23" />);
     await screen.findByText("18.2");

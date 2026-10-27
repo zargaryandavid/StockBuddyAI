@@ -164,6 +164,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Fixed
 
+- Today: the open portfolio is shown as it is on screen, so cash or holdings changed but not saved yet count straight away, with a note and an "Open Portfolio to save" button. The setup steps now match where things are entered: savings accounts, CDs and bonds in FIRE; homes, rental and commercial property, land, vehicles and equipment in Assets.
+
 - Cash currency: the box before Cash now sets only the currency the cash is typed in (for example ֏400,000); it is converted at today's rate into the portfolio's currency, shown as "All cash together: $1,000". The portfolio's own currency stays under Portfolio settings, so prices, cost basis and gains no longer switch to AMD.
 
 - Portfolio currency: picking another currency (for example AMD) no longer snaps back to USD. Changing it used to reload the saved portfolio over the change. Holdings are now priced again in the new currency, and extra cash already in that currency moves into the main amount. Cash amounts drop leading zeros ("030000" becomes 30000) and show as 30,000 when you are not typing.

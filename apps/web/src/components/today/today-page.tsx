@@ -37,12 +37,15 @@ const FIRE_DEFAULTS: FireSettings = {
 /** First screen after sign-in: what the money looks like today and what needs a look. */
 export function TodayPage({
   portfolios,
+  unsavedPortfolio = null,
   loadingPortfolios,
   book,
   today,
   onOpen,
 }: {
   portfolios: Portfolio[];
+  /** Name of the open portfolio when it has changes that are not saved yet. */
+  unsavedPortfolio?: string | null;
   loadingPortfolios: boolean;
   book: BookSettings;
   today: string;
@@ -261,7 +264,7 @@ export function TodayPage({
   const stepCopy = {
     plan: {
       title: t("Add your income and expenses"),
-      text: t("Your salary, rent and bills. FIRE uses them to work out how much you save and when you could stop working."),
+      text: t("Your salary, rent and bills, plus savings accounts, CDs and bonds. FIRE uses them to work out how much you save and when you could stop working."),
       action: t("Open FIRE"),
       to: "fire" as const,
     },
@@ -272,8 +275,8 @@ export function TodayPage({
       to: "portfolio" as const,
     },
     assets: {
-      title: t("Add savings and other assets"),
-      text: t("Savings accounts, CDs, bonds, a home or a car, so your net worth is complete."),
+      title: t("Add your property and other assets"),
+      text: t("Your home, rental or commercial property, apartments, land, vehicles or equipment, so your net worth is complete."),
       action: t("Open Assets"),
       to: "assets" as const,
     },
@@ -285,6 +288,17 @@ export function TodayPage({
         <h1 id="today-title">{t("Today")}</h1>
         <p className="muted">{t("Your money at a glance, and what needs a look.")}</p>
       </header>
+
+      {unsavedPortfolio && (
+        <div className="today-unsaved" role="status">
+          <span>
+            {t("These numbers include changes to {portfolio} that are not saved yet.", { portfolio: unsavedPortfolio })}
+          </span>
+          <button type="button" className="button" onClick={() => onOpen("portfolio")}>
+            {t("Open Portfolio to save")}
+          </button>
+        </div>
+      )}
 
       {showSetup && (
         <article className="panel setup-guide" aria-labelledby="setup-title">

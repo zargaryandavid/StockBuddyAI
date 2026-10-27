@@ -7,16 +7,19 @@ const today: Record<string, string> = {
   "Skip for now": "Բաց թողնել առայժմ",
   Done: "Արված է",
   "Add your income and expenses": "Ավելացրեք ձեր եկամուտներն ու ծախսերը",
-  "Your salary, rent and bills. FIRE uses them to work out how much you save and when you could stop working.":
-    "Աշխատավարձ, վարձ և հաշիվներ։ FIRE-ը դրանցով հաշվում է, թե որքան եք խնայում և երբ կարող եք դադարել աշխատել։",
+  "Your salary, rent and bills, plus savings accounts, CDs and bonds. FIRE uses them to work out how much you save and when you could stop working.":
+    "Աշխատավարձ, վարձ և հաշիվներ, ինչպես նաև խնայողական հաշիվներ, ավանդներ և պարտատոմսեր։ FIRE-ը դրանցով հաշվում է, թե որքան եք խնայում և երբ կարող եք դադարել աշխատել։",
   "Open FIRE": "Բացել FIRE-ը",
   "Add your portfolio": "Ավելացրեք ձեր պորտֆելը",
   "Type your holdings, upload a broker file (CSV), or a screenshot of your broker app.":
     "Մուտքագրեք ձեր դիրքերը, վերբեռնեք բրոքերի ֆայլը (CSV) կամ բրոքերի հավելվածի սքրինշոթը։",
   "Open Portfolio": "Բացել պորտֆելը",
-  "Add savings and other assets": "Ավելացրեք խնայողություններ և այլ ակտիվներ",
-  "Savings accounts, CDs, bonds, a home or a car, so your net worth is complete.":
-    "Խնայողական հաշիվներ, ավանդներ, պարտատոմսեր, տուն կամ մեքենա, որպեսզի ձեր զուտ կարողությունն ամբողջական լինի։",
+  "Add your property and other assets": "Ավելացրեք ձեր անշարժ գույքը և այլ ակտիվներ",
+  "Your home, rental or commercial property, apartments, land, vehicles or equipment, so your net worth is complete.":
+    "Ձեր տունը, վարձով տրվող կամ առևտրային անշարժ գույքը, բնակարանները, հողը, տրանսպորտային միջոցները կամ սարքավորումները, որպեսզի ձեր զուտ կարողությունն ամբողջական լինի։",
+  "These numbers include changes to {portfolio} that are not saved yet.":
+    "Այս թվերը ներառում են {portfolio}-ի դեռ չպահպանված փոփոխությունները։",
+  "Open Portfolio to save": "Բացել պորտֆելը՝ պահպանելու համար",
   "Open Assets": "Բացել ակտիվները",
   "Net worth": "Զուտ կարողություն",
   "Markets today: {amount}": "Շուկաներն այսօր՝ {amount}",
