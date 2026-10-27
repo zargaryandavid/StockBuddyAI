@@ -19,6 +19,7 @@ import {
 import { api, type AnalysisRun, type Portfolio } from "@/lib/api";
 import { useT } from "@/lib/i18n/client";
 import type { Translate } from "@/lib/i18n/core";
+import { ReviewerCrew } from "@/components/reviewer-crew";
 
 /** The newest close the AI review accepts: yesterday in New York, as YYYY-MM-DD. */
 export function latestReviewDate(now = new Date()) {
@@ -462,6 +463,7 @@ export function RunTest({
           >
             <span style={{ width: `${progress}%` }} />
           </div>
+          {working && current && phase !== "paused" && <ReviewerCrew ticker={current.row.ticker} />}
           {working && (
             <p className="muted run-test-note">
               {t("Pause or Stop takes effect after the review in progress. Holdings not started use no tokens.")}

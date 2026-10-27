@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { History, Plus, Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 
 import type { Portfolio, PortfolioTransaction } from "@/lib/api";
 import { useT } from "@/lib/i18n/client";
 import { money } from "@/lib/portfolio-metrics";
+import { EmptyState } from "@/components/empty-state";
 
 export type TransactionInput = {
   ticker: string;
@@ -127,24 +128,24 @@ export function TransactionsView({
       {loading ? (
         <p className="muted">{t("Loading transactions…")}</p>
       ) : transactions.length === 0 ? (
-        <div className="transactions-empty">
-          <History size={32} aria-hidden="true" />
-          <h2>{t("No transactions yet")}</h2>
-          <p>
-            {t(
-              "Record what you bought and sold, with dates and prices. StockBuddy updates your holdings and average cost for you.",
-            )}
-          </p>
-          <button
-            type="button"
-            className="button primary transactions-record"
-            disabled={Boolean(blockedReason)}
-            onClick={() => setRecording(true)}
-          >
-            <Plus size={16} aria-hidden="true" />
-            {t("Record your first transaction")}
-          </button>
-        </div>
+        <EmptyState
+          art="transactions"
+          title={t("No transactions yet")}
+          text={t(
+            "Record what you bought and sold, with dates and prices. StockBuddy updates your holdings and average cost for you.",
+          )}
+          action={
+            <button
+              type="button"
+              className="button primary transactions-record"
+              disabled={Boolean(blockedReason)}
+              onClick={() => setRecording(true)}
+            >
+              <Plus size={16} aria-hidden="true" />
+              {t("Record your first transaction")}
+            </button>
+          }
+        />
       ) : (
         <>
           <div className="transactions-filters">

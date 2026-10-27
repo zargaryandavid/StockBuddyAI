@@ -6,6 +6,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Added
 
+- More life in the app: holding prices and values flash green or red when a refresh changes them; empty pages (Portfolio, Transactions, Wishlist, Assets, Bonds, Library) show a small drawing with a line about what goes there; Today greets you by the time of your own clock and name ("Good morning, Davit. Your net worth is up $1,240 since …"); and Ask Buddy shows the five reviewers taking turns while a holding is reviewed. Motion switches off for reduced motion.
+
 - Livelier pages: net worth, cash, portfolio value, FIRE progress, current assets and the FIRE number count up to their value (and roll to a new one after a change); loading spots show a soft shimmer instead of "…"; the net worth line draws itself and progress bars fill; the Save button turns green with a small pop; Library stars light up under the pointer and bounce when chosen; clickable cards lift on hover; pop-ups grow in. All of it switches off for reduced motion.
 
 - Education **Library**: one list of investing and personal-finance books, sorted by readers' ratings, with #1–#5 badges for the top rated. Readers rate 1–5 stars straight from a card (or with a comment in the book's detail), see other readers' comments without names, and buy through Amazon links with the affiliate tag (plus the Amazon Associates disclosure). Admin has a **Library** section to add, edit, reorder and remove books, see each book's rating, and set the affiliate tag. Needs migrations `20261027150000_amazon_affiliate_tag.sql`, `20261027160000_book_reviews.sql` and `20261027170000_books.sql`.
@@ -641,6 +643,8 @@ All notable project changes and user-visible functionality are recorded here.
 - Added a compact ticker-symbol list beneath every industry allocation.
 
 ### Added
+
+- More life in the app: holding prices and values flash green or red when a refresh changes them; empty pages (Portfolio, Transactions, Wishlist, Assets, Bonds, Library) show a small drawing with a line about what goes there; Today greets you by the time of your own clock and name ("Good morning, Davit. Your net worth is up $1,240 since …"); and Ask Buddy shows the five reviewers taking turns while a holding is reviewed. Motion switches off for reduced motion.
 
 - Livelier pages: net worth, cash, portfolio value, FIRE progress, current assets and the FIRE number count up to their value (and roll to a new one after a change); loading spots show a soft shimmer instead of "…"; the net worth line draws itself and progress bars fill; the Save button turns green with a small pop; Library stars light up under the pointer and bounce when chosen; clickable cards lift on hover; pop-ups grow in. All of it switches off for reduced motion.
 

@@ -109,6 +109,21 @@ const today: Record<string, string> = {
   "Target met · {amount} above it": "Թիրախը կատարված է · {amount}-ով ավելի",
   "Why: cash kept aside covers emergencies and lets you buy when prices drop, without selling. Change the target with Min cash (%) in Portfolio settings, or for everyone in Admin.":
     "Ինչու՝ մի կողմ դրված կանխիկը ծածկում է անսպասելի ծախսերը և թույլ է տալիս գնել, երբ գները իջնում են, առանց վաճառելու։ Թիրախը փոխեք Պորտֆելի կարգավորումներում՝ «Կանխիկի նվազագույն չափ (%)», կամ բոլորի համար՝ Ադմինում։",
+  "Good morning": "Բարի լույս",
+  "Good afternoon": "Բարի օր",
+  "Good evening": "Բարի երեկո",
+  "{greeting}, {name}.": "{greeting}, {name}։",
+  "{greeting}.": "{greeting}։",
+  "Your net worth is up {amount} since {day}.": "Ձեր զուտ կարողությունն աճել է {amount}-ով {day}-ից ի վեր։",
+  "Your net worth is down {amount} since {day}.": "Ձեր զուտ կարողությունը նվազել է {amount}-ով {day}-ից ի վեր։",
+  "{name} is reading {ticker}'s filings…": "{name}-ը կարդում է {ticker}-ի հաշվետվությունները…",
+  "{name} is checking the balance sheet…": "{name}-ը ստուգում է հաշվեկշիռը…",
+  "{name} is weighing the price against the business…": "{name}-ը համեմատում է գինը բիզնեսի արժեքի հետ…",
+  "{name} is writing a verdict…": "{name}-ը գրում է իր եզրակացությունը…",
+  "Write down what you'd like money to buy you, big or small.": "Գրեք, թե ինչ կուզեիք, որ գումարը ձեզ տա՝ մեծ թե փոքր։",
+  "No assets yet": "Ակտիվներ դեռ չկան",
+  "No bonds yet": "Պարտատոմսեր դեռ չկան",
+  "The admin adds books to the Library in Admin.": "Ադմինը գրքերն ավելացնում է Գրադարանում՝ Ադմին բաժնից։",
 };
 
 export default today;

@@ -5,6 +5,7 @@ import { Check, GripVertical, Pencil, Sparkles, Trash2, X } from "lucide-react";
 
 import { api } from "@/lib/api";
 import { useT } from "@/lib/i18n/client";
+import { EmptyState } from "@/components/empty-state";
 
 export type WishList = "short" | "long" | "want" | "exercise";
 
@@ -306,7 +307,7 @@ function WishColumn({
         </p>
       )}
       {wishes.length === 0 ? (
-        <p className="muted">{t("No wishes yet.")}</p>
+        <EmptyState art="wish" compact title={t("No wishes yet.")} text={t("Write down what you'd like money to buy you, big or small.")} />
       ) : (
         <ul className="wish-list">
           {wishes.map((wish, index) => (
@@ -556,7 +557,7 @@ function Exercise({
       )}
 
       {wishes.length === 0 ? (
-        <p className="muted">{t("Start with anything: a place, a skill, a feeling, a thing.")}</p>
+        <EmptyState art="wish" compact title={t("Start with anything: a place, a skill, a feeling, a thing.")} />
       ) : (
         <ol className="wish-numbered">
           {wishes.map((wish, index) => (

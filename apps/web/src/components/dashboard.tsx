@@ -28,6 +28,8 @@ import { TodayPage, type TodayDestination } from "@/components/today/today-page"
 import { parseBrokerCsv } from "@/lib/broker-csv";
 import { AmountInput } from "@/components/amount-input";
 import { AnimatedNumber } from "@/components/animated-number";
+import { EmptyState } from "@/components/empty-state";
+import { FlashValue } from "@/components/flash-value";
 import { BondsSection, useBondHoldings } from "@/components/bonds-section";
 import { CashLabel, CashSummary, cashTargetNote } from "@/components/cash-target";
 import { cashShortfall, cashTarget, DEFAULT_CASH_TARGET } from "@/lib/analytics";
@@ -173,7 +175,7 @@ export function Dashboard({
   const [dateOfBirth, setDateOfBirth] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [showProfile, setShowProfile] = useState(false);
-  const needsProfile = activeTab === "fire" || showProfile;
+  const needsProfile = activeTab === "fire" || activeTab === "today" || showProfile;
   const [profileLoaded, setProfileLoaded] = useState(false);
 
   // Loaded the first time the FIRE page or the profile needs it.
@@ -1189,6 +1191,7 @@ export function Dashboard({
       {activeTab === "today" ? (
         <section className="simple-page today-shell">
           <TodayPage
+            name={displayName}
             portfolios={todayPortfolios}
             unsavedPortfolio={dirty && editingId ? portfolioName || t("My portfolio") : null}
             loadingPortfolios={loadingPortfolios}
@@ -1486,11 +1489,11 @@ export function Dashboard({
                 )}
 
                 {!loadingPortfolios && positions.length === 0 && (
-                  <div className="portfolio-empty">
-                    <IndustryIcon icon="briefcase" size={26} />
-                    <h2>{t("No positions yet")}</h2>
-                    <p>{t("Add a position or import a portfolio to begin.")}</p>
-                  </div>
+                  <EmptyState
+                    art="portfolio"
+                    title={t("No positions yet")}
+                    text={t("Add a position or import a portfolio to begin.")}
+                  />
                 )}
 
                 {positions.length > 0 && (
@@ -1618,7 +1621,7 @@ export function Dashboard({
                             </div>
                             <input aria-label={t("Quantity {number}", { number: index + 1 })} type="number" min="0" step="1" value={position.shares} onChange={(event) => updatePosition(index, { shares: Number(event.target.value.replace(/^0+(?=\d)/, "")) })} />
                             <input aria-label={t("Purchase price {number}", { number: index + 1 })} type="number" min="0" step="0.01" placeholder="—" value={position.purchase_price ?? ""} onChange={(event) => updatePosition(index, { purchase_price: event.target.value === "" ? null : Number(event.target.value) })} />
-                            <span className="financial-cell" role="cell">{position.price == null ? <span className="data-state"><CircleAlert size={14} /> {t("Missing price")}</span> : money(position.price, baseCurrency)}</span>
+                            <span className="financial-cell" role="cell">{position.price == null ? <span className="data-state"><CircleAlert size={14} /> {t("Missing price")}</span> : <FlashValue value={position.price}>{money(position.price, baseCurrency)}</FlashValue>}</span>
                             <span className="financial-cell" role="cell" title={t("Price ÷ trailing 12-month EPS (SEC filings)")}>{position.is_etf_index ? t("N/A") : position.pe_ratio == null ? "—" : position.pe_ratio.toFixed(1)}</span>
                             <span className="financial-cell report-date-col" role="cell" title={position.report_source || t("Report source unavailable")}>
                               {position.is_etf_index ? t("N/A") : position.report_date ? (
@@ -1632,7 +1635,7 @@ export function Dashboard({
                                 </button>
                               ) : t("Unavailable")}
                             </span>
-                            <strong className="financial-cell" role="cell">{metric.marketValue == null ? "—" : money(metric.marketValue, baseCurrency)}</strong>
+                            <strong className="financial-cell" role="cell">{metric.marketValue == null ? "—" : <FlashValue value={metric.marketValue}>{money(metric.marketValue, baseCurrency)}</FlashValue>}</strong>
                             <span className="financial-cell" role="cell">{metric.weight == null ? "—" : `${(metric.weight * 100).toFixed(1)}%`}</span>
                             <strong className={`financial-cell gain-cell ${(metric.unrealizedAmount ?? 0) >= 0 ? "positive" : "negative"}`} role="cell">
                               {metric.unrealizedAmount == null ? "—" : <StackedChange amount={signedMoney(metric.unrealizedAmount, baseCurrency)} percent={signedPercent(metric.unrealizedPercent)} />}

@@ -3507,3 +3507,60 @@ button.today-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px r
   button.today-card { transition: none; }
   button.today-card:hover { transform: none; }
 }
+
+/* A value that changed on a price refresh flashes green (up) or red (down) once. */
+.flash-up, .flash-down { display: inline-block; border-radius: 4px; animation: 1.2s ease-out both; }
+.flash-up { animation-name: flash-up; }
+.flash-down { animation-name: flash-down; }
+@keyframes flash-up { 0%, 30% { background: rgba(31, 112, 72, 0.18); color: #1f7048; } }
+@keyframes flash-down { 0%, 30% { background: rgba(162, 61, 53, 0.16); color: #a23d35; } }
+
+/* Friendly empty pages: a small drawing, a line about what goes here, and what to do. */
+.empty-state {
+  position: relative; display: grid; justify-items: center; gap: 0.45rem;
+  padding: 1.6rem 1rem 1.4rem; text-align: center;
+}
+.empty-state.compact { padding: 1rem 0.75rem; }
+.empty-state-art { width: 120px; height: 96px; }
+.empty-state.compact .empty-state-art { width: 96px; height: 76px; }
+.empty-state-icon { position: absolute; top: calc(1.6rem + 28px); }
+.empty-state.compact .empty-state-icon { top: calc(1rem + 22px); }
+.empty-state h3 { margin: 0.2rem 0 0; font-size: var(--text-md); }
+.empty-state p { margin: 0; max-width: 34rem; color: var(--muted); font-size: var(--text-sm); }
+.empty-shadow { fill: rgba(15, 23, 42, 0.06); }
+.empty-disc { fill: #eef4f0; }
+.empty-dot { fill: #d7e6dc; }
+.empty-spark { fill: var(--gold); }
+.empty-state .empty-state-icon { color: #2f7d4f; }
+.empty-state.tone-gold .empty-disc { fill: #fdf6e3; }
+.empty-state.tone-gold .empty-state-icon { color: var(--gold-dark); }
+.empty-state.tone-navy .empty-disc { fill: #eaf0fb; }
+.empty-state.tone-navy .empty-state-icon { color: var(--navy); }
+.empty-state-art, .empty-state-icon { animation: empty-float 4s ease-in-out infinite; }
+@keyframes empty-float { 50% { transform: translateY(-3px); } }
+
+/* Today: the welcome line. */
+.today-greeting { margin: 0; font-size: var(--text-md); }
+.today-greeting strong { color: var(--ink); }
+
+/* Ask Buddy: the five reviewers take turns while a holding is reviewed. */
+.reviewer-crew { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 0.9rem; margin-top: 0.75rem; }
+.reviewer-avatars { display: flex; margin: 0; padding: 0; list-style: none; }
+.reviewer-avatar {
+  display: inline-grid; place-items: center; width: 2.1rem; height: 2.1rem; margin-left: -0.35rem;
+  border: 2px solid #fff; border-radius: 50%; color: #fff; font-size: 0.68rem; font-weight: 700;
+  opacity: 0.55; transition: transform 0.25s ease, opacity 0.25s ease, box-shadow 0.25s ease;
+}
+.reviewer-avatar:first-child { margin-left: 0; }
+.reviewer-avatar.active { z-index: 1; opacity: 1; transform: translateY(-3px) scale(1.12); box-shadow: 0 0 0 3px rgba(232, 201, 122, 0.55); }
+.reviewer-graham { background: #1b2b4b; }
+.reviewer-buffett { background: #1f7048; }
+.reviewer-munger { background: #6b4f2a; }
+.reviewer-lynch { background: #2563a8; }
+.reviewer-druckenmiller { background: #7c3a5c; }
+.reviewer-line { margin: 0; color: var(--label); font-size: var(--text-sm); animation: page-in 0.3s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .flash-up, .flash-down, .empty-state-art, .empty-state-icon, .reviewer-line { animation: none; }
+  .reviewer-avatar { transition: none; }
+}

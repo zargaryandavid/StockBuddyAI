@@ -48,6 +48,8 @@ describe("Dashboard navigation", () => {
     render(<Dashboard email="owner@example.com" today="2026-10-23" />);
 
     expect(await screen.findByRole("heading", { name: "Today" })).toBeTruthy();
+    // A greeting for the time of day on the visitor's own clock.
+    expect(await screen.findByText(/^Good (morning|afternoon|evening)\.$/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Today" }).getAttribute("aria-current")).toBe("page");
     expect(await screen.findByRole("heading", { name: "Set up StockBuddy in three steps" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Open FIRE/ }));

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { AnimatedNumber } from "@/components/animated-number";
 import { AlertTriangle, ArrowRight, CalendarClock, Check, Flame, Info, PiggyBank, Wallet } from "lucide-react";
 
@@ -38,7 +38,19 @@ const FIRE_DEFAULTS: FireSettings = {
 } as FireSettings;
 
 /** First screen after sign-in: what the money looks like today and what needs a look. */
+// The visitor's own clock decides morning or evening, so it is read in the browser only.
+const noSubscribe = () => () => {};
+const localHour = () => new Date().getHours();
+
+function greetingFor(hour: number) {
+  if (hour < 5) return "Good evening";
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
 export function TodayPage({
+  name = null,
   portfolios,
   unsavedPortfolio = null,
   loadingPortfolios,
@@ -46,6 +58,8 @@ export function TodayPage({
   today,
   onOpen,
 }: {
+  /** The person's name from their profile, for the greeting. */
+  name?: string | null;
   portfolios: Portfolio[];
   /** Name of the open portfolio when it has changes that are not saved yet. */
   unsavedPortfolio?: string | null;
@@ -55,6 +69,7 @@ export function TodayPage({
   onOpen: (destination: TodayDestination) => void;
 }) {
   const t = useT();
+  const hour = useSyncExternalStore(noSubscribe, localHour, () => null);
   const currency = portfolios[0]?.base_currency ?? "USD";
 
   const [entries, setEntries] = useState<FireEntry[] | null>(null);
@@ -309,7 +324,24 @@ export function TodayPage({
     <section className="today-page" aria-labelledby="today-title">
       <header className="today-heading">
         <h1 id="today-title">{t("Today")}</h1>
-        <p className="muted">{t("Your money at a glance, and what needs a look.")}</p>
+        {hour == null ? (
+          <p className="muted">{t("Your money at a glance, and what needs a look.")}</p>
+        ) : (
+          <p className="today-greeting">
+            <strong>
+              {name?.trim()
+                ? t("{greeting}, {name}.", { greeting: t(greetingFor(hour)), name: name.trim().split(/\s+/)[0] })
+                : t("{greeting}.", { greeting: t(greetingFor(hour)) })}
+            </strong>{" "}
+            <span className="muted">
+              {ready && change && Math.abs(change.amount) >= 0.5
+                ? change.amount >= 0
+                  ? t("Your net worth is up {amount} since {day}.", { amount: m(change.amount), day: change.since })
+                  : t("Your net worth is down {amount} since {day}.", { amount: m(-change.amount), day: change.since })
+                : t("Your money at a glance, and what needs a look.")}
+            </span>
+          </p>
+        )}
       </header>
 
       {unsavedPortfolio && (

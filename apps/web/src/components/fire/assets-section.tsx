@@ -30,6 +30,7 @@ import { useT } from "@/lib/i18n/client";
 import { translator, type Translate } from "@/lib/i18n/core";
 import { cleanNumberInput } from "@/lib/inputs";
 import { money } from "@/lib/portfolio-metrics";
+import { EmptyState } from "@/components/empty-state";
 
 const ASSET_ICONS: Record<string, LucideIcon> = {
   home: Home,
@@ -121,11 +122,14 @@ export function AssetsSection({
       {loading ? (
         <p className="muted">{t("Loading…")}</p>
       ) : assets.length === 0 ? (
-        <p className="muted">
-          {t(
+        <EmptyState
+          art="asset"
+          compact
+          title={t("No assets yet")}
+          text={t(
             "Add rental property, land, or a vehicle or equipment you rent out. Adding rental income creates its asset here, and you can link an asset to a rental income from the income form.",
           )}
-        </p>
+        />
       ) : (
         <ul>
           {assets.map((asset) => {

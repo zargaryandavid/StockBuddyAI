@@ -15,6 +15,7 @@ import {
   type ReaderComment,
 } from "@/lib/books";
 import { useT } from "@/lib/i18n/client";
+import { EmptyState } from "@/components/empty-state";
 import { ShimmerLines } from "@/components/shimmer";
 
 import "./library.css";
@@ -160,7 +161,7 @@ export function Library() {
       {books === null ? (
         <ShimmerLines label={t("Loading books…")} lines={4} card />
       ) : books.length === 0 ? (
-        !booksFailed && <p className="muted">{t("No books yet.")}</p>
+        !booksFailed && <EmptyState art="books" title={t("No books yet.")} text={t("The admin adds books to the Library in Admin.")} />
       ) : (
         <ul className="library-grid" aria-label={t("Books")}>
           {ranked.map(({ book, rating, rank }) => (
