@@ -20,6 +20,8 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
   const router = useRouter();
   const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
   const [busy, setBusy] = useState(false);
+  // Signed in and loading the next page: the button stays busy until that page shows.
+  const [opening, setOpening] = useState(false);
   const [message, setMessageState] = useState<Message>({ text: notice ?? "" });
   const setMessage = (text: string, vars?: Vars) => setMessageState({ text, vars });
   // Problems (wrong password, missing consent…) show in red; confirmations stay grey.
@@ -88,7 +90,7 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
               data: { terms_version: TERMS_VERSION, terms_accepted_at: new Date().toISOString() },
             },
           });
-    setBusy(false);
+    if (result.error || (mode === "signup" && !result.data.session)) setBusy(false);
     if (result.error) {
       if (result.error.code === "email_not_confirmed") {
         setPendingEmail(credentials.email);
@@ -105,6 +107,7 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
       });
       return;
     }
+    setOpening(true);
     const me = await api<{ role: "admin" | "user" }>("/api/me").catch(() => null);
     router.push(me?.role === "admin" ? "/admin" : "/");
     router.refresh();
@@ -189,7 +192,7 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
         </button>
       )}
       <button className="button primary" disabled={busy} type="submit">
-        {busy ? t("Working…") : mode === "signin" ? t("Sign in") : mode === "signup" ? t("Create account") : t("Send reset link")}
+        {opening ? t("Opening your book…") : busy ? (mode === "signin" ? t("Signing in…") : t("Working…")) : mode === "signin" ? t("Sign in") : mode === "signup" ? t("Create account") : t("Send reset link")}
       </button>
       <button
         className="text-button"

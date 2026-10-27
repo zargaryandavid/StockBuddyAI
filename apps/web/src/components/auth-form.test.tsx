@@ -91,6 +91,15 @@ describe("AuthForm email confirmation", () => {
     expect(screen.getByRole("button", { name: "Didn't get it? Resend the confirmation email" })).toBeTruthy();
   });
 
+  it("keeps the button busy after a successful sign-in until the next page opens", async () => {
+    auth.signInWithPassword.mockResolvedValue({ data: { session: {} }, error: null });
+    render(<AuthForm />);
+    fillIn("member@example.com");
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    const button = await screen.findByRole("button", { name: "Opening your book…" });
+    expect((button as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it("shows the result of opening the confirmation link", () => {
     render(<AuthForm notice="Your email is confirmed. Sign in to continue." />);
     expect(screen.getByRole("status").textContent).toBe("Your email is confirmed. Sign in to continue.");

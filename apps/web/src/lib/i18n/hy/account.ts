@@ -31,6 +31,8 @@ const account: Record<string, string> = {
     "Գրեթե պատրաստ է։ Մենք հաստատման հղում ենք ուղարկել {email} հասցեին։ Բացեք այն՝ հաշվի ստեղծումն ավարտելու համար։",
   "Didn't get it? Resend the confirmation email": "Չե՞ք ստացել։ Կրկին ուղարկել հաստատման նամակը",
   "Working…": "Կատարվում է…",
+  "Signing in…": "Մուտք ենք գործում…",
+  "Opening your book…": "Բացում ենք ձեր գիրքը…",
   "Sign in": "Մուտք գործել",
   "Create account": "Ստեղծել հաշիվ",
   "Send reset link": "Ուղարկել վերականգնման հղումը",

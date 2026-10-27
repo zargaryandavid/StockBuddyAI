@@ -156,6 +156,9 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Fixed
 
+- Sign in: the button now says "Signing in…" and stays busy until your book opens, instead of switching back to "Sign in" while the next page is still loading.
+- Admin studio: Limits and model fields sit on one aligned row; Support us: the $9 side is centered in its box.
+
 - New accounts no longer show $10,000 they never entered. The portfolio form started
   with a made-up $10,000 cash balance, which FIRE counted as "Current assets" before any
   portfolio existed and which was saved if the person created a portfolio without
