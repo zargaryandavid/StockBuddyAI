@@ -364,6 +364,8 @@ const portfolio: Record<string, string> = {
   "Remove {currency} cash": "Հեռացնել {currency} կանխիկը",
   "Add cash in another currency": "Ավելացնել կանխիկ այլ արժույթով",
   "Loading exchange rates…": "Բեռնում ենք փոխարժեքները…",
+  "Cash currency": "Կանխիկի արժույթ",
+  "All cash together: {amount}, at today's exchange rates.": "Ամբողջ կանխիկը՝ {amount}, այսօրվա փոխարժեքներով։",
 };
 
 export default portfolio;

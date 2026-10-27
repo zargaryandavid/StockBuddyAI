@@ -174,25 +174,42 @@ describe("Holdings table", () => {
     expect(tickers()).toEqual(["BBB", "VOO", "AAA"]);
   });
 
-  it("keeps a new portfolio currency and prices the holdings in it", async () => {
+  it("keeps the portfolio in its own currency when the cash is typed in another", async () => {
+    vi.mocked(api).mockImplementation(async (path: string, init?: RequestInit) => {
+      if (path.startsWith("/api/fx")) return { rate: 0.0025 };
+      if (path === `/api/portfolios/${portfolio.id}` && init?.method === "PUT") {
+        return { ...portfolio, ...JSON.parse(String(init.body)) };
+      }
+      if (path === "/api/portfolios" && !init) return [portfolio];
+      if (path === "/api/securities/resolve-batch") {
+        const { queries } = JSON.parse(String(init?.body)) as { queries: string[] };
+        return queries.map((query) => ({ query, data: quotes[query.toUpperCase()] }));
+      }
+      return [];
+    });
     render(<Dashboard initialTab="portfolio" email="owner@example.com" today="2026-10-23" />);
     await screen.findByText("18.2");
+    const lookups = () =>
+      vi.mocked(api).mock.calls.filter(([path]) => path === "/api/securities/resolve-batch").length;
+    const before = lookups();
 
-    const currency = screen.getByLabelText("Portfolio currency") as HTMLSelectElement;
-    fireEvent.change(currency, { target: { value: "AMD" } });
+    fireEvent.change(screen.getByLabelText("Cash currency"), { target: { value: "AMD" } });
+    const amount = screen.getByRole("textbox", { name: "Cash" });
+    fireEvent.focus(amount);
+    fireEvent.change(amount, { target: { value: "400000" } });
 
-    await waitFor(() =>
-      expect(
-        vi.mocked(api).mock.calls.some(
-          ([path, init]) =>
-            path === "/api/securities/resolve-batch" &&
-            JSON.parse(String(init?.body)).base_currency === "AMD",
-        ),
-      ).toBe(true),
-    );
-    // The saved portfolio is not loaded again over the change.
-    expect(vi.mocked(api).mock.calls.filter(([path, init]) => path === "/api/portfolios" && !init)).toHaveLength(1);
-    expect((screen.getByLabelText("Portfolio currency") as HTMLSelectElement).value).toBe("AMD");
+    // ֏400,000 at 0.0025 is $1,000, shown in the portfolio's own currency.
+    expect(await screen.findByText(/All cash together: \$1,000\.00/)).toBeTruthy();
+    expect(lookups()).toBe(before); // holdings are not priced again
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() => {
+      const put = vi.mocked(api).mock.calls.find(([path, init]) => path === `/api/portfolios/${portfolio.id}` && init?.method === "PUT");
+      expect(put).toBeTruthy();
+      const body = JSON.parse(String(put?.[1]?.body));
+      expect(body.base_currency).toBe("USD");
+      expect(body.cash).toBe(0);
+      expect(body.other_cash).toEqual([{ currency: "AMD", amount: 400000 }]);
+    });
   });
 
   it("moves a row with the arrow keys on its handle", async () => {

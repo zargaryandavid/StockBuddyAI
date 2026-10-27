@@ -146,6 +146,8 @@ export function Dashboard({
   }, [baseCurrency]);
   // Cash in other currencies, beside the cash in the portfolio's own currency.
   const [otherCash, setOtherCash] = useState<CashBalance[]>([]);
+  // The currency the main Cash amount is typed in; it is converted into baseCurrency.
+  const [cashCurrency, setCashCurrency] = useState("USD");
   const [cashRates, setCashRates] = useState<Record<string, number>>({});
   const [benchmark, setBenchmark] = useState("SPY");
   const [maxPosition, setMaxPosition] = useState<number | null>(null);
@@ -259,8 +261,11 @@ export function Dashboard({
   );
   // Rates for cash held in other currencies (cached for a few minutes by the API helper).
   const otherCurrencies = useMemo(
-    () => [...new Set(otherCash.map((item) => item.currency).filter((code) => code !== baseCurrency))].sort().join(","),
-    [otherCash, baseCurrency],
+    () =>
+      [...new Set([cashCurrency, ...otherCash.map((item) => item.currency)].filter((code) => code !== baseCurrency))]
+        .sort()
+        .join(","),
+    [otherCash, cashCurrency, baseCurrency],
   );
   useEffect(() => {
     if (!otherCurrencies) return;
@@ -284,13 +289,12 @@ export function Dashboard({
   /** All cash in the portfolio's own currency; amounts without a rate are left out. */
   const totalCash = useMemo(
     () =>
-      Number(cash || 0) +
-      otherCash.reduce((sum, item) => {
+      [{ currency: cashCurrency, amount: cash }, ...otherCash].reduce((sum, item) => {
         if (item.currency === baseCurrency) return sum + Number(item.amount || 0);
         const rate = cashRates[item.currency];
         return rate ? sum + Number(item.amount || 0) * rate : sum;
       }, 0),
-    [cash, otherCash, cashRates, baseCurrency],
+    [cash, cashCurrency, otherCash, cashRates, baseCurrency],
   );
   const metrics = useMemo(
     () => calculatePortfolioMetrics(positions, totalCash),
@@ -311,9 +315,9 @@ export function Dashboard({
       allocationPositions.reduce(
         (total, position) =>
           total + Number(position.shares) * Number(position.price ?? 0),
-        Number(cash),
+        totalCash,
       ),
-    [allocationPositions, cash],
+    [allocationPositions, totalCash],
   );
   const industryAllocations = useMemo(() => {
     const totals = new Map<string, { value: number; holdings: string[] }>();
@@ -536,9 +540,19 @@ export function Dashboard({
       setSelectedId(portfolio.id);
       setEditingId(portfolio.id);
       setPortfolioName(portfolio.name);
-      setCash(Number(portfolio.cash));
-      setBaseCurrency(portfolio.base_currency ?? "USD");
-      setOtherCash(Array.isArray(portfolio.other_cash) ? portfolio.other_cash : []);
+      const own = portfolio.base_currency ?? "USD";
+      const others = Array.isArray(portfolio.other_cash) ? portfolio.other_cash : [];
+      setBaseCurrency(own);
+      // Cash kept only in another currency shows in the first Cash box with that currency.
+      if (!Number(portfolio.cash) && others.length) {
+        setCash(Number(others[0].amount) || 0);
+        setCashCurrency(others[0].currency);
+        setOtherCash(others.slice(1));
+      } else {
+        setCash(Number(portfolio.cash));
+        setCashCurrency(own);
+        setOtherCash(others);
+      }
       setBenchmark(portfolio.benchmark ?? "SPY");
       setMaxPosition(portfolio.max_position_pct ?? null);
       setMaxSector(portfolio.max_sector_pct ?? null);
@@ -556,15 +570,11 @@ export function Dashboard({
     [enrichPositions],
   );
 
-  /** A new portfolio currency: holdings are priced again in it, and extra cash in that
-   *  same currency moves into the main cash amount. */
+  /** A new portfolio currency (Portfolio settings): holdings are priced again in it. Cash
+   *  keeps the currency it was typed in and is converted. */
   function changeBaseCurrency(code: string) {
+    if (cashCurrency === baseCurrency) setCashCurrency(code);
     setBaseCurrency(code);
-    const same = otherCash.filter((item) => item.currency === code);
-    if (same.length) {
-      setCash(Number(cash || 0) + same.reduce((sum, item) => sum + Number(item.amount || 0), 0));
-      setOtherCash(otherCash.filter((item) => item.currency !== code));
-    }
     setSaveConfirmation(null);
     setDirty(true);
     if (positions.length) void enrichPositions(positions, { currency: code });
@@ -586,6 +596,7 @@ export function Dashboard({
     setCash(0);
     setBaseCurrency("USD");
     setOtherCash([]);
+    setCashCurrency("USD");
     setBenchmark("SPY");
     setMaxPosition(null);
     setMaxSector(null);
@@ -934,9 +945,8 @@ export function Dashboard({
         method: editingId ? "PUT" : "POST",
         body: JSON.stringify({
           name: portfolioName,
-          cash,
+          ...savedCash([{ currency: cashCurrency, amount: Number(cash || 0) }, ...otherCash], baseCurrency),
           base_currency: baseCurrency,
-          other_cash: otherCash.filter((item) => item.currency !== baseCurrency && Number(item.amount) > 0),
           benchmark,
           max_position_pct: maxPosition,
           max_sector_pct: maxSector,
@@ -1234,11 +1244,15 @@ export function Dashboard({
                     <span className="cash-inputs">
                       <span className="money-input">
                         <select
-                          aria-label={t("Portfolio currency")}
-                          value={baseCurrency}
-                          onChange={(event) => changeBaseCurrency(event.target.value)}
+                          aria-label={t("Cash currency")}
+                          value={cashCurrency}
+                          onChange={(event) => {
+                            setCashCurrency(event.target.value);
+                            setSaveConfirmation(null);
+                            setDirty(true);
+                          }}
                         >
-                          {[...new Set([baseCurrency, ...PORTFOLIO_CURRENCIES])].map((code) => (
+                          {[...new Set([cashCurrency, ...PORTFOLIO_CURRENCIES])].map((code) => (
                             <option key={code} value={code}>
                               {currencySign(code)} {code}
                             </option>
@@ -1268,9 +1282,7 @@ export function Dashboard({
                               setDirty(true);
                             }}
                           >
-                            {[...new Set([item.currency, ...PORTFOLIO_CURRENCIES])]
-                              .filter((code) => code !== baseCurrency || code === item.currency)
-                              .map((code) => (
+                            {[...new Set([item.currency, ...PORTFOLIO_CURRENCIES])].map((code) => (
                                 <option key={code} value={code}>
                                   {currencySign(code)} {code}
                                 </option>
@@ -1306,7 +1318,7 @@ export function Dashboard({
                           aria-label={t("Add cash in another currency")}
                           title={t("Add cash in another currency")}
                           onClick={() => {
-                            const used = new Set([baseCurrency, ...otherCash.map((item) => item.currency)]);
+                            const used = new Set([cashCurrency, ...otherCash.map((item) => item.currency)]);
                             const currency = PORTFOLIO_CURRENCIES.find((code) => !used.has(code)) ?? "EUR";
                             setOtherCash((current) => [...current, { currency, amount: 0 }]);
                             setDirty(true);
@@ -1316,8 +1328,18 @@ export function Dashboard({
                         </button>
                       )}
                     </span>
-                    {otherCash.some((item) => item.currency !== baseCurrency && !cashRates[item.currency]) && (
+                    {[cashCurrency, ...otherCash.map((item) => item.currency)].some(
+                      (code) => code !== baseCurrency && !cashRates[code],
+                    ) ? (
                       <small className="muted">{t("Loading exchange rates…")}</small>
+                    ) : (
+                      [cashCurrency, ...otherCash.map((item) => item.currency)].some((code) => code !== baseCurrency) && (
+                        <small className="muted">
+                          {t("All cash together: {amount}, at today's exchange rates.", {
+                            amount: money(totalCash, baseCurrency),
+                          })}
+                        </small>
+                      )
                     )}
                   </label>
                 </div>
@@ -2535,6 +2557,21 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 type ResolveResult = { query: string; data?: Omit<Position, "shares">; error?: string };
 type CashBalance = { currency: string; amount: number };
+
+/** What is saved: cash in the portfolio's own currency, and the rest by currency. */
+function savedCash(entries: CashBalance[], base: string) {
+  const byCurrency = new Map<string, number>();
+  for (const entry of entries) {
+    const amount = Number(entry.amount) || 0;
+    if (amount > 0) byCurrency.set(entry.currency, (byCurrency.get(entry.currency) ?? 0) + amount);
+  }
+  return {
+    cash: byCurrency.get(base) ?? 0,
+    other_cash: [...byCurrency.entries()]
+      .filter(([currency]) => currency !== base)
+      .map(([currency, amount]) => ({ currency, amount })),
+  };
+}
 
 const PORTFOLIO_CURRENCIES = ["USD", "AMD", "EUR", "GBP", "RUB", "CAD", "CHF", "AUD", "JPY"];
 
