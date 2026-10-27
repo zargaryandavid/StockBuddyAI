@@ -3240,3 +3240,21 @@ textarea {
 .sidebar-language { padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--sidebar-divider); }
 .sidebar-language .language-switcher { display: flex; width: 100%; }
 .sidebar-language .language-switcher button { flex: 1 1 0; min-width: 0; justify-content: center; }
+
+/* Sign-in: the $100 notes slide in, then float and sway gently, out of step with each other */
+@keyframes bill-in-back { from { opacity: 0; transform: translate(40px, 60px) rotate(18deg); } to { opacity: 0.55; transform: rotate(9deg); } }
+@keyframes bill-in-front { from { opacity: 0; transform: translate(-30px, 80px) rotate(-16deg); } to { opacity: 1; transform: rotate(-7deg); } }
+@keyframes bill-float-back {
+  0%, 100% { transform: translate(0, 0) rotate(9deg); }
+  50% { transform: translate(-6px, -10px) rotate(11.5deg); }
+}
+@keyframes bill-float-front {
+  0%, 100% { transform: translate(0, 0) rotate(-7deg); }
+  35% { transform: translate(4px, -12px) rotate(-5deg); }
+  70% { transform: translate(-3px, -5px) rotate(-8.5deg); }
+}
+.login-bill.back { animation: bill-in-back 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both, bill-float-back 7s ease-in-out 0.9s infinite; }
+.login-bill.front { animation: bill-in-front 1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s both, bill-float-front 6s ease-in-out 1.15s infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .login-bill.back, .login-bill.front { animation: none; }
+}

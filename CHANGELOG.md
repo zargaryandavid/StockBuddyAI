@@ -6,6 +6,9 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Added
 
+- Sign-in page: the two $100 notes slide in, then float and sway gently, out of step
+  with each other (CSS only; still for people who turn on reduced motion).
+
 - English / Armenian. US and ARM flag buttons at the top of the side menu (and the
   top-right of the sign-in, password, legal, and shared pages) switch the whole app; the
   choice is kept in a `lang` cookie for a year, so pages render in that language straight
