@@ -224,6 +224,9 @@ describe("Holdings table", () => {
     expect(await screen.findByText(/changes to .* that are not saved yet/)).toBeTruthy();
     const card = (await screen.findAllByText("Cash")).map((node) => node.closest(".today-card")).find(Boolean);
     await waitFor(() => expect(card?.textContent).toContain("$1,000.00"));
+    const breakdown = document.querySelector(".today-breakdown")?.textContent ?? "";
+    expect(breakdown).toContain("Reserved cash $1,000.00");
+    expect(breakdown).toMatch(/^Portfolio \$[\d,.]+ · Reserved cash \$1,000\.00 · Savings \$0\.00 · Bonds \$0\.00$/);
   });
 
   it("moves a row with the arrow keys on its handle", async () => {

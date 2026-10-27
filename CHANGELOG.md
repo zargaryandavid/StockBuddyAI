@@ -164,6 +164,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Fixed
 
+- Today: the net worth breakdown reads Portfolio · Reserved cash · Savings · Bonds (plus Property and other assets when there are any), instead of Investments · Savings · Other.
+
 - Today: the open portfolio is shown as it is on screen, so cash or holdings changed but not saved yet count straight away, with a note and an "Open Portfolio to save" button. The setup steps now match where things are entered: savings accounts, CDs and bonds in FIRE; homes, rental and commercial property, land, vehicles and equipment in Assets.
 
 - Cash currency: the box before Cash now sets only the currency the cash is typed in (for example ֏400,000); it is converted at today's rate into the portfolio's currency, shown as "All cash together: $1,000". The portfolio's own currency stays under Portfolio settings, so prices, cost basis and gains no longer switch to AMD.

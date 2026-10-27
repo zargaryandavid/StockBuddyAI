@@ -24,8 +24,11 @@ const today: Record<string, string> = {
   "Net worth": "Զուտ կարողություն",
   "Markets today: {amount}": "Շուկաներն այսօր՝ {amount}",
   "{amount} since {day}": "{amount} {day}-ից ի վեր",
-  "Investments {investments} · Savings {savings} · Other {other}":
-    "Ներդրումներ {investments} · Խնայողություններ {savings} · Այլ {other}",
+  "Portfolio {amount}": "Պորտֆել {amount}",
+  "Reserved cash {amount}": "Պահուստային կանխիկ {amount}",
+  "Savings {amount}": "Խնայողություններ {amount}",
+  "Bonds {amount}": "Պարտատոմսեր {amount}",
+  "Property and other assets {amount}": "Անշարժ գույք և այլ ակտիվներ {amount}",
   "FIRE progress": "FIRE առաջընթաց",
   "{assets} of {target} · {years}": "{assets}՝ {target}-ից · {years}",
   "Add your expenses to see your FIRE number.": "Ավելացրեք ձեր ծախսերը՝ FIRE թիվը տեսնելու համար։",

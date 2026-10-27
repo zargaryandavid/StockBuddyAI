@@ -358,12 +358,14 @@ export function TodayPage({
             </small>
           )}
           {ready && (
-            <small className="muted">
-              {t("Investments {investments} · Savings {savings} · Other {other}", {
-                investments: m(investments),
-                savings: m(savings),
-                other: m(otherAssets),
-              })}
+            <small className="muted today-breakdown">
+              {[
+                t("Portfolio {amount}", { amount: m(investments - totalCash) }),
+                t("Reserved cash {amount}", { amount: m(totalCash) }),
+                t("Savings {amount}", { amount: m(plan.savingsBalances) }),
+                t("Bonds {amount}", { amount: m(plan.bondBalances) }),
+                ...(otherAssets ? [t("Property and other assets {amount}", { amount: m(otherAssets) })] : []),
+              ].join(" · ")}
             </small>
           )}
         </article>
