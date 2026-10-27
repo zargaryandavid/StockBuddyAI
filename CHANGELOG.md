@@ -186,6 +186,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Changed
 
+- Sign-in headline line spacing: a little more in English (1.04) and more in Armenian
+  (1.22, with less letter squeeze), whose letters reach above and below English capitals.
 - Sign-in page: a photo of a real $100 note (two, stacked) replaces the drawn play bill.
   It is front only, shown at no more than about 58% of a real note's size, and stored at
   low resolution (`apps/web/public/login/hundred-dollar-bill.webp`).

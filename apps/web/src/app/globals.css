@@ -3258,3 +3258,9 @@ textarea {
 @media (prefers-reduced-motion: reduce) {
   .login-bill.back, .login-bill.front { animation: none; }
 }
+
+/* Sign-in headline: a little more room between lines; Armenian letters reach higher and
+   lower than English capitals, so they get more, with less letter squeeze. */
+.login-copy h1 { line-height: 1.04; }
+html:lang(hy) .login-copy h1 { line-height: 1.22; letter-spacing: -0.03em; }
+html:lang(hy) .hero h1 { line-height: 1.22; letter-spacing: -0.03em; }
