@@ -3270,3 +3270,6 @@ html:lang(hy) .hero h1 { line-height: 1.22; letter-spacing: -0.03em; }
 .cash-info { display: inline-flex; color: var(--muted); cursor: help; border-radius: 50%; }
 .cash-info:focus-visible { outline: 2px solid var(--accent, #1f4d32); outline-offset: 2px; }
 .summary-card.short > small, .analytics-metric.short > small { color: #a23d35; }
+.cash-field-label { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.25rem 0.75rem; }
+.cash-summary { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--muted); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.cash-summary.short { color: #a23d35; }

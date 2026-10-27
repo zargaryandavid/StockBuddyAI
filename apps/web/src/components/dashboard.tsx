@@ -24,7 +24,7 @@ import { WishlistPage } from "@/components/wishlist/wishlist-page";
 import { ProfileDialog, type ProfileValues } from "@/components/profile-dialog";
 import { notEnoughData, RunTest } from "@/components/run-test";
 import { SupportPage } from "@/components/support-page";
-import { CashLabel, cashTargetNote } from "@/components/cash-target";
+import { CashLabel, CashSummary, cashTargetNote } from "@/components/cash-target";
 import { cashShortfall, cashTarget, DEFAULT_CASH_TARGET } from "@/lib/analytics";
 import { ReportReminderDialog } from "@/components/report-reminder-dialog";
 import { TransactionsView, type TransactionInput } from "@/components/transactions-view";
@@ -1128,8 +1128,19 @@ export function Dashboard({
                     />
                   </label>
                   <label>
-                    {t("Cash")}
+                    <span className="cash-field-label">
+                      {t("Cash")}
+                      <CashSummary
+                        cash={cash}
+                        share={metrics.cashPercentage ?? 0}
+                        totalValue={metrics.totalValue}
+                        target={cashGoal}
+                        formatMoney={(value) => money(value, baseCurrency)}
+                        t={t}
+                      />
+                    </span>
                     <input
+                      aria-label={t("Cash")}
                       type="number"
                       min="0"
                       step="0.01"

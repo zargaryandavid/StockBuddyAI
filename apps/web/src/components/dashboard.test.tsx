@@ -613,5 +613,6 @@ describe("Dashboard navigation", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Portfolio" }));
     expect(document.body.textContent).not.toContain("10,000");
+    expect(screen.getByText(/Target 5%: \$0\.00/)).toBeTruthy();
   });
 });
