@@ -6,6 +6,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Added
 
+- Bonds on the Portfolio page: the bonds entered in FIRE are listed under the holdings (face value, coupon, how often it pays, maturity, income a year, total) with "Edit in FIRE". They are entered only in FIRE, so they are never counted twice, and load when the section scrolls into view. Analytics adds **Your mix**: stocks, funds and ETFs, bonds and cash as shares of everything invested.
+
 - Portfolio: Cash has a currency picker (the portfolio's own currency), and "+" adds cash in other currencies on the same line (for example ֏500,000 beside $1,000). It is converted at today's rate into the portfolio's currency for every total, the cash target, FIRE and Today. The name field is shorter so everything fits on one line. Needs migration `20261027140000_portfolio_other_cash.sql`.
 
 - **Today** is the new first page after sign-in: net worth (all portfolios + savings, CDs and bonds + other owned assets) with today's market move and the change since the last reading, FIRE progress, cash against its target, limits that are broken (a company above its maximum position, cash below target), and company reports expected in the next 30 days (about three months after each last report).
@@ -631,6 +633,8 @@ All notable project changes and user-visible functionality are recorded here.
 - Added a compact ticker-symbol list beneath every industry allocation.
 
 ### Added
+
+- Bonds on the Portfolio page: the bonds entered in FIRE are listed under the holdings (face value, coupon, how often it pays, maturity, income a year, total) with "Edit in FIRE". They are entered only in FIRE, so they are never counted twice, and load when the section scrolls into view. Analytics adds **Your mix**: stocks, funds and ETFs, bonds and cash as shares of everything invested.
 
 - Portfolio: Cash has a currency picker (the portfolio's own currency), and "+" adds cash in other currencies on the same line (for example ֏500,000 beside $1,000). It is converted at today's rate into the portfolio's currency for every total, the cash target, FIRE and Today. The name field is shorter so everything fits on one line. Needs migration `20261027140000_portfolio_other_cash.sql`.
 

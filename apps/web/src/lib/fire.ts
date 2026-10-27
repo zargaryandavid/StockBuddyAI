@@ -784,3 +784,55 @@ export function monthEvents({
   }
   return events.sort((a, b) => a.date.localeCompare(b.date) || a.kind.localeCompare(b.kind));
 }
+
+export type BondHolding = {
+  id: string;
+  name: string;
+  /** Face value in the portfolio's currency; null when its currency has no rate yet. */
+  faceValue: number | null;
+  /** Face value in the bond's own currency. */
+  faceValueOwn: number;
+  currency: string;
+  couponPct: number;
+  frequency: FireFrequency;
+  maturity: string | null;
+  /** Coupons over a year in the portfolio's currency; null without a rate. */
+  yearlyIncome: number | null;
+  quantity: number | null;
+  unitPrice: number | null;
+};
+
+/** The bonds entered in FIRE that have not matured, valued at face value. */
+export function bondHoldings(
+  entries: FireEntry[],
+  today: string,
+  rates: FxRates = {},
+  baseCurrency = "USD",
+): BondHolding[] {
+  return entries
+    .filter(
+      (entry) =>
+        entry.kind === "income" &&
+        categoryFor("income", entry.category).yields === "face" &&
+        !(entry.ends_on && entry.ends_on < today),
+    )
+    .map((entry) => {
+      const own = Number(entry.principal ?? 0);
+      const coupon = Number(entry.yield_pct) || 0;
+      const faceValue = toBase(own, entry.currency, rates, baseCurrency);
+      return {
+        id: entry.id,
+        name: entry.name,
+        faceValue,
+        faceValueOwn: own,
+        currency: entry.currency,
+        couponPct: coupon,
+        frequency: entry.frequency,
+        maturity: entry.ends_on,
+        yearlyIncome: faceValue == null ? null : (faceValue * coupon) / 100,
+        quantity: entry.quantity ?? null,
+        unitPrice: entry.unit_price ?? null,
+      };
+    })
+    .sort((a, b) => (a.maturity ?? "9999").localeCompare(b.maturity ?? "9999"));
+}

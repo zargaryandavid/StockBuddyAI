@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  bondHoldings,
   assetMix,
   buildPlan,
   heldAssets,
@@ -434,5 +435,30 @@ describe("owned assets", () => {
     };
     expect(heldAssets([], [rental])).toEqual([{ key: "real_estate", label: "Real estate", value: 200000 }]);
     expect(heldAssets([asset({})], [{ ...rental, asset_id: "a1" }])[0].value).toBe(350000);
+  });
+});
+
+describe("bondHoldings", () => {
+  const bond = (id: string, ends_on: string | null, principal: number, currency = "USD") => ({
+    id, kind: "income" as const, category: "bond", name: `Bond ${id}`, amount: 0, currency,
+    frequency: "semiannual" as const, starts_on: "2026-01-01", ends_on, principal, yield_pct: 4,
+    note: null, quantity: 10, unit_price: principal / 10,
+  });
+
+  it("lists running bonds at face value with their yearly coupons, soonest maturity first", () => {
+    const rows = bondHoldings(
+      [
+        bond("a", "2030-06-01", 10000),
+        bond("b", "2027-01-01", 5000, "EUR"),
+        bond("old", "2026-01-01", 9999),
+        { ...bond("cd", null, 1000), category: "cd" },
+      ],
+      "2026-10-27",
+      { EUR: 1.1 },
+    );
+    expect(rows.map((row) => row.id)).toEqual(["b", "a"]);
+    expect(rows[0].faceValue).toBeCloseTo(5500);
+    expect(rows[0].yearlyIncome).toBeCloseTo(220);
+    expect(rows[1].yearlyIncome).toBe(400);
   });
 });

@@ -82,6 +82,7 @@ describe("PortfolioAnalyticsDashboard", () => {
         selectedId="one"
         positions={positions}
         cash={100}
+        bondsValue={300}
         asOfDate="2026-10-23"
         limits={{ maxPositionPct: 0.5 }}
         onSelectPortfolio={vi.fn()}
@@ -95,6 +96,9 @@ describe("PortfolioAnalyticsDashboard", () => {
       screen.getByRole("region", { name: "Portfolio summary" }).children,
     ).toHaveLength(8);
     expect(screen.getByText("Cash balance")).toBeTruthy();
+    const mix = screen.getByRole("region", { name: "Your mix" });
+    expect(mix.textContent).toContain("Bonds");
+    expect(mix.textContent).toContain("$300");
     expect(screen.getByText(/^Target 5% · (\$[\d,.]+ to add|met)$/)).toBeTruthy();
     expect(
       screen.getByRole("img", { name: /at least 5% of your portfolio in cash/ }),

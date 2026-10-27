@@ -75,6 +75,7 @@ export function PortfolioAnalyticsDashboard({
   selectedId,
   positions,
   cash,
+  bondsValue = 0,
   transactions = [],
   useTransactionHistory = false,
   limits: suppliedLimits,
@@ -87,6 +88,8 @@ export function PortfolioAnalyticsDashboard({
   selectedId: string;
   positions: Position[];
   cash: number;
+  /** Bonds entered in FIRE, at face value; shown in the mix only. */
+  bondsValue?: number;
   transactions?: PortfolioTransaction[];
   useTransactionHistory?: boolean;
   limits: Partial<AnalyticsLimits>;
@@ -606,6 +609,18 @@ export function PortfolioAnalyticsDashboard({
           tone={analytics.warnings.length ? "negative" : "positive"}
         />
       </section>
+
+      <InvestmentMix
+        stocks={analytics.positions
+          .filter((position) => !isFund(position))
+          .reduce((sum, position) => sum + (position.marketValue ?? 0), 0)}
+        funds={analytics.positions
+          .filter((position) => isFund(position))
+          .reduce((sum, position) => sum + (position.marketValue ?? 0), 0)}
+        bonds={bondsValue}
+        cash={cash}
+        t={t}
+      />
 
       <section className="panel analytics-module analytics-anchor" id="analytics-allocation">
         <ModuleHeading
@@ -1236,5 +1251,53 @@ function AllocationGuide({ limits }: { limits: AnalyticsLimits }) {
       </div>
       )}
     </aside>
+  );
+}
+
+
+/** Stocks, funds, bonds and cash as shares of everything invested, bonds included. */
+function InvestmentMix({
+  stocks,
+  funds,
+  bonds,
+  cash,
+  t,
+}: {
+  stocks: number;
+  funds: number;
+  bonds: number;
+  cash: number;
+  t: Translate;
+}) {
+  const rows = [
+    { key: "stocks", label: t("Stocks"), value: stocks },
+    { key: "funds", label: t("Funds and ETFs"), value: funds },
+    { key: "bonds", label: t("Bonds"), value: bonds },
+    { key: "cash", label: t("Cash"), value: cash },
+  ];
+  const total = rows.reduce((sum, row) => sum + Math.max(0, row.value), 0);
+  if (!total) return null;
+  return (
+    <section className="panel investment-mix" aria-labelledby="investment-mix-title">
+      <h2 id="investment-mix-title">{t("Your mix")}</h2>
+      <div className="investment-mix-bar" aria-hidden="true">
+        {rows.map((row) =>
+          row.value > 0 ? (
+            <span key={row.key} className={`mix-${row.key}`} style={{ width: `${(row.value / total) * 100}%` }} />
+          ) : null,
+        )}
+      </div>
+      <ul className="investment-mix-rows">
+        {rows.map((row) => (
+          <li key={row.key}>
+            <span className={`mix-dot mix-${row.key}`} aria-hidden="true" />
+            <span>{row.label}</span>
+            <strong>{formatPercent(row.value / total)}</strong>
+            <span className="muted">{money(row.value)}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="muted">{t("Bonds are the ones entered in FIRE, at face value.")}</p>
+    </section>
   );
 }

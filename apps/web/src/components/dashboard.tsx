@@ -27,6 +27,7 @@ import { SupportPage } from "@/components/support-page";
 import { TodayPage, type TodayDestination } from "@/components/today/today-page";
 import { parseBrokerCsv } from "@/lib/broker-csv";
 import { AmountInput } from "@/components/amount-input";
+import { BondsSection, useBondHoldings } from "@/components/bonds-section";
 import { CashLabel, CashSummary, cashTargetNote } from "@/components/cash-target";
 import { cashShortfall, cashTarget, DEFAULT_CASH_TARGET } from "@/lib/analytics";
 import { ReportReminderDialog } from "@/components/report-reminder-dialog";
@@ -295,6 +296,14 @@ export function Dashboard({
         return rate ? sum + Number(item.amount || 0) * rate : sum;
       }, 0),
     [cash, cashCurrency, otherCash, cashRates, baseCurrency],
+  );
+  // Bonds are entered in FIRE; the Portfolio page and Analytics show them for the full mix.
+  const [bondsWanted, setBondsWanted] = useState(false);
+  const wantBonds = useCallback(() => setBondsWanted(true), []);
+  const bondData = useBondHoldings(
+    baseCurrency,
+    today,
+    bondsWanted || (activeTab === "portfolio" && portfolioView === "analytics"),
   );
   // Today shows the open portfolio as it is on screen, including changes not saved yet.
   const todayPortfolios = useMemo(
@@ -1722,6 +1731,15 @@ export function Dashboard({
                 {dirty && <p className="unsaved-state">{t("Unsaved changes")}</p>}
               </form>
 
+              <BondsSection
+                bonds={bondData.bonds}
+                total={bondData.total}
+                loading={bondData.loading}
+                currency={baseCurrency}
+                onEdit={() => setActiveTab("fire")}
+                onVisible={wantBonds}
+              />
+
               {portfolios.length > 0 && (
                 <section className="saved-portfolios">
                   <h2>{t("My portfolios")}</h2>
@@ -1821,6 +1839,7 @@ export function Dashboard({
                 selectedId={selectedId}
                 positions={positions}
                 cash={totalCash}
+                bondsValue={bondData.total}
                 transactions={transactions}
                 useTransactionHistory={book.use_transaction_history_analytics}
                 loading={loadingPortfolios}
