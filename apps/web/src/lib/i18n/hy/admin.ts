@@ -190,6 +190,8 @@ const admin: Record<string, string> = {
   "Port must be a number from 1 to 65535": "Պորտը պետք է լինի 1-ից 65535 թիվ",
   "Set SUPABASE_SERVICE_ROLE_KEY to store connection settings":
     "Միացման կարգավորումները պահելու համար նշեք SUPABASE_SERVICE_ROLE_KEY-ը",
+  "Minimum cash %": "Կանխիկի նվազագույն %",
+  "Default for portfolios without their own Min cash.": "Լռելյայն արժեք այն պորտֆելների համար, որոնք չունեն իրենց նվազագույն կանխիկը։",
 };
 
 export default admin;

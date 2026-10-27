@@ -345,6 +345,7 @@ class StudioUpdate(BaseModel):
     deep_value_weight: float = Field(gt=0, lt=1)
     llm_model: str = Field(min_length=1, max_length=80)
     use_transaction_history_analytics: bool = True
+    min_cash_pct: float = Field(default=0.05, ge=0, le=1)
     daily_wish_checks: int = Field(default=100, ge=0, le=10000)
     daily_screenshot_imports: int = Field(default=20, ge=0, le=10000)
     daily_ai_reviews: int = Field(default=10, ge=0, le=10000)

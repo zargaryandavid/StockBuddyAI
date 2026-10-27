@@ -6,6 +6,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Added
 
+- Admin studio: "Minimum cash %" in Limits and model (default 5%). Portfolios without their own Min cash use it as their cash target. Needs migration 20261027120000_min_cash_default.sql.
+
 - Cash balance cards (Portfolio and analytics) now show cash as amount and share, the cash target (the portfolio's Min cash, or 5% when none is set), how much cash is missing, and an (i) explaining the target.
 
 - Sign-in page: the two $100 notes slide in, then float and sway gently, out of step

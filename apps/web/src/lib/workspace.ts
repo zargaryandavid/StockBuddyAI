@@ -11,6 +11,8 @@ export type BookSettings = {
   deep_value_weight: number;
   trajectory_weight: number;
   use_transaction_history_analytics: boolean;
+  /** Cash share portfolios without their own Min cash should keep. */
+  min_cash_pct?: number;
   email_reminders_enabled?: boolean;
   /** Daily AI review limit per user, from the admin AI limits. */
   daily_ai_reviews?: number;
@@ -29,6 +31,7 @@ export const defaultBook: BookSettings = {
   deep_value_weight: 0.7,
   trajectory_weight: 0.3,
   use_transaction_history_analytics: true,
+  min_cash_pct: 0.05,
   industries: [
     { name: "Communication Services", icon: "message-circle" },
     { name: "Consumer Discretionary", icon: "shopping-bag" },

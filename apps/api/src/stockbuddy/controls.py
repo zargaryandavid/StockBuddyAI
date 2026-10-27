@@ -37,6 +37,8 @@ class StudioSettings:
     industries: tuple[IndustrySetting, ...]
     personas: tuple[PersonaSetting, ...]
     use_transaction_history_analytics: bool = True
+    # Cash share portfolios without their own Min cash should keep.
+    min_cash_pct: float = 0.05
     # Uses per person per day of each AI feature; 0 turns the feature off.
     daily_wish_checks: int = 100
     daily_screenshot_imports: int = 20
@@ -109,6 +111,7 @@ def normalize_settings(
     deep_value_weight: float,
     llm_model: str,
     use_transaction_history_analytics: bool = True,
+    min_cash_pct: float = 0.05,
     prompts: dict[str, str],
     defaults: dict[str, str],
     industries: list[tuple[str, str]] | None = None,
@@ -125,6 +128,8 @@ def normalize_settings(
             raise ValueError(f"{label} must be between 0 and 10000")
     position = _percent(max_position_pct, "Maximum position")
     industry_cap = _percent(max_industry_pct, "Industry position")
+    if not 0 <= min_cash_pct <= 1:
+        raise ValueError("Minimum cash must be between 0% and 100%")
     deep, trajectory = split_sleeve_weights(deep_value_weight)
     model = llm_model.strip()
     if not model or len(model) > 80 or any(character.isspace() for character in model):
@@ -163,6 +168,7 @@ def normalize_settings(
         trajectory_weight=float(trajectory),
         llm_model=model,
         use_transaction_history_analytics=use_transaction_history_analytics,
+        min_cash_pct=float(min_cash_pct),
         daily_wish_checks=daily_wish_checks,
         daily_screenshot_imports=daily_screenshot_imports,
         daily_ai_reviews=daily_ai_reviews,

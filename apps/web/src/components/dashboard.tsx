@@ -246,7 +246,7 @@ export function Dashboard({
     () => calculatePortfolioMetrics(positions, cash),
     [positions, cash],
   );
-  const cashGoal = cashTarget(minCash);
+  const cashGoal = cashTarget(minCash, book.min_cash_pct);
   const marketValue = metrics.holdingsValue;
   const costBasis = metrics.totalCostBasis;
   const allocationPositions = useMemo(
@@ -1245,7 +1245,7 @@ export function Dashboard({
                     </label>
                     <PercentSetting label={t("Max position (%)")} value={maxPosition} fallback={book.max_position_pct} onChange={(value) => { setMaxPosition(value); setDirty(true); }} />
                     <PercentSetting label={t("Max sector (%)")} value={maxSector} fallback={book.max_industry_pct} onChange={(value) => { setMaxSector(value); setDirty(true); }} />
-                    <PercentSetting label={t("Min cash (%)")} value={minCash || null} fallback={DEFAULT_CASH_TARGET} onChange={(value) => { setMinCash(value ?? 0); setDirty(true); }} />
+                    <PercentSetting label={t("Min cash (%)")} value={minCash || null} fallback={book.min_cash_pct ?? DEFAULT_CASH_TARGET} onChange={(value) => { setMinCash(value ?? 0); setDirty(true); }} />
                     <label>
                       {t("Time horizon")}
                       <select value={timeHorizon} onChange={(event) => { setTimeHorizon(event.target.value as typeof timeHorizon); setDirty(true); }}>
@@ -1615,7 +1615,7 @@ export function Dashboard({
                     selected?.max_position_pct ?? book.max_position_pct,
                   maxSectorPct:
                     selected?.max_sector_pct ?? book.max_industry_pct,
-                  minCashPct: cashTarget(selected?.min_cash_pct),
+                  minCashPct: cashTarget(selected?.min_cash_pct, book.min_cash_pct),
                   rebalancingThresholdPct:
                     selected?.rebalancing_threshold_pct,
                 }}

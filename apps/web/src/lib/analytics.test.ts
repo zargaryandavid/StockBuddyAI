@@ -236,6 +236,8 @@ describe("cash target", () => {
     expect(cashTarget(0)).toBe(0.05);
     expect(cashTarget(null)).toBe(0.05);
     expect(cashTarget(0.1)).toBe(0.1);
+    expect(cashTarget(0, 0.08)).toBe(0.08);
+    expect(cashTarget(0.1, 0.08)).toBe(0.1);
   });
 
   it("says how much cash is missing for the target", () => {

@@ -712,6 +712,7 @@ class Repository:
             use_transaction_history_analytics=bool(
                 row.get("use_transaction_history_analytics", True)
             ),
+            min_cash_pct=float(row.get("min_cash_pct", 0.05)),
             daily_wish_checks=int(row.get("daily_wish_checks", 100)),
             daily_screenshot_imports=int(row.get("daily_screenshot_imports", 20)),
             daily_ai_reviews=int(row.get("daily_ai_reviews", 10)),
@@ -731,6 +732,7 @@ class Repository:
                 "trajectory_weight": f"{settings.trajectory_weight:.4f}",
                 "llm_model": settings.llm_model,
                 "use_transaction_history_analytics": (settings.use_transaction_history_analytics),
+                "min_cash_pct": f"{settings.min_cash_pct:.4f}",
                 "daily_wish_checks": settings.daily_wish_checks,
                 "daily_screenshot_imports": settings.daily_screenshot_imports,
                 "daily_ai_reviews": settings.daily_ai_reviews,

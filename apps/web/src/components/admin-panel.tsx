@@ -37,6 +37,7 @@ export type StudioConfig = {
   trajectory_weight: number;
   llm_model: string;
   use_transaction_history_analytics: boolean;
+  min_cash_pct?: number;
   daily_wish_checks?: number;
   daily_screenshot_imports?: number;
   daily_ai_reviews?: number;
@@ -56,6 +57,7 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
     percent(initial.max_industry_pct),
   );
   const [deepValue, setDeepValue] = useState(percent(initial.deep_value_weight));
+  const [minCash, setMinCash] = useState(percent(initial.min_cash_pct ?? 0.05));
   const [model, setModel] = useState(initial.llm_model);
   const models = initial.models ?? [];
   const provider = models.find((item) => item.id === model)?.provider;
@@ -133,6 +135,7 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
           deep_value_weight: Number(deepValue) / 100,
           llm_model: model.trim(),
           use_transaction_history_analytics: useTransactionHistory,
+          min_cash_pct: Number(minCash) / 100,
           daily_wish_checks: Number(limits.daily_wish_checks),
           daily_screenshot_imports: Number(limits.daily_screenshot_imports),
           daily_ai_reviews: Number(limits.daily_ai_reviews),
@@ -154,6 +157,7 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
       setMaxPosition(percent(saved.max_position_pct));
       setIndustryPosition(percent(saved.max_industry_pct));
       setDeepValue(percent(saved.deep_value_weight));
+      setMinCash(percent(saved.min_cash_pct ?? 0.05));
       setNotice(t("Studio settings saved. The next review uses them."));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : t("Could not save studio settings"));
@@ -257,6 +261,19 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
                   onChange={(event) => setIndustryPosition(event.target.value)}
                   required
                 />
+              </label>
+              <label>
+                {t("Minimum cash %")}
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={minCash}
+                  onChange={(event) => setMinCash(event.target.value)}
+                  required
+                />
+                <small className="muted">{t("Default for portfolios without their own Min cash.")}</small>
               </label>
               <label>
                 {t("Deep value sleeve %")}
