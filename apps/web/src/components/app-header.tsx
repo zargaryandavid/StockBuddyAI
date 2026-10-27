@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { Loader2, LogOut } from "lucide-react";
 
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useT } from "@/lib/i18n/client";
@@ -14,7 +14,7 @@ export function AppHeader({
   children,
 }: {
   email: string;
-  onSignOut: () => void;
+  onSignOut: () => void | Promise<void>;
   /** When set, the account card opens the profile. */
   onOpenProfile?: () => void;
   children: ReactNode;
@@ -22,6 +22,8 @@ export function AppHeader({
   const t = useT();
   const nav = useRef<HTMLElement>(null);
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
+  // Signing out: the dialog stays, busy, until the sign-in page replaces this one.
+  const [signingOut, setSigningOut] = useState(false);
   const shown = useRef<HTMLElement | null>(null);
   // On phones the menu is a sideways-scrolling row: bring the current page into view when
   // it changes, without fighting someone who is scrolling the row themselves.
@@ -75,11 +77,18 @@ export function AppHeader({
       </div>
       {confirmingSignOut && (
         <SignOutDialog
-          onConfirm={() => {
-            setConfirmingSignOut(false);
-            onSignOut();
+          busy={signingOut}
+          onConfirm={async () => {
+            setSigningOut(true);
+            try {
+              await onSignOut();
+            } catch {
+              setSigningOut(false);
+            }
           }}
-          onCancel={() => setConfirmingSignOut(false)}
+          onCancel={() => {
+            if (!signingOut) setConfirmingSignOut(false);
+          }}
         />
       )}
     </header>
@@ -87,7 +96,15 @@ export function AppHeader({
 }
 
 /** "Are you sure?" before signing out, so a stray click doesn't end the session. */
-function SignOutDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
+function SignOutDialog({
+  busy,
+  onConfirm,
+  onCancel,
+}: {
+  busy: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
   const t = useT();
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -111,11 +128,12 @@ function SignOutDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCance
           {t("You'll need your email and password to sign back in. Your data stays saved.")}
         </p>
         <div className="confirm-actions">
-          <button type="button" className="button" onClick={onCancel} autoFocus>
+          <button type="button" className="button" onClick={onCancel} disabled={busy} autoFocus>
             {t("Stay signed in")}
           </button>
-          <button type="button" className="button primary" onClick={onConfirm}>
-            {t("Sign out")}
+          <button type="button" className="button primary" onClick={onConfirm} disabled={busy} aria-busy={busy}>
+            {busy && <Loader2 size={15} className="spinning" aria-hidden="true" />}
+            {busy ? t("Signing out…") : t("Sign out")}
           </button>
         </div>
       </section>

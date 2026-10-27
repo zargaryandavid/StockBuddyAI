@@ -3225,6 +3225,7 @@ textarea {
 .confirm-dialog h2 { margin: 0 0 0.5rem; }
 .confirm-dialog p { margin: 0 0 1rem; }
 .confirm-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; }
+.confirm-actions .button { display: inline-flex; align-items: center; gap: 0.4rem; }
 
 /* Profile: delete my account and data */
 .delete-account { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--line); }

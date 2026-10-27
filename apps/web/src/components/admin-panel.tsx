@@ -2,7 +2,6 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Briefcase, GraduationCap, PlugZap, RotateCcw, ShieldCheck } from "lucide-react";
 
 import { AppHeader } from "@/components/app-header";
@@ -50,7 +49,6 @@ export type StudioConfig = {
 export type ReviewModel = { id: string; name: string; provider: string };
 
 export function AdminPanel({ email, initial }: { email: string; initial: StudioConfig }) {
-  const router = useRouter();
   const t = useT();
   const [maxPosition, setMaxPosition] = useState(percent(initial.max_position_pct));
   const [industryPosition, setIndustryPosition] = useState(
@@ -78,8 +76,9 @@ export function AdminPanel({ email, initial }: { email: string; initial: StudioC
 
   async function signOut() {
     await createClient().auth.signOut();
-    router.push("/login");
-    router.refresh();
+    // A full load: nothing from the account stays in memory, and the sign-out
+    // dialog keeps showing until the sign-in page is really there.
+    window.location.replace("/login");
   }
 
   function updatePrompt(persona: string, prompt: string) {

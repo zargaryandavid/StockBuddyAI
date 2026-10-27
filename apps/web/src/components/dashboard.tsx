@@ -921,8 +921,9 @@ export function Dashboard({
 
   async function signOut() {
     await createClient().auth.signOut();
-    router.push("/login");
-    router.refresh();
+    // A full load: nothing from the account stays in memory, and the sign-out
+    // dialog keeps showing until the sign-in page is really there.
+    window.location.replace("/login");
   }
 
   return (

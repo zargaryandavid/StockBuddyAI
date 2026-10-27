@@ -3,6 +3,7 @@ const common: Record<string, string> = {
   "Your profile": "Ձեր պրոֆիլը",
   "Main navigation": "Գլխավոր ընտրացանկ",
   "Sign out": "Դուրս գալ",
+  "Signing out…": "Դուրս ենք գալիս…",
   "Sign out?": "Դուրս գա՞լ",
   "Stay signed in": "Մնալ համակարգում",
   "You'll need your email and password to sign back in. Your data stays saved.":

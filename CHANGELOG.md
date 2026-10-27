@@ -156,6 +156,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Fixed
 
+- Sign out: after you confirm, the dialog stays open with "Signing out…" and a spinner until the sign-in page loads, instead of closing while the old page lingers. Sign-out now does a full page load, so nothing from the account stays in memory.
+
 - Sign in: the button now says "Signing in…" and stays busy until your book opens, instead of switching back to "Sign in" while the next page is still loading.
 - Admin studio: Limits and model fields sit on one aligned row; Support us: the $9 side is centered in its box.
 
