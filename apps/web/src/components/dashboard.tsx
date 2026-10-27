@@ -127,7 +127,7 @@ export function Dashboard({
     shares: 0,
   });
   const [portfolioName, setPortfolioName] = useState("My portfolio");
-  const [cash, setCash] = useState(10000);
+  const [cash, setCash] = useState(0);
   const [baseCurrency, setBaseCurrency] = useState("USD");
   const [benchmark, setBenchmark] = useState("SPY");
   const [maxPosition, setMaxPosition] = useState<number | null>(null);
@@ -509,7 +509,7 @@ export function Dashboard({
     setEditingId("");
     setSelectedId("");
     setPortfolioName("My portfolio");
-    setCash(10000);
+    setCash(0);
     setBaseCurrency("USD");
     setBenchmark("SPY");
     setMaxPosition(null);

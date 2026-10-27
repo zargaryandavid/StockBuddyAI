@@ -603,4 +603,15 @@ describe("Dashboard navigation", () => {
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("group", { name: "Transaction for NVDA" })).toBeNull();
   });
+
+  it("starts a brand-new account with no made-up money", async () => {
+    render(<Dashboard initialTab="fire" email="new@example.com" today="2026-10-27" />);
+
+    const card = (await screen.findByText("Current assets")).parentElement as HTMLElement;
+    await waitFor(() => expect(card.textContent).toContain("$0.00"));
+    expect(document.body.textContent).not.toContain("10,000");
+
+    fireEvent.click(screen.getByRole("button", { name: "Portfolio" }));
+    expect(document.body.textContent).not.toContain("10,000");
+  });
 });

@@ -150,6 +150,10 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Fixed
 
+- New accounts no longer show $10,000 they never entered. The portfolio form started
+  with a made-up $10,000 cash balance, which FIRE counted as "Current assets" before any
+  portfolio existed and which was saved if the person created a portfolio without
+  changing it. Cash now starts at $0.
 - The $100 note picture on the live sign-in page showed as broken: Vercel's image
   resizer isn't available with Services, so the (already small) picture is served as is.
 - The new-password box is centred, and its errors (e.g. "New password should be
