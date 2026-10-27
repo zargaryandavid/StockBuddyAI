@@ -101,6 +101,7 @@ const today: Record<string, string> = {
   "Funds and ETFs": "Ֆոնդեր և ETF-ներ",
   "Your mix": "Ձեր բաշխումը",
   "Bonds are the ones entered in FIRE, at face value.": "Պարտատոմսերը FIRE-ում մուտքագրվածներն են՝ անվանական արժեքով։",
+  "About the cash target": "Կանխիկի թիրախի մասին",
   "your Min cash": "ձեր նվազագույն կանխիկը",
   "{share} of your portfolios · target {target} = {amount}": "Ձեր պորտֆելների {share}-ը · թիրախ՝ {target} = {amount}",
   "{amount} to add to reach the target": "Թիրախին հասնելու համար պակասում է {amount}",

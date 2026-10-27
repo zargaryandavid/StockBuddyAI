@@ -224,6 +224,15 @@ describe("Holdings table", () => {
     expect(await screen.findByText(/changes to .* that are not saved yet/)).toBeTruthy();
     const card = (await screen.findAllByText("Cash")).map((node) => node.closest(".today-card")).find(Boolean);
     await waitFor(() => expect(card?.textContent).toContain("$1,000.00"));
+    // The Cash card is not a link; its explanation opens from the (i) button.
+    expect(card?.tagName).toBe("ARTICLE");
+    expect(screen.queryByText(/cash kept aside covers emergencies/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "About the cash target" }));
+    expect(screen.getByRole("dialog", { name: "About the cash target" }).textContent).toContain(
+      "cash kept aside covers emergencies",
+    );
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "About the cash target" })).toBeNull();
     const breakdown = document.querySelector(".today-breakdown")?.textContent ?? "";
     expect(breakdown).toContain("Reserved cash $1,000.00");
     expect(breakdown).toMatch(/^Portfolio \$[\d,.]+ · Reserved cash \$1,000\.00 · Savings \$0\.00 · Bonds \$0\.00$/);

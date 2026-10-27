@@ -168,6 +168,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Fixed
 
+- Today Cash card: the "why" explanation opens from an (i) button at the right of the Cash title (Escape or Close shuts it), and the card no longer opens the Portfolio page when clicked.
+
 - Today Cash card: shows the cash share of your portfolios, the target and what it means in dollars ("7.7% of your portfolios · target 5% = $5,397"), a progress bar, how much is missing or above the target, and why the target exists and where to change it. Switching pages now shows a short loading bar at the top and the new page fades in (off for reduced motion).
 
 - Today: the net worth breakdown reads Portfolio · Reserved cash · Savings · Bonds (plus Property and other assets when there are any), instead of Investments · Savings · Other.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, ArrowRight, CalendarClock, Check, Flame, PiggyBank, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowRight, CalendarClock, Check, Flame, Info, PiggyBank, Wallet } from "lucide-react";
 
 import { cashTarget } from "@/lib/analytics";
 import { api, type Portfolio } from "@/lib/api";
@@ -61,6 +61,16 @@ export function TodayPage({
   const [rates, setRates] = useState<FxRates>({});
   const [quotes, setQuotes] = useState<Map<string, Quote> | null>(null);
   const [history, setHistory] = useState<NetWorthPoint[]>([]);
+  const [cashHelpOpen, setCashHelpOpen] = useState(false);
+  // Escape closes the cash explanation.
+  useEffect(() => {
+    if (!cashHelpOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setCashHelpOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [cashHelpOpen]);
   const [skipped, setSkipped] = useState(() => {
     try {
       return window.localStorage.getItem(SKIP_SETUP_KEY) === "1";
@@ -403,10 +413,32 @@ export function TodayPage({
           </small>
         </button>
 
-        <button type="button" className="today-card" onClick={() => onOpen("portfolio")}>
+        <article className="today-card">
           <span className="today-card-label">
             <PiggyBank size={16} aria-hidden="true" />
             {t("Cash")}
+            <span className="today-info">
+              <button
+                type="button"
+                className="today-info-button"
+                aria-label={t("About the cash target")}
+                aria-expanded={cashHelpOpen}
+                aria-controls="cash-help"
+                onClick={() => setCashHelpOpen((open) => !open)}
+              >
+                <Info size={15} aria-hidden="true" />
+              </button>
+              {cashHelpOpen && (
+                <span id="cash-help" role="dialog" aria-label={t("About the cash target")} className="today-info-popup">
+                  {t(
+                    "Why: cash kept aside covers emergencies and lets you buy when prices drop, without selling. Change the target with Min cash (%) in Portfolio settings, or for everyone in Admin.",
+                  )}
+                  <button type="button" className="text-button" onClick={() => setCashHelpOpen(false)}>
+                    {t("Close")}
+                  </button>
+                </span>
+              )}
+            </span>
           </span>
           <strong>{ready ? m(totalCash) : "…"}</strong>
           {ready && portfolios.length > 0 && (
@@ -432,14 +464,7 @@ export function TodayPage({
                   ? t("{amount} to add to reach the target", { amount: m(cashGoal) })
                   : t("Target met · {amount} above it", { amount: m(Math.max(0, totalCash - cashTargetAmount)) })}
           </small>
-          {ready && portfolios.length > 0 && (
-            <small className="muted today-card-help">
-              {t(
-                "Why: cash kept aside covers emergencies and lets you buy when prices drop, without selling. Change the target with Min cash (%) in Portfolio settings, or for everyone in Admin.",
-              )}
-            </small>
-          )}
-        </button>
+        </article>
       </div>
 
       <article className="panel today-chart">
