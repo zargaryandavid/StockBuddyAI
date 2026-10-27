@@ -362,7 +362,8 @@ class StudioUpdate(BaseModel):
     llm_model: str = Field(min_length=1, max_length=80)
     use_transaction_history_analytics: bool = True
     min_cash_pct: float = Field(default=0.05, ge=0, le=1)
-    amazon_affiliate_tag: str = Field(default="", max_length=64)
+    # Saved from Admin > Library; None keeps the current tag.
+    amazon_affiliate_tag: str | None = Field(default=None, max_length=64)
     daily_wish_checks: int = Field(default=100, ge=0, le=10000)
     daily_screenshot_imports: int = Field(default=20, ge=0, le=10000)
     daily_ai_reviews: int = Field(default=10, ge=0, le=10000)

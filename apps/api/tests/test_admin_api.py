@@ -109,6 +109,35 @@ def test_admin_can_save_prompts_and_book_settings():
     assert repository.saved.amazon_affiliate_tag == "stockbuddy-20"
 
 
+def test_saving_the_studio_without_a_tag_keeps_the_library_tag():
+    from dataclasses import replace
+
+    repository = Repository()
+    repository.settings = replace(repository.settings, amazon_affiliate_tag="kept-20")
+    prompts = builtin_prompts()
+    with TestClient(app) as client:
+        app.state.gateway = Gateway()
+        app.state.repository = repository
+        response = client.put(
+            "/api/admin/config",
+            headers={"Authorization": "Bearer admin"},
+            json={
+                "max_position_pct": 0.25,
+                "max_industry_pct": 0.25,
+                "deep_value_weight": 0.7,
+                "llm_model": "claude-opus-5-5",
+                "industries": [
+                    {"name": item.name, "icon": item.icon} for item in DEFAULT_INDUSTRIES
+                ],
+                "prompts": [
+                    {"persona": name, "prompt": prompt} for name, prompt in prompts.items()
+                ],
+            },
+        )
+    assert response.status_code == 200
+    assert repository.saved.amazon_affiliate_tag == "kept-20"
+
+
 def test_admin_affiliate_tag_allows_only_letters_digits_and_hyphens():
     repository = Repository()
     prompts = builtin_prompts()

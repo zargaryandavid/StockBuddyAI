@@ -5,13 +5,16 @@ const library: Record<string, string> = {
   "Finance books worth your time. Rate the ones you've read.":
     "Ֆինանսական գրքեր, որոնք արժե կարդալ։ Գնահատեք նրանք, որոնք արդեն կարդացել եք։",
   "Ratings are unavailable right now.": "Գնահատականներն այս պահին հասանելի չեն։",
-  "Top 5 by readers": "Ընթերցողների թոփ 5-ը",
-  "Our picks": "Մեր ընտրությունը",
-  "Our pick": "Մեր ընտրությունը",
-  "No ratings yet. Read one of these and be the first to rate it.":
-    "Գնահատականներ դեռ չկան։ Կարդացեք այս գրքերից մեկը և առաջինը գնահատեք այն։",
-  "All books": "Բոլոր գրքերը",
-  "{title} by {author}": "{title}, հեղինակ՝ {author}",
+  "Books are unavailable right now.": "Գրքերն այս պահին հասանելի չեն։",
+  "Loading books…": "Գրքերը բեռնվում են…",
+  "No books yet.": "Գրքեր դեռ չկան։",
+  Books: "Գրքեր",
+  "Number {rank} by readers' rating": "Ընթերցողների գնահատականով {rank}-րդը",
+  "Details for {title}": "«{title}» գրքի մանրամասները",
+  "Rate {title}": "Գնահատել «{title}» գիրքը",
+  Remove: "Հեռացնել",
+  "Rating saved": "Գնահատականը պահպանված է",
+  "Rating removed": "Գնահատականը հեռացվեց",
   "Not rated yet": "Դեռ գնահատված չէ",
   "As an Amazon Associate, StockBuddy earns from qualifying purchases.":
     "Որպես Amazon Associate՝ StockBuddy-ն եկամուտ է ստանում որակավորվող գնումներից։",
@@ -85,8 +88,59 @@ const library: Record<string, string> = {
   "Added to the Library's Buy on Amazon links. Leave empty for plain links.":
     "Ավելացվում է Գրադարանի «Գնել Amazon-ում» հղումներին։ Թողեք դատարկ՝ սովորական հղումների համար։",
 
+  "The books every user sees in Education, in this order until readers rate them.":
+    "Գրքերը, որոնք բոլոր օգտատերերը տեսնում են «Կրթություն» բաժնում՝ այս հերթականությամբ, քանի դեռ ընթերցողները չեն գնահատել դրանք։",
+  "Add book": "Ավելացնել գիրք",
+  "Could not load the books": "Չհաջողվեց բեռնել գրքերը",
+  "Could not change the order": "Չհաջողվեց փոխել հերթականությունը",
+  "No books yet. Add the first one with Add book.": "Գրքեր դեռ չկան։ Ավելացրեք առաջինը «Ավելացնել գիրք» կոճակով։",
+  Cover: "Շապիկ",
+  Author: "Հեղինակ",
+  Amazon: "Amazon",
+  Rating: "Գնահատական",
+  "Amazon link": "Amazon-ի հղում",
+  "ISBN {isbn}": "ISBN {isbn}",
+  "No link": "Հղում չկա",
+  "{average} from {count}": "{average}՝ {count} գնահատականից",
+  "Move {title} up": "Տեղափոխել «{title}»-ը վերև",
+  "Move {title} down": "Տեղափոխել «{title}»-ը ներքև",
+  "Remove {title}": "Հեռացնել «{title}»-ը",
+  "Save tag": "Պահպանել թեգը",
+  "Affiliate tag saved.": "Գործընկերային թեգը պահպանված է։",
+  "Could not save the affiliate tag": "Չհաջողվեց պահպանել գործընկերային թեգը",
+  "Edit book": "Խմբագրել գիրքը",
+  ISBN: "ISBN",
+  Topic: "Թեմա",
+  Description: "Նկարագրություն",
+  "Amazon link (optional)": "Amazon-ի հղում (ըստ ցանկության)",
+  "Without a link, one is made from the ISBN. The affiliate tag is added either way.":
+    "Եթե հղում չկա, այն կստեղծվի ISBN-ից։ Գործընկերային թեգը ավելացվում է ամեն դեպքում։",
+  "Cover link (optional)": "Շապիկի հղում (ըստ ցանկության)",
+  "From Open Library, Amazon, or Google Books. Without one, the ISBN's Open Library cover is used.":
+    "Open Library-ից, Amazon-ից կամ Google Books-ից։ Եթե հղում չկա, օգտագործվում է ISBN-ի Open Library շապիկը։",
+  "Give the book a title.": "Նշեք գրքի վերնագիրը։",
+  "Add the author.": "Նշեք հեղինակին։",
+  "Save book": "Պահպանել գիրքը",
+  "Could not save the book": "Չհաջողվեց պահպանել գիրքը",
+  "Remove {title}?": "Հեռացնե՞լ «{title}»-ը",
+  "It disappears from every user's Library, and its ratings and comments are deleted.":
+    "Այն կանհետանա բոլոր օգտատերերի Գրադարանից, իսկ դրա գնահատականներն ու մեկնաբանությունները կջնջվեն։",
+  "Keep book": "Թողնել գիրքը",
+  "Remove book": "Հեռացնել գիրքը",
+  "Could not remove the book": "Չհաջողվեց հեռացնել գիրքը",
+
   // ── Messages from the API ───────────────────────────────────────────────────
   "Book not found": "Գիրքը չի գտնվել",
+  "Title is required (up to 200 characters)": "Վերնագիրը պարտադիր է (մինչև 200 նիշ)",
+  "Author is required (up to 200 characters)": "Հեղինակը պարտադիր է (մինչև 200 նիշ)",
+  "ISBN must be 10 or 13 digits (the last of 10 may be X)":
+    "ISBN-ը պետք է լինի 10 կամ 13 թվանշան (10-անիշի վերջինը կարող է լինել X)",
+  "Amazon link must be an https link to an amazon.* site": "Amazon-ի հղումը պետք է լինի https հղում amazon.* կայքին",
+  "Cover link must be an https link from Open Library, Amazon, or Google Books":
+    "Շապիկի հղումը պետք է լինի https հղում Open Library-ից, Amazon-ից կամ Google Books-ից",
+  "Description can be up to 600 characters": "Նկարագրությունը կարող է լինել մինչև 600 նիշ",
+  "Topic can be up to 60 characters": "Թեման կարող է լինել մինչև 60 նիշ",
+  "The order must list every book once": "Հերթականությունում յուրաքանչյուր գիրք պետք է նշված լինի մեկ անգամ",
   "Amazon affiliate tag must be at most 64 letters, digits, or hyphens":
     "Amazon-ի գործընկերային թեգը պետք է պարունակի առավելագույնը 64 տառ, թիվ կամ գծիկ",
 };

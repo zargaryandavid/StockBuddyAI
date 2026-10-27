@@ -1,155 +1,35 @@
 /**
- * The Education Library: recommended personal-finance and investing books.
- *
- * Ids are stable (ratings are stored against them) and mirrored in the API's
- * stockbuddy/books.py BOOK_IDS. ISBN-10s are print editions, checked against Open Library,
- * and double as the Amazon ASIN for the "Buy on Amazon" link.
+ * The Education Library: types and helpers for the admin-managed book list (public.books,
+ * served by GET /api/books) and readers' ratings.
  */
-
-export type BookTopic = "index-investing" | "value-investing" | "stock-picking" | "mindset" | "financial-independence" | "money-basics";
 
 export type Book = {
   id: string;
   title: string;
   author: string;
-  isbn10: string;
-  /** One sentence in our own words, translated in the UI. */
+  /** ISBN-10 or ISBN-13, digits only (an ISBN-10 may end in X). */
+  isbn: string | null;
+  /** The admin's own Amazon link; otherwise one is built from the ISBN. */
+  amazon_url: string | null;
+  cover_url: string | null;
+  /** English text, shown through t() so the starting books read in Armenian too. */
   description: string;
-  topic: BookTopic;
+  /** English topic label, shown through t(). */
+  topic: string;
+  sort_order: number;
 };
 
-/** English topic labels; shown through t(). */
-export const TOPIC_LABELS: Record<BookTopic, string> = {
-  "index-investing": "Index investing",
-  "value-investing": "Value investing",
-  "stock-picking": "Stock picking",
-  mindset: "Money mindset",
-  "financial-independence": "Financial independence",
-  "money-basics": "Money basics",
-};
+/** A book in Admin, with its readers' average. */
+export type AdminBook = Book & { average: number | null; count: number };
 
-/** In curated order: this is also the "Our picks" order until readers rate books. */
-export const BOOK_CATALOG: Book[] = [
-  {
-    id: "simple-path-to-wealth",
-    title: "The Simple Path to Wealth",
-    author: "JL Collins",
-    isbn10: "1533667926",
-    description: "A plain-spoken case for spending less than you earn, avoiding debt, and putting the rest in a broad stock index fund.",
-    topic: "financial-independence",
-  },
-  {
-    id: "psychology-of-money",
-    title: "The Psychology of Money",
-    author: "Morgan Housel",
-    isbn10: "0857197681",
-    description: "Short stories showing that how we behave with money matters more than how much finance we know.",
-    topic: "mindset",
-  },
-  {
-    id: "little-book-common-sense-investing",
-    title: "The Little Book of Common Sense Investing",
-    author: "John C. Bogle",
-    isbn10: "1119404509",
-    description: "The founder of Vanguard explains why owning the whole market at low cost beats trying to outguess it.",
-    topic: "index-investing",
-  },
-  {
-    id: "intelligent-investor",
-    title: "The Intelligent Investor",
-    author: "Benjamin Graham",
-    isbn10: "0060555661",
-    description: "The classic guide to treating stocks as parts of real businesses and always keeping a margin of safety.",
-    topic: "value-investing",
-  },
-  {
-    id: "random-walk-down-wall-street",
-    title: "A Random Walk Down Wall Street",
-    author: "Burton G. Malkiel",
-    isbn10: "0393358380",
-    description: "A tour of market history and theory that ends with a practical, low-cost plan for ordinary investors.",
-    topic: "index-investing",
-  },
-  {
-    id: "bogleheads-guide-to-investing",
-    title: "The Bogleheads' Guide to Investing",
-    author: "Taylor Larimore, Mel Lindauer and Michael LeBoeuf",
-    isbn10: "1118921283",
-    description: "A step-by-step handbook for building a simple, diversified portfolio and leaving it alone.",
-    topic: "index-investing",
-  },
-  {
-    id: "your-money-or-your-life",
-    title: "Your Money or Your Life",
-    author: "Vicki Robin and Joe Dominguez",
-    isbn10: "0143115766",
-    description: "A nine-step program for measuring what your spending really costs in hours of your life.",
-    topic: "financial-independence",
-  },
-  {
-    id: "millionaire-next-door",
-    title: "The Millionaire Next Door",
-    author: "Thomas J. Stanley and William D. Danko",
-    isbn10: "1589795474",
-    description: "Research on real American millionaires, who mostly live modestly and build wealth quietly over decades.",
-    topic: "money-basics",
-  },
-  {
-    id: "i-will-teach-you-to-be-rich",
-    title: "I Will Teach You to Be Rich",
-    author: "Ramit Sethi",
-    isbn10: "1523505745",
-    description: "A six-week plan to automate your saving and investing so you can spend guilt-free on what you love.",
-    topic: "money-basics",
-  },
-  {
-    id: "die-with-zero",
-    title: "Die With Zero",
-    author: "Bill Perkins",
-    isbn10: "0358099765",
-    description: "An argument for spending your money on experiences while you can enjoy them, not hoarding it forever.",
-    topic: "mindset",
-  },
-  {
-    id: "one-up-on-wall-street",
-    title: "One Up On Wall Street",
-    author: "Peter Lynch",
-    isbn10: "0743200403",
-    description: "A legendary fund manager shows how everyday observations can lead you to promising companies.",
-    topic: "stock-picking",
-  },
-  {
-    id: "common-stocks-uncommon-profits",
-    title: "Common Stocks and Uncommon Profits",
-    author: "Philip A. Fisher",
-    isbn10: "0471445509",
-    description: "Fifteen questions for finding outstanding growth companies worth holding for many years.",
-    topic: "stock-picking",
-  },
-  {
-    id: "security-analysis",
-    title: "Security Analysis",
-    author: "Benjamin Graham and David Dodd",
-    isbn10: "0071592539",
-    description: "The deep, technical textbook on valuing stocks and bonds from their financial statements.",
-    topic: "value-investing",
-  },
-  {
-    id: "rich-dad-poor-dad",
-    title: "Rich Dad Poor Dad",
-    author: "Robert T. Kiyosaki",
-    isbn10: "1612680194",
-    description: "A story-driven push to think about assets that earn income rather than a paycheck alone.",
-    topic: "mindset",
-  },
-  {
-    id: "richest-man-in-babylon",
-    title: "The Richest Man in Babylon",
-    author: "George S. Clason",
-    isbn10: "0451205367",
-    description: "Old-fashioned parables about paying yourself first and letting savings work for you.",
-    topic: "money-basics",
-  },
+/** Topic suggestions for Admin; they have Armenian translations. Any other text is allowed. */
+export const BOOK_TOPICS = [
+  "Index investing",
+  "Value investing",
+  "Stock picking",
+  "Money mindset",
+  "Financial independence",
+  "Money basics",
 ];
 
 export type BookRating = { average: number; count: number };
@@ -164,40 +44,68 @@ export type BookRatings = {
 /** An Amazon Associates tag: letters, digits, and hyphens only. */
 const AFFILIATE_TAG = /^[A-Za-z0-9-]{1,64}$/;
 
-/** The book's Amazon page, with the admin's Associates tag when one is set. */
-export function amazonUrl(book: Pick<Book, "isbn10">, tag?: string | null) {
-  const base = `https://www.amazon.com/dp/${book.isbn10}`;
-  const clean = (tag ?? "").trim();
-  return AFFILIATE_TAG.test(clean) ? `${base}?tag=${encodeURIComponent(clean)}` : base;
+/** The ISBN-10 for an ISBN-10, or for an ISBN-13 that starts with 978; otherwise null. */
+export function isbn10(isbn: string | null | undefined): string | null {
+  const value = (isbn ?? "").replace(/[\s-]/g, "").toUpperCase();
+  if (/^\d{9}[\dX]$/.test(value)) return value;
+  if (!/^978\d{10}$/.test(value)) return null;
+  const core = value.slice(3, 12);
+  const sum = [...core].reduce((total, digit, index) => total + (10 - index) * Number(digit), 0);
+  const check = (11 - (sum % 11)) % 11;
+  return `${core}${check === 10 ? "X" : check}`;
 }
-
-/** Open Library's cover for the edition. */
-export function coverUrl(book: Pick<Book, "isbn10">, size: "S" | "M" | "L" = "M") {
-  return `https://covers.openlibrary.org/b/isbn/${book.isbn10}-${size}.jpg?default=false`;
-}
-
-export type TopBook = { book: Book; rating: BookRating | null; pick: boolean };
 
 /**
- * The library's Top 5: rated books by average (ties by number of ratings, then the curated
- * order), topped up from the curated order when fewer than `size` books have ratings.
- * `byReaders` is false until anyone has rated a book, so the list can be called "Our picks".
+ * Where "Buy on Amazon" goes: the admin's Amazon link (with the Associates tag added when it
+ * has none), else the Amazon page for the ISBN-10, else null (no button).
  */
-export function topBooks(
-  ratings: Record<string, BookRating>,
-  catalog: Book[] = BOOK_CATALOG,
-  size = 5,
-): { books: TopBook[]; byReaders: boolean } {
-  const rated = catalog
-    .map((book, order) => ({ book, order, rating: ratings[book.id] }))
-    .filter((item): item is { book: Book; order: number; rating: BookRating } => Boolean(item.rating && item.rating.count > 0))
-    .sort((a, b) => b.rating.average - a.rating.average || b.rating.count - a.rating.count || a.order - b.order)
-    .slice(0, size)
-    .map(({ book, rating }) => ({ book, rating, pick: false }));
-  const chosen = new Set(rated.map((item) => item.book.id));
-  const picks = catalog
-    .filter((book) => !chosen.has(book.id))
-    .slice(0, Math.max(0, size - rated.length))
-    .map((book) => ({ book, rating: null, pick: true }));
-  return { books: [...rated, ...picks], byReaders: rated.length > 0 };
+export function amazonUrl(book: Pick<Book, "isbn" | "amazon_url">, tag?: string | null): string | null {
+  const clean = (tag ?? "").trim();
+  const useTag = AFFILIATE_TAG.test(clean);
+  if (book.amazon_url) {
+    try {
+      const url = new URL(book.amazon_url);
+      if (url.protocol !== "https:") return null;
+      if (useTag && !url.searchParams.has("tag")) url.searchParams.set("tag", clean);
+      return url.toString();
+    } catch {
+      return null;
+    }
+  }
+  const asin = isbn10(book.isbn);
+  if (!asin) return null;
+  const base = `https://www.amazon.com/dp/${asin}`;
+  return useTag ? `${base}?tag=${encodeURIComponent(clean)}` : base;
+}
+
+/** The admin's cover link, else Open Library's cover for the ISBN, else null (title tile). */
+export function coverUrl(book: Pick<Book, "isbn" | "cover_url">, size: "S" | "M" | "L" = "M"): string | null {
+  if (book.cover_url) return book.cover_url;
+  const isbn = (book.isbn ?? "").replace(/[\s-]/g, "");
+  return isbn ? `https://covers.openlibrary.org/b/isbn/${isbn}-${size}.jpg?default=false` : null;
+}
+
+export type RankedBook = { book: Book; rating: BookRating | null; rank: number | null };
+
+/**
+ * One list for the Library: rated books first by average (ties by number of ratings, then
+ * the admin's order), then unrated books in the admin's order. The first five rated books
+ * get a rank (1–5) for their badge.
+ */
+export function rankBooks(books: Book[], ratings: Record<string, BookRating>, badges = 5): RankedBook[] {
+  const items = books.map((book, order) => {
+    const rating = ratings[book.id];
+    return { book, order, rating: rating && rating.count > 0 ? rating : null };
+  });
+  const rated = items
+    .filter((item) => item.rating)
+    .sort(
+      (a, b) =>
+        b.rating!.average - a.rating!.average || b.rating!.count - a.rating!.count || a.order - b.order,
+    );
+  const unrated = items.filter((item) => !item.rating);
+  return [
+    ...rated.map(({ book, rating }, index) => ({ book, rating, rank: index < badges ? index + 1 : null })),
+    ...unrated.map(({ book }) => ({ book, rating: null, rank: null })),
+  ];
 }

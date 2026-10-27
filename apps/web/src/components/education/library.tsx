@@ -5,15 +5,14 @@ import { ExternalLink, Loader2, Star } from "lucide-react";
 
 import { api } from "@/lib/api";
 import {
-  BOOK_CATALOG,
-  TOPIC_LABELS,
   amazonUrl,
   coverUrl,
-  topBooks,
+  rankBooks,
   type Book,
   type BookRating,
   type BookRatings,
   type MyReview,
+  type ReaderComment,
 } from "@/lib/books";
 import { useT } from "@/lib/i18n/client";
 
@@ -21,23 +20,36 @@ import "./library.css";
 
 const EMPTY: BookRatings = { ratings: {}, mine: {}, comments: {} };
 const COMMENT_MAX = 500;
+/** Arrow keys move through the stars one by one; only the star someone settles on is saved. */
+const SAVE_DELAY_MS = 350;
 
-/** Recommended books with readers' ratings, a Top 5, and Amazon links. */
+type CardStatus = { kind: "saving" | "saved" | "error"; text: string };
+
+/** The admin's books with readers' ratings, sorted by rating, rated right on the cards. */
 export function Library() {
   const t = useT();
+  const [books, setBooks] = useState<Book[] | null>(null);
+  const [booksFailed, setBooksFailed] = useState(false);
   const [data, setData] = useState<BookRatings | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [ratingsFailed, setRatingsFailed] = useState(false);
   const [tag, setTag] = useState("");
   const [open, setOpen] = useState<Book | null>(null);
+  // Stars picked on a card that are still being saved, so the card shows them at once.
+  const [drafts, setDrafts] = useState<Record<string, number>>({});
+  const [status, setStatus] = useState<Record<string, CardStatus>>({});
   const opener = useRef<HTMLElement | null>(null);
+  const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const latest = useRef<BookRatings>(EMPTY);
 
   const applyRatings = useCallback((body: BookRatings | null) => {
     if (body) {
-      setData({ ...EMPTY, ...body });
-      setFailed(false);
+      const next = { ...EMPTY, ...body };
+      latest.current = next;
+      setData(next);
+      setRatingsFailed(false);
     } else {
       setData((current) => current ?? EMPTY);
-      setFailed(true);
+      setRatingsFailed(true);
     }
   }, []);
 
@@ -48,6 +60,17 @@ export function Library() {
 
   useEffect(() => {
     let active = true;
+    const pending = timers.current;
+    api<Book[]>("/api/books")
+      .then((rows) => {
+        if (active) setBooks(Array.isArray(rows) ? rows : []);
+      })
+      .catch(() => {
+        if (active) {
+          setBooks([]);
+          setBooksFailed(true);
+        }
+      });
     // The admin's Amazon Associates tag; links stay plain if settings can't be read.
     api<{ amazon_affiliate_tag?: string }>("/api/settings")
       .then((settings) => {
@@ -61,11 +84,12 @@ export function Library() {
       });
     return () => {
       active = false;
+      for (const timer of Object.values(pending)) clearTimeout(timer);
     };
   }, [applyRatings]);
 
   const ratings = data?.ratings ?? EMPTY.ratings;
-  const top = useMemo(() => topBooks(ratings), [ratings]);
+  const ranked = useMemo(() => rankBooks(books ?? [], ratings), [books, ratings]);
 
   function show(book: Book) {
     opener.current = document.activeElement as HTMLElement | null;
@@ -77,6 +101,51 @@ export function Library() {
     opener.current?.focus?.();
   }, []);
 
+  function forgetDraft(bookId: string) {
+    setDrafts((current) => {
+      const next = { ...current };
+      delete next[bookId];
+      return next;
+    });
+  }
+
+  async function saveFromCard(book: Book, stars: number) {
+    setStatus((current) => ({ ...current, [book.id]: { kind: "saving", text: t("Saving…") } }));
+    try {
+      await api(`/api/books/${book.id}/review`, {
+        method: "PUT",
+        // A comment written in the book's dialog is kept.
+        body: JSON.stringify({ stars, comment: latest.current.mine[book.id]?.comment ?? null }),
+      });
+      await reloadRatings();
+      setStatus((current) => ({ ...current, [book.id]: { kind: "saved", text: t("Rating saved") } }));
+    } catch (cause) {
+      const text = cause instanceof Error ? cause.message : t("Could not save your rating.");
+      setStatus((current) => ({ ...current, [book.id]: { kind: "error", text } }));
+    } finally {
+      forgetDraft(book.id);
+    }
+  }
+
+  function rateFromCard(book: Book, stars: number) {
+    setDrafts((current) => ({ ...current, [book.id]: stars }));
+    clearTimeout(timers.current[book.id]);
+    timers.current[book.id] = setTimeout(() => void saveFromCard(book, stars), SAVE_DELAY_MS);
+  }
+
+  async function removeFromCard(book: Book) {
+    clearTimeout(timers.current[book.id]);
+    forgetDraft(book.id);
+    try {
+      await api(`/api/books/${book.id}/review`, { method: "DELETE" });
+      await reloadRatings();
+      setStatus((current) => ({ ...current, [book.id]: { kind: "saved", text: t("Rating removed") } }));
+    } catch (cause) {
+      const text = cause instanceof Error ? cause.message : t("Could not remove your rating.");
+      setStatus((current) => ({ ...current, [book.id]: { kind: "error", text } }));
+    }
+  }
+
   return (
     <section className="library" aria-labelledby="library-title">
       <header className="library-head">
@@ -84,59 +153,32 @@ export function Library() {
         <p className="muted">{t("Finance books worth your time. Rate the ones you've read.")}</p>
       </header>
 
-      {failed && <p className="alert library-alert">{t("Ratings are unavailable right now.")}</p>}
+      {booksFailed && <p className="alert library-alert">{t("Books are unavailable right now.")}</p>}
+      {!booksFailed && ratingsFailed && <p className="alert library-alert">{t("Ratings are unavailable right now.")}</p>}
 
-      <section className="library-top" aria-labelledby="library-top-title">
-        <h3 id="library-top-title">{top.byReaders ? t("Top 5 by readers") : t("Our picks")}</h3>
-        {!top.byReaders && data && (
-          <p className="muted">{t("No ratings yet. Read one of these and be the first to rate it.")}</p>
-        )}
-        <ol className="library-top-list">
-          {top.books.map(({ book, rating, pick }, index) => (
-            <li key={book.id}>
-              <button type="button" className="library-top-item" onClick={() => show(book)}>
-                <span className="library-rank" aria-hidden="true">
-                  {index + 1}
-                </span>
-                <BookCover book={book} size="S" />
-                <span className="library-top-text">
-                  <strong>{book.title}</strong>
-                  <span className="muted">{book.author}</span>
-                  {rating ? (
-                    <Stars rating={rating} />
-                  ) : (
-                    top.byReaders && pick && <span className="library-pick">{t("Our pick")}</span>
-                  )}
-                </span>
-              </button>
-            </li>
+      {books === null ? (
+        <p className="muted">{t("Loading books…")}</p>
+      ) : books.length === 0 ? (
+        !booksFailed && <p className="muted">{t("No books yet.")}</p>
+      ) : (
+        <ul className="library-grid" aria-label={t("Books")}>
+          {ranked.map(({ book, rating, rank }) => (
+            <BookCard
+              key={book.id}
+              book={book}
+              rating={rating}
+              rank={rank}
+              tag={tag}
+              mine={drafts[book.id] ?? data?.mine[book.id]?.stars ?? null}
+              hasReview={Boolean(data?.mine[book.id])}
+              status={status[book.id]}
+              onOpen={() => show(book)}
+              onRate={(stars) => rateFromCard(book, stars)}
+              onRemove={() => void removeFromCard(book)}
+            />
           ))}
-        </ol>
-      </section>
-
-      <section className="library-all" aria-labelledby="library-all-title">
-        <h3 id="library-all-title">{t("All books")}</h3>
-        <ul className="library-grid">
-          {BOOK_CATALOG.map((book) => {
-            const rating = ratings[book.id];
-            return (
-              <li key={book.id} className="library-card">
-                <button type="button" className="library-card-open" onClick={() => show(book)} aria-label={t("{title} by {author}", { title: book.title, author: book.author })}>
-                  <BookCover book={book} />
-                  <span className="library-card-text">
-                    <span className="library-topic">{t(TOPIC_LABELS[book.topic])}</span>
-                    <strong>{book.title}</strong>
-                    <span className="muted">{book.author}</span>
-                    <span className="library-description">{t(book.description)}</span>
-                    {rating ? <Stars rating={rating} /> : <span className="muted library-unrated">{t("Not rated yet")}</span>}
-                  </span>
-                </button>
-                <BuyLink book={book} tag={tag} />
-              </li>
-            );
-          })}
         </ul>
-      </section>
+      )}
 
       <p className="library-disclosure muted">{t("As an Amazon Associate, StockBuddy earns from qualifying purchases.")}</p>
 
@@ -155,12 +197,138 @@ export function Library() {
   );
 }
 
+function BookCard({
+  book,
+  rating,
+  rank,
+  tag,
+  mine,
+  hasReview,
+  status,
+  onOpen,
+  onRate,
+  onRemove,
+}: {
+  book: Book;
+  rating: BookRating | null;
+  rank: number | null;
+  tag: string;
+  mine: number | null;
+  hasReview: boolean;
+  status: CardStatus | undefined;
+  onOpen: () => void;
+  onRate: (stars: number) => void;
+  onRemove: () => void;
+}) {
+  const t = useT();
+  return (
+    <li className="library-card" aria-label={book.title}>
+      {rank !== null && (
+        <span className="library-rank">
+          <span aria-hidden="true">#{rank}</span>
+          <span className="sr-only">{t("Number {rank} by readers' rating", { rank })}</span>
+        </span>
+      )}
+      <div className="library-card-main">
+        <button type="button" className="library-card-cover" onClick={onOpen} aria-label={t("Details for {title}", { title: book.title })}>
+          <BookCover book={book} />
+        </button>
+        <div className="library-card-text">
+          {book.topic && <span className="library-topic">{t(book.topic)}</span>}
+          <button type="button" className="library-card-title" onClick={onOpen}>
+            {book.title}
+          </button>
+          <span className="muted">{book.author}</span>
+          {book.description && <span className="library-description">{t(book.description)}</span>}
+        </div>
+      </div>
+      <div className="library-card-rating">
+        <StarInput
+          name={`card-stars-${book.id}`}
+          legend={t("Rate {title}", { title: book.title })}
+          value={mine}
+          display={rating?.average ?? 0}
+          size={20}
+          onChange={onRate}
+        />
+        <span className="library-rating-text">
+          {rating ? (
+            <span
+              aria-label={
+                rating.count === 1
+                  ? t("Rated {average} out of 5 by 1 reader", { average: rating.average.toFixed(1) })
+                  : t("Rated {average} out of 5 by {count} readers", { average: rating.average.toFixed(1), count: rating.count })
+              }
+            >
+              {rating.average.toFixed(1)} ({rating.count})
+            </span>
+          ) : (
+            <span className="muted">{t("Not rated yet")}</span>
+          )}
+          {hasReview && (
+            <button type="button" className="text-button library-remove" onClick={onRemove}>
+              {t("Remove")}
+            </button>
+          )}
+        </span>
+        <span className={`library-card-status ${status?.kind ?? ""}`} role="status">
+          {status?.text ?? ""}
+        </span>
+      </div>
+      <BuyLink book={book} tag={tag} />
+    </li>
+  );
+}
+
+/**
+ * Five stars as radio buttons ("Rate N out of 5"), so arrow keys and screen readers work.
+ * `value` is the person's own rating; without one, `display` (the average) is shown greyed.
+ */
+function StarInput({
+  name,
+  legend,
+  value,
+  display,
+  size,
+  onChange,
+}: {
+  name: string;
+  legend: string;
+  value: number | null;
+  display: number;
+  size: number;
+  onChange: (stars: number) => void;
+}) {
+  const t = useT();
+  const filled = value ?? Math.round(display);
+  return (
+    <fieldset className={`library-star-input${value ? " mine" : " average"}`}>
+      <legend className="sr-only">{legend}</legend>
+      {[1, 2, 3, 4, 5].map((stars) => (
+        <label key={stars} className={stars <= filled ? "on" : ""}>
+          <input
+            type="radio"
+            name={name}
+            value={stars}
+            checked={value === stars}
+            onChange={() => onChange(stars)}
+            aria-label={t("Rate {stars} out of 5", { stars })}
+          />
+          <Star size={size} aria-hidden="true" />
+        </label>
+      ))}
+    </fieldset>
+  );
+}
+
 function BuyLink({ book, tag, primary = false }: { book: Book; tag: string; primary?: boolean }) {
   const t = useT();
+  const href = amazonUrl(book, tag);
+  if (!href) return null;
   return (
     <a
       className={`button library-buy${primary ? " primary" : ""}`}
-      href={amazonUrl(book, tag)}
+      href={href}
       target="_blank"
       rel="sponsored noopener noreferrer"
       aria-label={t("Buy {title} on Amazon (opens in a new tab)", { title: book.title })}
@@ -171,12 +339,13 @@ function BuyLink({ book, tag, primary = false }: { book: Book; tag: string; prim
   );
 }
 
-/** The Open Library cover, or the title on a plain tile when there is no picture. */
-function BookCover({ book, size = "M" }: { book: Book; size?: "S" | "M" | "L" }) {
+/** The book's cover, or the title on a plain tile when there is no picture. */
+function BookCover({ book, size = "M" }: { book: Book; size?: "M" | "L" }) {
   const t = useT();
-  const [failed, setFailed] = useState(false);
+  const src = coverUrl(book, size);
+  const [failed, setFailed] = useState<string | null>(null);
   const label = t("Cover of {title}", { title: book.title });
-  if (failed) {
+  if (!src || failed === src) {
     return (
       <span className={`library-cover library-cover-${size} library-cover-fallback`} role="img" aria-label={label}>
         <span>{book.title}</span>
@@ -184,32 +353,9 @@ function BookCover({ book, size = "M" }: { book: Book; size?: "S" | "M" | "L" })
     );
   }
   return (
-    // Covers come from Open Library at their own sizes.
+    // Covers come from Open Library or the admin's link, at their own sizes.
     // eslint-disable-next-line @next/next/no-img-element
-    <img
-      className={`library-cover library-cover-${size}`}
-      src={coverUrl(book, size === "S" ? "M" : size)}
-      alt={label}
-      loading="lazy"
-      onError={() => setFailed(true)}
-    />
-  );
-}
-
-/** An average rating as five stars plus the number, e.g. "4.3 (12)". */
-function Stars({ rating }: { rating: BookRating }) {
-  const t = useT();
-  const average = rating.average.toFixed(1);
-  return (
-    <StarRow
-      value={rating.average}
-      label={
-        rating.count === 1
-          ? t("Rated {average} out of 5 by 1 reader", { average })
-          : t("Rated {average} out of 5 by {count} readers", { average, count: rating.count })
-      }
-      text={`${average} (${rating.count})`}
-    />
+    <img className={`library-cover library-cover-${size}`} src={src} alt={label} loading="lazy" onError={() => setFailed(src)} />
   );
 }
 
@@ -238,7 +384,7 @@ function BookDialog({
   tag: string;
   rating: BookRating | undefined;
   mine: MyReview | undefined;
-  comments: { stars: number; comment: string; date: string }[];
+  comments: ReaderComment[];
   onSaved: () => Promise<void>;
   onClose: () => void;
 }) {
@@ -319,9 +465,21 @@ function BookDialog({
           <BookCover book={book} size="L" />
           <div className="library-dialog-info">
             <p className="muted">{t("by {author}", { author: book.author })}</p>
-            <span className="library-topic">{t(TOPIC_LABELS[book.topic])}</span>
-            <p>{t(book.description)}</p>
-            {rating ? <Stars rating={rating} /> : <p className="muted">{t("Not rated yet")}</p>}
+            {book.topic && <span className="library-topic">{t(book.topic)}</span>}
+            {book.description && <p>{t(book.description)}</p>}
+            {rating ? (
+              <StarRow
+                value={rating.average}
+                label={
+                  rating.count === 1
+                    ? t("Rated {average} out of 5 by 1 reader", { average: rating.average.toFixed(1) })
+                    : t("Rated {average} out of 5 by {count} readers", { average: rating.average.toFixed(1), count: rating.count })
+                }
+                text={`${rating.average.toFixed(1)} (${rating.count})`}
+              />
+            ) : (
+              <p className="muted">{t("Not rated yet")}</p>
+            )}
             <div>
               <BuyLink book={book} tag={tag} primary />
             </div>
@@ -337,22 +495,14 @@ function BookDialog({
             </button>
           ) : (
             <form onSubmit={save} className="library-rate-form">
-              <fieldset className="library-star-input">
-                <legend className="sr-only">{t("Your rating")}</legend>
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <label key={value} className={value <= stars ? "on" : ""}>
-                    <input
-                      type="radio"
-                      name={`stars-${book.id}`}
-                      value={value}
-                      checked={stars === value}
-                      onChange={() => setStars(value)}
-                      aria-label={t("Rate {stars} out of 5", { stars: value })}
-                    />
-                    <Star size={26} aria-hidden="true" />
-                  </label>
-                ))}
-              </fieldset>
+              <StarInput
+                name={`dialog-stars-${book.id}`}
+                legend={t("Your rating")}
+                value={stars || null}
+                display={0}
+                size={26}
+                onChange={setStars}
+              />
               <label className="library-comment">
                 {t("Comment (optional)")}
                 <textarea
@@ -362,12 +512,18 @@ function BookDialog({
                   onChange={(event) => setComment(event.target.value)}
                   placeholder={t("What did you take away from it?")}
                 />
-                <small className="muted">
-                  {t("{used} of {max} characters", { used: comment.length, max: COMMENT_MAX })}
-                </small>
+                <small className="muted">{t("{used} of {max} characters", { used: comment.length, max: COMMENT_MAX })}</small>
               </label>
-              {error && <p className="alert" role="alert">{error}</p>}
-              {notice && <p className="notice" role="status">{notice}</p>}
+              {error && (
+                <p className="alert" role="alert">
+                  {error}
+                </p>
+              )}
+              {notice && (
+                <p className="notice" role="status">
+                  {notice}
+                </p>
+              )}
               <div className="confirm-actions">
                 {mine && (
                   <button type="button" className="button" onClick={remove} disabled={busy !== null} aria-busy={busy === "remove"}>
@@ -382,7 +538,11 @@ function BookDialog({
               </div>
             </form>
           )}
-          {!ratingOpen && notice && <p className="notice" role="status">{notice}</p>}
+          {!ratingOpen && notice && (
+            <p className="notice" role="status">
+              {notice}
+            </p>
+          )}
         </section>
 
         <section className="library-comments" aria-labelledby="library-comments-title">
@@ -393,7 +553,11 @@ function BookDialog({
                 <li key={`${item.date}-${index}`}>
                   <StarRow value={item.stars} label={t("Rated {stars} out of 5", { stars: item.stars })} />
                   <p>{item.comment}</p>
-                  {item.date && <time dateTime={item.date} className="muted">{item.date}</time>}
+                  {item.date && (
+                    <time dateTime={item.date} className="muted">
+                      {item.date}
+                    </time>
+                  )}
                 </li>
               ))}
             </ul>

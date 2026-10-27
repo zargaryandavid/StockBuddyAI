@@ -463,6 +463,9 @@ async def update_admin_config(
     request: Request,
     _account: Annotated[Account, Depends(require_admin)],
 ):
+    affiliate_tag = payload.amazon_affiliate_tag
+    if affiliate_tag is None:
+        affiliate_tag = (await request.app.state.repository.load_settings()).amazon_affiliate_tag
     try:
         settings = normalize_settings(
             max_position_pct=payload.max_position_pct,
@@ -471,7 +474,7 @@ async def update_admin_config(
             llm_model=payload.llm_model,
             use_transaction_history_analytics=payload.use_transaction_history_analytics,
             min_cash_pct=payload.min_cash_pct,
-            amazon_affiliate_tag=payload.amazon_affiliate_tag,
+            amazon_affiliate_tag=affiliate_tag,
             daily_wish_checks=payload.daily_wish_checks,
             daily_screenshot_imports=payload.daily_screenshot_imports,
             daily_ai_reviews=payload.daily_ai_reviews,

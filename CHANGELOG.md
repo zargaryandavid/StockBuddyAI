@@ -6,7 +6,7 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Added
 
-- Education **Library**: 15 investing and personal-finance books with covers, short descriptions and "Buy on Amazon" links using the affiliate tag set in Admin (new Library panel), with the Amazon Associates disclosure. Readers can rate a book 1–5 stars with an optional comment, see other readers' comments (no names), and a Top 5 by readers' ratings, filled with our picks until there are enough. Needs migrations `20261027150000_amazon_affiliate_tag.sql` and `20261027160000_book_reviews.sql`.
+- Education **Library**: one list of investing and personal-finance books, sorted by readers' ratings, with #1–#5 badges for the top rated. Readers rate 1–5 stars straight from a card (or with a comment in the book's detail), see other readers' comments without names, and buy through Amazon links with the affiliate tag (plus the Amazon Associates disclosure). Admin has a **Library** section to add, edit, reorder and remove books, see each book's rating, and set the affiliate tag. Needs migrations `20261027150000_amazon_affiliate_tag.sql`, `20261027160000_book_reviews.sql` and `20261027170000_books.sql`.
 
 - Bonds on the Portfolio page: the bonds entered in FIRE are listed under the holdings (face value, coupon, how often it pays, maturity, income a year, total) with "Edit in FIRE". They are entered only in FIRE, so they are never counted twice, and load when the section scrolls into view. Analytics adds **Your mix**: stocks, funds and ETFs, bonds and cash as shares of everything invested.
 

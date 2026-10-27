@@ -122,17 +122,19 @@ describe("AdminPanel industry catalog", () => {
     await waitFor(() => expect(toggle).toHaveProperty("checked", false));
   });
 
-  it("saves the Amazon affiliate tag for the Library", async () => {
-    apiMock.mockResolvedValue({ ...initial, amazon_affiliate_tag: "stockbuddy-20" });
-    render(<AdminPanel email="admin@example.com" initial={initial} />);
-    const field = screen.getByLabelText(/Amazon affiliate tag/);
-    fireEvent.change(field, { target: { value: "stockbuddy-20" } });
+  it("keeps the affiliate tag in the Library section, out of the studio save", async () => {
+    apiMock.mockResolvedValue({ ...initial });
+    render(<AdminPanel email="admin@example.com" initial={{ ...initial, amazon_affiliate_tag: "kept-20" }} />);
+    expect(screen.queryByLabelText(/Amazon affiliate tag/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Save studio" }));
-
     await waitFor(() => expect(apiMock).toHaveBeenCalledOnce());
     const body = JSON.parse(String((apiMock.mock.calls[0][1] as RequestInit).body));
-    expect(body.amazon_affiliate_tag).toBe("stockbuddy-20");
-    await waitFor(() => expect(field).toHaveProperty("value", "stockbuddy-20"));
+    expect(body).not.toHaveProperty("amazon_affiliate_tag");
+
+    apiMock.mockResolvedValue([]);
+    fireEvent.click(screen.getByRole("button", { name: "Library" }));
+    expect(screen.getByLabelText(/Amazon affiliate tag/)).toHaveProperty("value", "kept-20");
+    await waitFor(() => expect(apiMock).toHaveBeenCalledWith("/api/admin/books"));
   });
 
   it("resets the admin's own AI tokens for today without saving the studio", async () => {

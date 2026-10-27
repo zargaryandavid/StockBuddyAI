@@ -14,9 +14,20 @@ function origin(url: string) {
 }
 
 // What the browser may load. The app talks only to its own API and Supabase, shows
-// article pictures from Supabase Storage and Library book covers from Open Library (which
-// redirects many covers to archive.org), and may never be framed by another site.
-const bookCovers = "https://covers.openlibrary.org https://archive.org https://*.archive.org";
+// article pictures from Supabase Storage and Library book covers (Open Library, which
+// redirects many covers to archive.org, or an admin's cover link from Amazon or Google Books;
+// keep in step with COVER_HOSTS in apps/api/src/stockbuddy/books.py), and may never be
+// framed by another site.
+const bookCovers = [
+  "https://covers.openlibrary.org",
+  "https://archive.org",
+  "https://*.archive.org",
+  "https://m.media-amazon.com",
+  "https://images-na.ssl-images-amazon.com",
+  "https://images-eu.ssl-images-amazon.com",
+  "https://books.google.com",
+  "https://books.googleusercontent.com",
+].join(" ");
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
