@@ -174,6 +174,27 @@ describe("Holdings table", () => {
     expect(tickers()).toEqual(["BBB", "VOO", "AAA"]);
   });
 
+  it("keeps a new portfolio currency and prices the holdings in it", async () => {
+    render(<Dashboard initialTab="portfolio" email="owner@example.com" today="2026-10-23" />);
+    await screen.findByText("18.2");
+
+    const currency = screen.getByLabelText("Portfolio currency") as HTMLSelectElement;
+    fireEvent.change(currency, { target: { value: "AMD" } });
+
+    await waitFor(() =>
+      expect(
+        vi.mocked(api).mock.calls.some(
+          ([path, init]) =>
+            path === "/api/securities/resolve-batch" &&
+            JSON.parse(String(init?.body)).base_currency === "AMD",
+        ),
+      ).toBe(true),
+    );
+    // The saved portfolio is not loaded again over the change.
+    expect(vi.mocked(api).mock.calls.filter(([path, init]) => path === "/api/portfolios" && !init)).toHaveLength(1);
+    expect((screen.getByLabelText("Portfolio currency") as HTMLSelectElement).value).toBe("AMD");
+  });
+
   it("moves a row with the arrow keys on its handle", async () => {
     render(<Dashboard initialTab="portfolio" email="owner@example.com" today="2026-10-23" />);
     await screen.findByText("18.2");

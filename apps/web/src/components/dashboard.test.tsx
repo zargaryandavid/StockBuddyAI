@@ -291,7 +291,7 @@ describe("Dashboard navigation", () => {
 
     expect(await screen.findByRole("button", { name: "Updated ✓" })).toBeTruthy();
 
-    fireEvent.change(screen.getByRole("spinbutton", { name: "Cash" }), {
+    fireEvent.change(screen.getByRole("textbox", { name: "Cash" }), {
       target: { value: "100" },
     });
     expect(screen.getByRole("button", { name: "Save changes" })).toBeTruthy();

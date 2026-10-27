@@ -26,6 +26,7 @@ import { notEnoughData, RunTest } from "@/components/run-test";
 import { SupportPage } from "@/components/support-page";
 import { TodayPage, type TodayDestination } from "@/components/today/today-page";
 import { parseBrokerCsv } from "@/lib/broker-csv";
+import { AmountInput } from "@/components/amount-input";
 import { CashLabel, CashSummary, cashTargetNote } from "@/components/cash-target";
 import { cashShortfall, cashTarget, DEFAULT_CASH_TARGET } from "@/lib/analytics";
 import { ReportReminderDialog } from "@/components/report-reminder-dialog";
@@ -137,6 +138,12 @@ export function Dashboard({
   const [portfolioName, setPortfolioName] = useState("My portfolio");
   const [cash, setCash] = useState(0);
   const [baseCurrency, setBaseCurrency] = useState("USD");
+  // Read by the portfolio loading callbacks for the same reason as tRef: changing the
+  // currency must not reload the saved portfolio over the change.
+  const baseCurrencyRef = useRef(baseCurrency);
+  useEffect(() => {
+    baseCurrencyRef.current = baseCurrency;
+  }, [baseCurrency]);
   // Cash in other currencies, beside the cash in the portfolio's own currency.
   const [otherCash, setOtherCash] = useState<CashBalance[]>([]);
   const [cashRates, setCashRates] = useState<Record<string, number>>({});
@@ -492,7 +499,7 @@ export function Dashboard({
         try {
           results = await api<ResolveResult[]>("/api/securities/resolve-batch", {
             method: "POST",
-            body: JSON.stringify({ queries, base_currency: currency ?? baseCurrency }),
+            body: JSON.stringify({ queries, base_currency: currency ?? baseCurrencyRef.current }),
             ...(fresh ? { cache: "reload" as const } : {}),
           });
         } catch (cause) {
@@ -520,7 +527,7 @@ export function Dashboard({
       );
       setLoadingPortfolios(false);
     },
-    [baseCurrency],
+    [],
   );
 
 
@@ -548,6 +555,20 @@ export function Dashboard({
     },
     [enrichPositions],
   );
+
+  /** A new portfolio currency: holdings are priced again in it, and extra cash in that
+   *  same currency moves into the main cash amount. */
+  function changeBaseCurrency(code: string) {
+    setBaseCurrency(code);
+    const same = otherCash.filter((item) => item.currency === code);
+    if (same.length) {
+      setCash(Number(cash || 0) + same.reduce((sum, item) => sum + Number(item.amount || 0), 0));
+      setOtherCash(otherCash.filter((item) => item.currency !== code));
+    }
+    setSaveConfirmation(null);
+    setDirty(true);
+    if (positions.length) void enrichPositions(positions, { currency: code });
+  }
 
   function openFromToday(destination: TodayDestination) {
     if (destination === "analytics") {
@@ -1215,11 +1236,7 @@ export function Dashboard({
                         <select
                           aria-label={t("Portfolio currency")}
                           value={baseCurrency}
-                          onChange={(event) => {
-                            setBaseCurrency(event.target.value);
-                            setSaveConfirmation(null);
-                            setDirty(true);
-                          }}
+                          onChange={(event) => changeBaseCurrency(event.target.value)}
                         >
                           {[...new Set([baseCurrency, ...PORTFOLIO_CURRENCIES])].map((code) => (
                             <option key={code} value={code}>
@@ -1227,14 +1244,11 @@ export function Dashboard({
                             </option>
                           ))}
                         </select>
-                        <input
+                        <AmountInput
                           aria-label={t("Cash")}
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={cash}
-                          onChange={(event) => {
-                            setCash(Number(event.target.value));
+                          value={Number(cash) || 0}
+                          onChange={(amount) => {
+                            setCash(amount);
                             setSaveConfirmation(null);
                             setDirty(true);
                           }}
@@ -1262,14 +1276,10 @@ export function Dashboard({
                                 </option>
                               ))}
                           </select>
-                          <input
+                          <AmountInput
                             aria-label={t("Extra cash {number}", { number: index + 1 })}
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={item.amount}
-                            onChange={(event) => {
-                              const amount = Number(event.target.value);
+                            value={Number(item.amount) || 0}
+                            onChange={(amount) => {
                               setOtherCash((current) =>
                                 current.map((row, at) => (at === index ? { ...row, amount } : row)),
                               );
@@ -1386,10 +1396,7 @@ export function Dashboard({
                       {t("Base currency")}
                       <select
                         value={baseCurrency}
-                        onChange={(event) => {
-                          setBaseCurrency(event.target.value);
-                          setDirty(true);
-                        }}
+                        onChange={(event) => changeBaseCurrency(event.target.value)}
                       >
                         {[...new Set([baseCurrency, ...PORTFOLIO_CURRENCIES])].map((currency) => (
                           <option key={currency}>{currency}</option>

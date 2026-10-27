@@ -164,6 +164,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Fixed
 
+- Portfolio currency: picking another currency (for example AMD) no longer snaps back to USD. Changing it used to reload the saved portfolio over the change. Holdings are now priced again in the new currency, and extra cash already in that currency moves into the main amount. Cash amounts drop leading zeros ("030000" becomes 30000) and show as 30,000 when you are not typing.
+
 - Support us: the page is centered in the area to the right of the menu, across and down, with the heading and intro centered.
 
 - Today: the chart shows today's net worth even before it is saved, a failed save is tried again next time, and "Reports coming up" uses the fresh filing dates. Portfolio: the Cash field shows its currency sign ($, €, ֏…) inside the box.
