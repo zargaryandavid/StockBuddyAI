@@ -1167,19 +1167,24 @@ export function Dashboard({
                         t={t}
                       />
                     </span>
-                    <input
-                      aria-label={t("Cash")}
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={cash}
-                      onChange={(event) => {
-                        setCash(Number(event.target.value));
-                        setSaveConfirmation(null);
-                        setDirty(true);
-                      }}
-                      required
-                    />
+                    <span className="money-input">
+                      <span className="money-input-sign" aria-hidden="true">
+                        {currencySign(baseCurrency)}
+                      </span>
+                      <input
+                        aria-label={t("Cash")}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={cash}
+                        onChange={(event) => {
+                          setCash(Number(event.target.value));
+                          setSaveConfirmation(null);
+                          setDirty(true);
+                        }}
+                        required
+                      />
+                    </span>
                   </label>
                 </div>
 
@@ -2398,6 +2403,19 @@ function Metric({ label, value }: { label: string; value: string }) {
 }
 
 type ResolveResult = { query: string; data?: Omit<Position, "shares">; error?: string };
+
+/** "$", "€", "֏"… for a currency code, or the code itself when it has no sign. */
+function currencySign(currency: string) {
+  try {
+    return (
+      new Intl.NumberFormat("en-US", { style: "currency", currency, currencyDisplay: "narrowSymbol" })
+        .formatToParts(0)
+        .find((part) => part.type === "currency")?.value ?? currency
+    );
+  } catch {
+    return currency;
+  }
+}
 
 /** A holding with fresh market data; classifications the person set by hand stay. */
 function withOverview(position: Position, overview: Omit<Position, "shares">): Position {

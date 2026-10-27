@@ -3359,3 +3359,11 @@ button.today-row:hover { background: var(--row-hover); }
   .setup-steps li { grid-template-columns: 1.75rem minmax(0, 1fr); }
   .setup-steps li > :last-child { grid-column: 2; justify-self: start; }
 }
+
+/* Money fields show their currency sign inside the box. */
+.money-input { position: relative; display: block; }
+.money-input-sign {
+  position: absolute; top: 50%; left: 0.75rem; transform: translateY(-50%);
+  color: var(--muted); font-weight: 600; pointer-events: none;
+}
+.money-input input { width: 100%; padding-left: 1.9rem; }

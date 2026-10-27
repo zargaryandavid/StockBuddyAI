@@ -194,7 +194,10 @@ export function TodayPage({
           { ...reading, total: netWorth },
         ]),
       )
-      .catch(() => undefined);
+      .catch(() => {
+        // Try again the next time this page opens.
+        saved.current = false;
+      });
   }, [ready, hasAnything, today, investments, savings, otherAssets, netWorth, currency]);
 
   const change = changeSinceLast(history, today, netWorth);
@@ -202,7 +205,28 @@ export function TodayPage({
     () => (quotes ? attentionItems(snapshots, portfolios, book) : []),
     [quotes, snapshots, portfolios, book],
   );
-  const reports = useMemo(() => upcomingReports(portfolios, today), [portfolios, today]);
+  // Fresh filing dates and fund types from today's lookup, where the saved ones may be older.
+  const reports = useMemo(
+    () =>
+      upcomingReports(
+        portfolios.map((portfolio) => ({
+          ...portfolio,
+          portfolio_positions: portfolio.portfolio_positions.map((position) => {
+            const quote = quotes?.get(position.ticker.trim().toUpperCase());
+            return quote
+              ? {
+                  ...position,
+                  report_date: quote.report_date ?? position.report_date,
+                  asset_type: quote.asset_type ?? position.asset_type,
+                  is_etf_index: quote.is_etf_index ?? position.is_etf_index,
+                }
+              : position;
+          }),
+        })),
+        today,
+      ),
+    [portfolios, quotes, today],
+  );
   const unpriced = [...new Set(snapshots.flatMap((snapshot) => snapshot.unpriced))];
   const progress = plan.fireNumber ? Math.min(1, plan.currentAssets / plan.fireNumber) : null;
   const cashGoal = snapshots.reduce((sum, snapshot) => {
@@ -367,7 +391,12 @@ export function TodayPage({
         <div className="today-section-heading">
           <h2>{t("Net worth over time")}</h2>
         </div>
-        <NetWorthChart points={history} currency={currency} today={today} />
+        <NetWorthChart
+          points={history}
+          current={ready && hasAnything ? { day: today, total: netWorth } : null}
+          currency={currency}
+          today={today}
+        />
       </article>
 
       <div className="today-columns">

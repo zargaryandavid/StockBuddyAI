@@ -25,11 +25,14 @@ function daysBefore(day: string, days: number) {
 
 /** A line of the daily net worth readings, saved each day the app is opened. */
 export function NetWorthChart({
-  points,
+  points: saved,
+  current,
   currency,
   today,
 }: {
   points: NetWorthPoint[];
+  /** Today's value as shown on the page, so the chart has today even before it is saved. */
+  current?: { day: string; total: number } | null;
   currency: string;
   today: string;
 }) {
@@ -37,6 +40,13 @@ export function NetWorthChart({
   const [range, setRange] = useState<(typeof RANGES)[number]["key"]>("6M");
   const [hover, setHover] = useState<number | null>(null);
 
+  const points = useMemo(
+    () =>
+      current && !saved.some((point) => point.day === current.day)
+        ? [...saved, { ...current, investments: 0, savings: 0, other_assets: 0 }]
+        : saved,
+    [saved, current],
+  );
   const shown = useMemo(() => {
     const days = RANGES.find((item) => item.key === range)?.days;
     const from = days ? daysBefore(today, days) : "";
