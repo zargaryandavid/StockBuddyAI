@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import threading
 import time
 from dataclasses import dataclass
@@ -75,6 +76,8 @@ class EdgarClient:
     TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
     _request_lock = threading.Lock()
     _last_request = 0.0
+    _file_locks: dict[str, threading.Lock] = {}
+    _file_locks_guard = threading.Lock()
 
     def __init__(
         self,
@@ -383,21 +386,40 @@ class EdgarClient:
 
     def _json(self, url: str, filename: str, max_age: int | None) -> dict[str, Any]:
         path = self.cache_dir / filename.replace("/", "_")
+        cached = self._read_cache(path, max_age)
+        if cached is not None:
+            return cached
+        # One download per file: lookups that need the same file wait for it, not each fetch it.
+        with self._file_locks_guard:
+            file_lock = self._file_locks.setdefault(str(path), threading.Lock())
+        with file_lock:
+            cached = self._read_cache(path, max_age)
+            if cached is not None:
+                return cached
+            return self._download(url, path)
+
+    @staticmethod
+    def _read_cache(path: Path, max_age: int | None) -> dict[str, Any] | None:
         if path.exists() and (max_age is None or time.time() - path.stat().st_mtime < max_age):
             try:
                 return json.loads(path.read_text())
             except (OSError, json.JSONDecodeError):
                 path.unlink(missing_ok=True)
+        return None
 
+    def _download(self, url: str, path: Path) -> dict[str, Any]:
+        # Requests start at most `requests_per_second` apart (SEC fair access), but they
+        # no longer wait for each other to finish downloading.
         with self._request_lock:
-            elapsed = time.monotonic() - self._last_request
-            if elapsed < self._interval:
-                time.sleep(self._interval - elapsed)
-            try:
-                response = self._session.get(url, timeout=30)
-            except requests.RequestException as exc:
-                raise EdgarError(f"SEC request failed: {url}") from exc
-            EdgarClient._last_request = time.monotonic()
+            now = time.monotonic()
+            start = max(now, EdgarClient._last_request + self._interval)
+            EdgarClient._last_request = start
+        if start > now:
+            time.sleep(start - now)
+        try:
+            response = self._session.get(url, timeout=30)
+        except requests.RequestException as exc:
+            raise EdgarError(f"SEC request failed: {url}") from exc
         if response.status_code >= 400:
             raise EdgarError(f"SEC request returned HTTP {response.status_code}: {url}")
         try:
@@ -405,7 +427,10 @@ class EdgarClient:
         except ValueError as exc:
             raise EdgarError(f"SEC returned invalid JSON: {url}") from exc
         try:
-            path.write_text(json.dumps(payload, separators=(",", ":")))
+            # Written whole, then swapped in, so another lookup never reads half a file.
+            partial = path.with_name(f"{path.name}.{threading.get_ident()}.tmp")
+            partial.write_text(json.dumps(payload, separators=(",", ":")))
+            os.replace(partial, path)
         except OSError as exc:
             raise EdgarError(f"Could not write SEC cache {path}") from exc
         return payload

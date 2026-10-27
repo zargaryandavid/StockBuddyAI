@@ -30,6 +30,12 @@ vi.mock("@/lib/api", async (importOriginal) => {
   };
 });
 
+
+/** What the one-request holdings lookup answers for these quotes. */
+function batch(...quotes: Array<{ ticker: string } & Record<string, unknown>>) {
+  return quotes.map((quote) => ({ query: quote.ticker, data: quote }));
+}
+
 describe("Dashboard navigation", () => {
   afterEach(cleanup);
 
@@ -270,7 +276,7 @@ describe("Dashboard navigation", () => {
     };
     vi.mocked(api)
       .mockResolvedValueOnce([portfolio])
-      .mockResolvedValueOnce(overview)
+      .mockResolvedValueOnce(batch(overview))
       .mockResolvedValueOnce(overview)
       .mockResolvedValueOnce(portfolio)
       .mockResolvedValueOnce([portfolio]);
@@ -342,7 +348,8 @@ describe("Dashboard navigation", () => {
           portfolio_positions: [{ ticker: "VOO", shares: 1, sector: "Other" }],
         },
       ])
-      .mockResolvedValueOnce({
+      .mockResolvedValueOnce(batch(
+        {
         ticker: "VOO",
         name: "Vanguard S&P 500 ETF",
         price: 600,
@@ -350,7 +357,8 @@ describe("Dashboard navigation", () => {
         sector: null,
         price_date: "2026-10-22",
         is_etf_index: true,
-      });
+      },
+      ));
     render(<Dashboard initialTab="portfolio" email="owner@example.com" today="2026-10-23" />);
 
     await screen.findByRole("button", { name: "Fund portfolio 1 holding" });
@@ -387,20 +395,22 @@ describe("Dashboard navigation", () => {
           ],
         },
       ])
-      .mockResolvedValueOnce({
+      .mockResolvedValueOnce(batch(
+        {
         ticker: "AAPL",
         name: "Apple Inc.",
         price: 120,
         growth: 4,
         sector: "Technology",
-      })
-      .mockResolvedValueOnce({
+      },
+        {
         ticker: "MSFT",
         name: "Microsoft Corp.",
         price: 180,
         growth: -2,
         sector: "Technology",
-      });
+      },
+      ));
     render(<Dashboard initialTab="portfolio" email="owner@example.com" today="2026-10-23" />);
 
     const gain = (await screen.findByText("+$200.00")).closest(".stacked-change");
@@ -447,7 +457,8 @@ describe("Dashboard navigation", () => {
           ],
         },
       ])
-      .mockResolvedValueOnce({
+      .mockResolvedValueOnce(batch(
+        {
         ticker: "CCC",
         name: "Company C",
         price: 20,
@@ -456,8 +467,8 @@ describe("Dashboard navigation", () => {
         growth_6m: -10,
         growth_1y: 5,
         sector: "Technology",
-      })
-      .mockResolvedValueOnce({
+      },
+        {
         ticker: "AAA",
         name: "Company A",
         price: 100,
@@ -466,8 +477,8 @@ describe("Dashboard navigation", () => {
         growth_6m: 20,
         growth_1y: -5,
         sector: "Technology",
-      })
-      .mockResolvedValueOnce({
+      },
+        {
         ticker: "BBB",
         name: "Company B",
         price: 300,
@@ -476,7 +487,8 @@ describe("Dashboard navigation", () => {
         growth_6m: 5,
         growth_1y: 30,
         sector: "Technology",
-      });
+      },
+      ));
     render(<Dashboard initialTab="portfolio" email="owner@example.com" today="2026-10-23" />);
     await screen.findAllByText("Company A");
 
@@ -518,7 +530,8 @@ describe("Dashboard navigation", () => {
           ],
         },
       ])
-      .mockResolvedValueOnce({
+      .mockResolvedValueOnce(batch(
+        {
         ticker: "NVDA",
         name: "NVIDIA Corporation",
         price: 100,
@@ -532,7 +545,8 @@ describe("Dashboard navigation", () => {
         price_date: "2026-10-22",
         report_date: "2026-08-01",
         report_source: "SEC EDGAR",
-      });
+      },
+      ));
     render(<Dashboard initialTab="portfolio" email="owner@example.com" today="2026-10-23" />);
 
     const status = await screen.findByRole("button", { name: "Review" });

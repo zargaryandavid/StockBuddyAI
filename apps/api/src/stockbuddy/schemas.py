@@ -471,3 +471,8 @@ class ShareLinkCreate(BaseModel):
         if self.kind == "portfolio" and self.portfolio_id is None:
             raise ValueError("Choose the portfolio to share")
         return self
+
+
+class ResolveBatch(BaseModel):
+    queries: list[str] = Field(min_length=1, max_length=60)
+    base_currency: str = Field(default="USD", min_length=3, max_length=3)

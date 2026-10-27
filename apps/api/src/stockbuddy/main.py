@@ -47,6 +47,7 @@ from stockbuddy.schemas import (
     PositionTransaction,
     ProfileInput,
     ReminderCreate,
+    ResolveBatch,
     ShareLinkCreate,
     StudioUpdate,
     WishCheck,
@@ -236,6 +237,7 @@ async def delete_my_account(
     payload: AccountDeletion,
     request: Request,
     account: Annotated[Account, Depends(current_account)],
+    token: Annotated[str, Depends(bearer_token)],
 ):
     """Deletes the signed-in person's account and every record that belongs to it."""
     if payload.confirm.strip().lower() != "delete":
@@ -249,6 +251,9 @@ async def delete_my_account(
         await request.app.state.gateway.delete_user(account.id)
     except SupabaseError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+    forget = getattr(request.app.state.gateway, "forget_identity", None)
+    if forget:
+        forget(token)
     return Response(status_code=204)
 
 
@@ -841,6 +846,37 @@ async def resolve_security(
 
 
 MAX_HISTORY_TICKERS = 40
+MAX_RESOLVE_BATCH = 60
+
+
+@app.post("/api/securities/resolve-batch")
+async def resolve_securities(
+    payload: ResolveBatch,
+    request: Request,
+    _user_id: Annotated[UUID, Depends(current_user)],
+):
+    """Market data for a whole portfolio in one request: one server, shared caches,
+    lookups side by side. Each item carries its data or its own error."""
+    queries = [query.strip() for query in payload.queries if query.strip()]
+    if len(queries) > MAX_RESOLVE_BATCH:
+        raise HTTPException(status_code=422, detail=f"At most {MAX_RESOLVE_BATCH} holdings at once")
+    market = request.app.state.market
+    limit = asyncio.Semaphore(8)
+
+    async def one(query: str) -> dict:
+        async with limit:
+            try:
+                data = await asyncio.to_thread(
+                    market.resolve, query, base_currency=payload.base_currency
+                )
+                return {"query": query, "data": data}
+            except (SecurityNotFoundError, YahooPriceError) as exc:
+                return {"query": query, "error": str(exc)}
+            except Exception:  # one bad holding must not hide the others
+                logger.exception("Market data lookup failed for %s", query)
+                return {"query": query, "error": "Market data is unavailable right now"}
+
+    return await asyncio.gather(*(one(query) for query in queries))
 
 
 @app.get("/api/prices/history")

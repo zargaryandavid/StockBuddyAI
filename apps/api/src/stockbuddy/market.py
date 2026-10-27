@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
 from typing import Any, Protocol
 
@@ -170,18 +171,21 @@ class SecurityOverviewService:
     ) -> dict[str, list[dict[str, Any]]]:
         """Completed daily closes per ticker; a ticker whose request fails gets an empty list."""
         finish = end or date.today()
-        history: dict[str, list[dict[str, Any]]] = {}
-        for ticker in tickers:
+
+        def closes(ticker: str) -> list[dict[str, Any]]:
             try:
                 bars = self.prices.get_prices(ticker, start.isoformat(), finish.isoformat())
             except RuntimeError:
                 bars = []
-            history[ticker] = [
+            return [
                 {"date": bar.time[:10], "close": bar.close}
                 for bar in sorted(bars, key=lambda bar: bar.time)
                 if bar.time[:10] <= finish.isoformat()
             ]
-        return history
+
+        # Side by side: a portfolio's history arrives in about the time of its slowest ticker.
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            return dict(zip(tickers, pool.map(closes, tickers), strict=True))
 
     def fx_rate(self, source: str, target: str, as_of: date | None = None) -> float | None:
         """Latest completed close converting one unit of `source` into `target`."""

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
@@ -11,6 +12,10 @@ import httpx
 from stockbuddy.config import Settings
 
 logger = logging.getLogger(__name__)
+
+
+# Short, so a signed-out or deleted account stops working within half a minute.
+IDENTITY_TTL_SECONDS = 30
 
 
 class SupabaseError(RuntimeError):
@@ -33,6 +38,8 @@ class SupabaseGateway:
         self._client = client or httpx.AsyncClient(timeout=30)
         self._owns_client = client is None
         self._admin_ready = False
+        # Who each recent token belongs to, so a page's burst of requests asks Supabase once.
+        self._identities: dict[str, tuple[float, Account]] = {}
 
     async def close(self) -> None:
         if self._owns_client:
@@ -52,6 +59,20 @@ class SupabaseGateway:
         return (await self.identify(token)).id
 
     async def identify(self, token: str) -> Account:
+        now = time.monotonic()
+        cached = self._identities.get(token)
+        if cached and now - cached[0] < IDENTITY_TTL_SECONDS:
+            return cached[1]
+        account = await self._fetch_identity(token)
+        if len(self._identities) >= 500:
+            self._identities.clear()
+        self._identities[token] = (now, account)
+        return account
+
+    def forget_identity(self, token: str) -> None:
+        self._identities.pop(token, None)
+
+    async def _fetch_identity(self, token: str) -> Account:
         response = await self._client.get(
             f"{self.settings.supabase_url}/auth/v1/user",
             headers={

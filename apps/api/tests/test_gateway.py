@@ -52,3 +52,38 @@ def test_api_responses_carry_security_headers():
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
     assert response.headers["cache-control"] == "no-store"
+
+
+def test_a_burst_of_requests_asks_supabase_who_the_token_is_once():
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request.headers["authorization"])
+        return httpx.Response(200, json={"id": USER_ID, "email": "owner@example.com"})
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    gateway = SupabaseGateway(Settings(supabase_url="http://supabase.test"), client)
+
+    async def burst():
+        for _ in range(5):
+            await gateway.identify("token")
+        gateway.forget_identity("token")
+        await gateway.identify("token")
+
+    asyncio.run(burst())
+    assert calls == ["Bearer token", "Bearer token"]
+
+
+def test_a_rejected_token_is_not_remembered():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(401, json={"msg": "bad"})
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    gateway = SupabaseGateway(Settings(supabase_url="http://supabase.test"), client)
+    import pytest
+
+    from stockbuddy.supabase import SupabaseError
+
+    with pytest.raises(SupabaseError):
+        asyncio.run(gateway.identify("bad"))
+    assert "bad" not in gateway._identities

@@ -57,19 +57,79 @@ export type Recommendation = {
   mark: number;
 };
 
+/*
+ * Recent answers, so going back to a page shows it at once instead of waiting on the
+ * server again. Only page data is kept, never live progress (Ask Buddy runs, usage).
+ * Any change (POST, PUT, PATCH, DELETE) clears it, so nothing shows out of date after
+ * an edit; market data is kept a little longer because edits don't change it.
+ */
+const PAGE_DATA = [
+  "/api/portfolios",
+  "/api/profile",
+  "/api/fire/",
+  "/api/wishes",
+  "/api/education/articles",
+  "/api/share-links",
+  "/api/reminders",
+];
+const MARKET_DATA = ["/api/prices/history", "/api/fx", "/api/securities/resolve-batch"];
+const PAGE_TTL_MS = 60_000;
+const MARKET_TTL_MS = 5 * 60_000;
+const answers = new Map<string, { at: number; ttl: number; value: Promise<unknown> }>();
+
+function cacheTtl(path: string, method: string) {
+  const route = path.split("?")[0];
+  const matches = (prefixes: string[]) =>
+    prefixes.some((prefix) => (prefix.endsWith("/") ? route.startsWith(prefix) : route === prefix));
+  if (matches(MARKET_DATA)) return MARKET_TTL_MS; // the batch lookup reads, though it is a POST
+  if (method === "GET" && matches(PAGE_DATA)) return PAGE_TTL_MS;
+  return 0;
+}
+
+/** Forget every remembered answer (after sign-in, sign-out, or any change). */
+export function clearApiCache({ keepMarketData = false } = {}) {
+  for (const [key, entry] of answers) {
+    if (!keepMarketData || entry.ttl !== MARKET_TTL_MS) answers.delete(key);
+  }
+}
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const supabase = createClient();
   const { data } = await supabase.auth.getSession();
   if (!data.session) {
     throw new Error("Your session has expired. Please sign in again.");
   }
+  const method = (init?.method ?? "GET").toUpperCase();
+  const ttl = cacheTtl(path, method);
+  if (!ttl) {
+    if (method !== "GET") clearApiCache({ keepMarketData: true });
+    return request<T>(path, init, data.session.access_token);
+  }
+  // Answers belong to one person.
+  const key = `${data.session.user.id} ${method} ${path} ${typeof init?.body === "string" ? init.body : ""}`;
+  const cached = answers.get(key);
+  if (cached && init?.cache !== "reload" && Date.now() - cached.at < cached.ttl) {
+    return cached.value as Promise<T>;
+  }
+  const fetchInit = { ...init };
+  delete fetchInit.cache; // "reload" only means "skip what we remember"
+  const value = request<T>(path, fetchInit, data.session.access_token);
+  answers.set(key, { at: Date.now(), ttl, value });
+  // A failed answer is not kept, so the next visit tries again.
+  value.catch(() => {
+    if (answers.get(key)?.value === value) answers.delete(key);
+  });
+  return value;
+}
+
+async function request<T>(path: string, init: RequestInit | undefined, token: string): Promise<T> {
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000"}${path}`,
     {
       ...init,
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${data.session.access_token}`,
+        Authorization: `Bearer ${token}`,
         ...init?.headers,
       },
     },
@@ -85,6 +145,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function apiUpload<T>(path: string, body: FormData): Promise<T> {
+  clearApiCache({ keepMarketData: true });
   const supabase = createClient();
   const { data } = await supabase.auth.getSession();
   if (!data.session) {

@@ -156,6 +156,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Fixed
 
+- Speed: a portfolio's market data now loads in one request (`POST /api/securities/resolve-batch`) instead of one per holding; SEC downloads no longer wait for each other (still rate limited) and a file is downloaded once even when several lookups need it; Analytics price history loads tickers side by side; the API remembers who a token belongs to for 30 seconds; and the web app keeps page data for a minute (market data for five), cleared by any change, so going back to a page is instant.
+
 - Sign out: after you confirm, the dialog stays open with "Signing out…" and a spinner until the sign-in page loads, instead of closing while the old page lingers. Sign-out now does a full page load, so nothing from the account stays in memory.
 
 - Sign in: the button now says "Signing in…" and stays busy until your book opens, instead of switching back to "Sign in" while the next page is still loading.

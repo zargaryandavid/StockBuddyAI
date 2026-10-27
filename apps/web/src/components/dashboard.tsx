@@ -431,59 +431,55 @@ export function Dashboard({
       const overview = await api<Omit<Position, "shares">>(
         `/api/securities/resolve?query=${encodeURIComponent(query)}&base_currency=${encodeURIComponent(baseCurrency)}`,
       );
-      const manual = position.classification_source === "manual";
-      return {
-        ...position,
-        ...overview,
-        name: overview.name,
-        company_name: overview.name,
-        sector: manual
-          ? position.sector
-          : normalizeSector(
-              overview.sector,
-              overview.industry,
-              overview.asset_type,
-            ),
-        industry: manual ? position.industry : overview.industry,
-        asset_type: manual ? position.asset_type : overview.asset_type,
-        investment_category: manual
-          ? position.investment_category
-          : overview.investment_category,
-        classification_source: manual ? "manual" : "automatic",
-        resolve_error: null,
-      };
+      return withOverview(position, overview);
     },
     [baseCurrency],
   );
 
   const enrichPositions = useCallback(
-    async (rows: Position[]) => {
+    async (rows: Position[], { fresh = false, currency }: { fresh?: boolean; currency?: string } = {}) => {
       setSortKey("custom");
       setSaveConfirmation(null);
       setPositions(rows);
-      const settled = await Promise.allSettled(rows.map(resolvePosition));
+      const queries = rows.map((row) => row.ticker.trim()).filter(Boolean);
+      // One request for the whole portfolio instead of one per holding.
+      let results: ResolveResult[] = [];
+      let failure: string | null = null;
+      if (queries.length) {
+        try {
+          results = await api<ResolveResult[]>("/api/securities/resolve-batch", {
+            method: "POST",
+            body: JSON.stringify({ queries, base_currency: currency ?? baseCurrency }),
+            ...(fresh ? { cache: "reload" as const } : {}),
+          });
+        } catch (cause) {
+          failure = cause instanceof Error ? cause.message : "";
+        }
+      }
+      const byQuery = new Map(results.map((item) => [item.query, item]));
       setPositions(
-        settled.map((result, index) =>
-          result.status === "fulfilled"
-            ? result.value
-            : {
-                ...rows[index],
-                resolve_error:
-                  result.reason instanceof Error
-                    ? tRef.current("Could not update {ticker}: {message}", {
-                        ticker: rows[index].ticker,
-                        message: tRef.current(result.reason.message),
-                      })
-                    : tRef.current("Could not update {ticker}.", {
-                        ticker: rows[index].ticker,
-                      }),
-              },
-        ),
+        rows.map((row) => {
+          const query = row.ticker.trim();
+          if (!query) return row;
+          const found = byQuery.get(query);
+          if (found?.data) return withOverview(row, found.data);
+          const message = found?.error ?? failure;
+          return {
+            ...row,
+            resolve_error: message
+              ? tRef.current("Could not update {ticker}: {message}", {
+                  ticker: row.ticker,
+                  message: tRef.current(message),
+                })
+              : tRef.current("Could not update {ticker}.", { ticker: row.ticker }),
+          };
+        }),
       );
       setLoadingPortfolios(false);
     },
-    [resolvePosition],
+    [baseCurrency],
   );
+
 
   const openPortfolio = useCallback(
     (portfolio: Portfolio) => {
@@ -504,7 +500,7 @@ export function Dashboard({
       const ordered = [...portfolio.portfolio_positions].sort(
         (left, right) => (left.display_order ?? 0) - (right.display_order ?? 0),
       );
-      void enrichPositions(ordered);
+      void enrichPositions(ordered, { currency: portfolio.base_currency ?? "USD" });
     },
     [enrichPositions],
   );
@@ -1640,7 +1636,7 @@ export function Dashboard({
                     void loadTransactionHistory(portfolioId);
                   }
                 }}
-                onRefresh={() => enrichPositions(positions)}
+                onRefresh={() => enrichPositions(positions, { fresh: true })}
               />
             )}
 
@@ -2308,6 +2304,27 @@ function RecommendationBadge({ recommendation }: { recommendation: Recommendatio
 
 function Metric({ label, value }: { label: string; value: string }) {
   return <div className="metric"><span>{label}</span><strong>{value}</strong></div>;
+}
+
+type ResolveResult = { query: string; data?: Omit<Position, "shares">; error?: string };
+
+/** A holding with fresh market data; classifications the person set by hand stay. */
+function withOverview(position: Position, overview: Omit<Position, "shares">): Position {
+  const manual = position.classification_source === "manual";
+  return {
+    ...position,
+    ...overview,
+    name: overview.name,
+    company_name: overview.name,
+    sector: manual
+      ? position.sector
+      : normalizeSector(overview.sector, overview.industry, overview.asset_type),
+    industry: manual ? position.industry : overview.industry,
+    asset_type: manual ? position.asset_type : overview.asset_type,
+    investment_category: manual ? position.investment_category : overview.investment_category,
+    classification_source: manual ? "manual" : "automatic",
+    resolve_error: null,
+  };
 }
 
 function SummaryCard({

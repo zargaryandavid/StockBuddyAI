@@ -185,3 +185,35 @@ def test_people_can_delete_their_own_account_but_not_the_admin():
     assert admin.status_code == 403
     assert done.status_code == 204
     assert gateway.deleted == [USER.id]
+
+
+def test_resolve_batch_returns_each_holding_or_its_own_error():
+    from stockbuddy.market import SecurityNotFoundError
+
+    class Market:
+        def resolve(self, query, base_currency="USD"):
+            if query == "NOPE":
+                raise SecurityNotFoundError("No company or ticker matched 'NOPE'")
+            if query == "BOOM":
+                raise RuntimeError("SEC is down")
+            return {"ticker": query, "price": 10.0, "base_currency": base_currency}
+
+    class UserGateway(Gateway):
+        async def authenticate(self, token: str):
+            return (await self.identify(token)).id
+
+    with TestClient(app) as client:
+        app.state.gateway = UserGateway()
+        app.state.market = Market()
+        response = client.post(
+            "/api/securities/resolve-batch",
+            headers={"Authorization": "Bearer user"},
+            json={"queries": ["AAPL", "NOPE", "BOOM", "VOO"], "base_currency": "EUR"},
+        )
+    assert response.status_code == 200
+    body = response.json()
+    assert [item["query"] for item in body] == ["AAPL", "NOPE", "BOOM", "VOO"]
+    assert body[0]["data"]["base_currency"] == "EUR"
+    assert "No company" in body[1]["error"]
+    assert body[2]["error"] == "Market data is unavailable right now"
+    assert body[3]["data"]["ticker"] == "VOO"

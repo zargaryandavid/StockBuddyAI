@@ -67,6 +67,10 @@ const quotes: Record<string, Record<string, unknown>> = {
 function mockApi() {
   vi.mocked(api).mockImplementation(async (path: string, init?: RequestInit) => {
     if (path === "/api/portfolios" && !init) return [portfolio];
+    if (path === "/api/securities/resolve-batch") {
+      const { queries } = JSON.parse(String(init?.body)) as { queries: string[] };
+      return queries.map((query) => ({ query, data: quotes[query.toUpperCase()] }));
+    }
     if (path.startsWith("/api/securities/resolve")) {
       const query = new URL(`http://x${path}`).searchParams.get("query") ?? "";
       return quotes[query.toUpperCase()];
@@ -154,7 +158,11 @@ describe("Holdings table", () => {
           },
         ];
       }
-      if (path.startsWith("/api/securities/resolve")) {
+      if (path === "/api/securities/resolve-batch") {
+      const { queries } = JSON.parse(String(init?.body)) as { queries: string[] };
+      return queries.map((query) => ({ query, data: quotes[query.toUpperCase()] }));
+    }
+    if (path.startsWith("/api/securities/resolve")) {
         const query = new URL(`http://x${path}`).searchParams.get("query") ?? "";
         return quotes[query.toUpperCase()];
       }
