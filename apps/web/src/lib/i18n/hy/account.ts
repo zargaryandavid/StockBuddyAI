@@ -258,6 +258,7 @@ const account: Record<string, string> = {
   "Use at least 10 characters.": "Օգտագործեք առնվազն 10 նիշ։",
   "Use both letters and numbers.": "Օգտագործեք և՛ տառեր, և՛ թվեր։",
   "At least 10 characters, with letters and numbers.": "Առնվազն 10 նիշ՝ տառերով և թվերով։",
+  "Your session ended, so we signed you out. Please sign in again.": "Ձեր նիստն ավարտվել է, ուստի մենք ձեզ դուրս բերեցինք։ Խնդրում ենք կրկին մուտք գործել։",
 };
 
 export default account;

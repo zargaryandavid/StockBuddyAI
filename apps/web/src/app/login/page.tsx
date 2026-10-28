@@ -12,6 +12,7 @@ import Image from "next/image";
 const CONFIRM_NOTICES: Record<string, string> = {
   done: "Your email is confirmed. Sign in to continue.",
   deleted: "Your account and all its data were deleted. Thanks for trying StockBuddy.",
+  "session-ended": "Your session ended, so we signed you out. Please sign in again.",
   expired: "That confirmation link has expired or was already used. Sign in, or create the account again to get a new link.",
   "reset-expired": "That password reset link has expired or was already used. Ask for a new one below.",
   "reset-browser": "Open the password reset link in the same browser you asked for it from, or ask for a new one below.",

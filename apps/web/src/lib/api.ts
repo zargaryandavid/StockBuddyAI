@@ -103,17 +103,73 @@ export function clearApiCache({ keepMarketData = false } = {}) {
   }
 }
 
+const SESSION_ENDED = "Your session has expired. Please sign in again.";
+
+/** Thrown for a 401: the server no longer accepts this sign-in. */
+class SessionRejected extends Error {}
+
+/** Where the browser goes when a session can't be renewed; replaceable in tests. */
+export const sessionEnd = {
+  // A full page load, so nothing from the ended session stays in memory.
+  goToSignIn: () => window.location.replace(new URL("/login?confirm=session-ended", window.location.origin).href),
+};
+
+let ending = false;
+let renewing: Promise<string | null> | null = null;
+
+/** One renewal for all the requests that were turned away at the same moment. */
+function renewSession(): Promise<string | null> {
+  renewing ??= createClient()
+    .auth.refreshSession()
+    .then(({ data, error }) => (error ? null : (data.session?.access_token ?? null)))
+    .catch(() => null)
+    .finally(() => {
+      renewing = null;
+    });
+  return renewing;
+}
+
+/** Signs out on this device and opens the sign-in page with a friendly note, once. */
+async function endSession(): Promise<never> {
+  if (!ending) {
+    ending = true;
+    clearApiCache();
+    await createClient().auth.signOut({ scope: "local" }).catch(() => undefined);
+    sessionEnd.goToSignIn();
+  }
+  throw new Error(SESSION_ENDED);
+}
+
+/**
+ * Runs a request with the current sign-in. If the server turns it away (the session expired
+ * or was ended elsewhere), renews the session once and tries again; if that fails too, the
+ * person is signed out and sent to sign in, instead of every page showing an error.
+ */
+async function withSession<T>(run: (token: string) => Promise<T>, token: string): Promise<T> {
+  try {
+    return await run(token);
+  } catch (cause) {
+    if (!(cause instanceof SessionRejected)) throw cause;
+    const renewed = await renewSession();
+    if (!renewed) return endSession();
+    try {
+      return await run(renewed);
+    } catch (again) {
+      if (again instanceof SessionRejected) return endSession();
+      throw again;
+    }
+  }
+}
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const supabase = createClient();
   const { data } = await supabase.auth.getSession();
-  if (!data.session) {
-    throw new Error("Your session has expired. Please sign in again.");
-  }
+  if (!data.session) return endSession();
   const method = (init?.method ?? "GET").toUpperCase();
   const ttl = cacheTtl(path, method);
   if (!ttl) {
     if (method !== "GET") clearApiCache({ keepMarketData: true });
-    return request<T>(path, init, data.session.access_token);
+    return withSession((token) => request<T>(path, init, token), data.session.access_token);
   }
   // Answers belong to one person.
   const key = `${data.session.user.id} ${method} ${path} ${typeof init?.body === "string" ? init.body : ""}`;
@@ -123,7 +179,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   }
   const fetchInit = { ...init };
   delete fetchInit.cache; // "reload" only means "skip what we remember"
-  const value = request<T>(path, fetchInit, data.session.access_token);
+  const value = withSession((token) => request<T>(path, fetchInit, token), data.session.access_token);
   answers.set(key, { at: Date.now(), ttl, value });
   // A failed answer is not kept, so the next visit tries again.
   value.catch(() => {
@@ -146,6 +202,7 @@ async function request<T>(path: string, init: RequestInit | undefined, token: st
   );
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
+    if (response.status === 401) throw new SessionRejected(errorDetail(body.detail, response.status));
     throw new Error(errorDetail(body.detail, response.status));
   }
   if (response.status === 204) {
@@ -158,21 +215,19 @@ export async function apiUpload<T>(path: string, body: FormData): Promise<T> {
   clearApiCache({ keepMarketData: true });
   const supabase = createClient();
   const { data } = await supabase.auth.getSession();
-  if (!data.session) {
-    throw new Error("Your session has expired. Please sign in again.");
-  }
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000"}${path}`,
-    {
+  if (!data.session) return endSession();
+  return withSession(async (token) => {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000"}${path}`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${data.session.access_token}` },
+      headers: { Authorization: `Bearer ${token}` },
       body,
-    },
-  );
-  if (!response.ok) {
-    const payload = await response.json().catch(() => ({}));
-    throw new Error(errorDetail(payload.detail, response.status));
-  }
-  return response.json() as Promise<T>;
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      if (response.status === 401) throw new SessionRejected(errorDetail(payload.detail, response.status));
+      throw new Error(errorDetail(payload.detail, response.status));
+    }
+    return response.json() as Promise<T>;
+  }, data.session.access_token);
 }
 

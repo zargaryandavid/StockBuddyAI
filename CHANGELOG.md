@@ -178,6 +178,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Fixed
 
+- "Invalid or expired session": when the server turns a sign-in away (it expired, or was ended elsewhere or by a sign-in settings change), the app now renews it once and retries; if that fails, it signs out on this device and opens sign-in with "Your session ended, so we signed you out. Please sign in again." instead of every page showing the error.
+
 - Sign-in page fits one screen in both languages: in Armenian the headline wrapped to five lines and the page scrolled. The headline now follows the screen's height as well as its width (Armenian a step smaller), the space above and below follows the height, and on shorter screens the dollar bills sit in the bottom corner, clear of the text and the quote card.
 
 - Speed: the home and Admin pages no longer wait for the API before showing. The server only reads the sign-in cookie (no network trip) and the page appears at once; the role, book settings and Admin studio settings load in the browser a moment later (Admin shows a shimmer meanwhile, and anyone who is not the admin is still sent home). The unused server-side workspace loader is removed.
