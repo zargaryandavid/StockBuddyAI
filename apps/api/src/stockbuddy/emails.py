@@ -259,3 +259,49 @@ def link_shared(email_address: str, link: str, what: str) -> tuple[str, str, str
         "from your profile; anyone holding the link loses access at once.\n"
     )
     return "Your MyPortfolioBuddy share link is ready", render(message), text
+
+
+def invite(inviter: str, friend_name: str, join_url: str) -> tuple[str, str, str]:
+    """Subject, HTML and plain text of the invitation a member sends a friend.
+
+    `inviter` is how the member is shown, e.g. "Anna (anna@example.com)"; `friend_name` may be
+    empty. Both are plain text.
+    """
+    who = escape(inviter)
+    hello = f"Hi {escape(friend_name)}," if friend_name else "Hi,"
+    message = Email(
+        title=f"{inviter} invited you to MyPortfolioBuddy",
+        preheader="A free, calm place for your portfolio and your path to financial freedom.",
+        heading="You&rsquo;re invited to MyPortfolioBuddy",
+        paragraphs=[
+            hello,
+            f"<strong>{who}</strong> uses MyPortfolioBuddy and thought you&rsquo;d like it too.",
+            "It&rsquo;s a free place to see your whole financial picture: your portfolio and what "
+            "your ETFs really hold, your savings and cash target, and when your money could pay "
+            "for your life (FIRE). Fundamentals, not hype.",
+        ],
+        steps=[
+            ("Create your free account", "Takes a minute: just your email and a password."),
+            (
+                "Add your numbers",
+                "Type your holdings or upload your broker&rsquo;s file or a screenshot.",
+            ),
+            (
+                "See your path",
+                "Net worth, cash target and your financial freedom date, in one place.",
+            ),
+        ],
+        button_label="Join MyPortfolioBuddy",
+        button_url=join_url,
+        after=["No sponsors, no ads, and your data is never sold. Only you can see your numbers."],
+        note=f"{who} sent this invitation from MyPortfolioBuddy. Not interested? Just ignore this "
+        "email; we won&rsquo;t write again unless you sign up.",
+    )
+    text = (
+        f"{'Hi ' + friend_name + ',' if friend_name else 'Hi,'}\n\n"
+        f"{inviter} invited you to MyPortfolioBuddy, a free place to see your portfolio, "
+        "savings and path to financial freedom.\n\n"
+        f"Join here: {join_url}\n\n"
+        "Not interested? Just ignore this email.\n"
+    )
+    return f"{inviter} invited you to MyPortfolioBuddy", render(message), text

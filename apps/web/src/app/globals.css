@@ -3047,6 +3047,24 @@ textarea {
 }
 .share-copy:hover, .share-copy:focus-visible { border-color: var(--navy); background: var(--row-hover); }
 
+/* Invite a friend */
+.sidebar-footer .sidebar-invite { color: var(--gold); }
+.sidebar-footer .sidebar-invite:hover { color: var(--gold); }
+.invite-dialog { display: grid; gap: 0.75rem; width: min(480px, calc(100vw - 2rem)); max-height: calc(100vh - 3rem); overflow-y: auto; }
+.invite-dialog > p { margin: 0; }
+.invite-dialog .modal-fields .button { display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; }
+.invite-sent { display: flex; align-items: center; gap: 0.4rem; margin: 0; color: #1f6b3a; font-weight: 600; font-size: var(--text-sm); }
+.invite-or { display: flex; align-items: center; gap: 0.6rem; color: var(--muted); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; }
+.invite-or::before, .invite-or::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
+.share-copy.invite-copy { display: inline-flex; gap: 0.35rem; width: auto; padding: 0 0.8rem; font: inherit; font-size: var(--text-sm); font-weight: 600; }
+.invite-places { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.invite-place {
+  display: inline-flex; align-items: center; gap: 0.35rem; min-height: 32px; padding: 0 0.75rem; border: 1px solid var(--border);
+  border-radius: 999px; background: #fff; color: var(--navy); font: inherit; font-size: var(--text-sm); font-weight: 600;
+  text-decoration: none; cursor: pointer; transition: border-color 120ms, background-color 120ms;
+}
+.invite-place:hover, .invite-place:focus-visible { border-color: var(--navy); background: var(--row-hover); }
+
 /* Shared read-only pages */
 .share-page { display: grid; gap: 1rem; width: min(1100px, calc(100vw - 2rem)); margin: 0 auto; padding: 1.5rem 0 4rem; }
 .share-page > * { min-width: 0; }

@@ -259,6 +259,29 @@ const account: Record<string, string> = {
   "Use both letters and numbers.": "Օգտագործեք և՛ տառեր, և՛ թվեր։",
   "At least 10 characters, with letters and numbers.": "Առնվազն 10 նիշ՝ տառերով և թվերով։",
   "Your session ended, so we signed you out. Please sign in again.": "Ձեր նիստն ավարտվել է, ուստի մենք ձեզ դուրս բերեցինք։ Խնդրում ենք կրկին մուտք գործել։",
+  // Invite a friend
+  "Invite a friend": "Հրավիրել ընկերոջը",
+  "Know someone who'd like to see their whole financial picture? Invite them. It's free, and they never see your data.":
+    "Ճանաչո՞ւմ եք մեկին, ով կուզենար տեսնել իր ամբողջ ֆինանսական պատկերը։ Հրավիրեք նրան։ Դա անվճար է, և նա երբեք չի տեսնի ձեր տվյալները։",
+  "Their name": "Նրա անունը",
+  Optional: "Ըստ ցանկության",
+  "Their email": "Նրա էլ. փոստը",
+  "Invitation sent to {email}. Invite someone else?": "Հրավերն ուղարկվեց {email} հասցեին։ Հրավիրե՞լ ևս մեկին։",
+  "Sending…": "Ուղարկվում է…",
+  "Send invitation": "Ուղարկել հրավերը",
+  "or share the link": "կամ կիսվեք հղումով",
+  "Invitation link": "Հրավերի հղումը",
+  Copy: "Պատճենել",
+  "Share…": "Կիսվել…",
+  "Join me on MyPortfolioBuddy": "Միացիր ինձ MyPortfolioBuddy-ում",
+  "I use MyPortfolioBuddy to see my portfolio and my path to financial freedom. It's free. Join me:":
+    "Ես օգտագործում եմ MyPortfolioBuddy-ն՝ տեսնելու իմ պորտֆելը և ֆինանսական ազատության ճանապարհը։ Այն անվճար է։ Միացիր ինձ՝",
+  "Enter a valid email address": "Մուտքագրեք ճիշտ էլ. փոստի հասցե",
+  "That's your own email address": "Սա ձեր սեփական էլ. փոստի հասցեն է",
+  "Email isn't set up yet. Copy the link instead.": "Էլ. փոստը դեռ կարգավորված չէ։ Փոխարենը պատճենեք հղումը։",
+  "You've sent today's invitations. Copy the link to share more.":
+    "Այսօրվա հրավերներն արդեն ուղարկել եք։ Պատճենեք հղումը՝ ավելի շատ մարդկանց հետ կիսվելու համար։",
+  "The invitation couldn't be sent. Try again later.": "Հրավերը չհաջողվեց ուղարկել։ Փորձեք ավելի ուշ։",
 };
 
 export default account;

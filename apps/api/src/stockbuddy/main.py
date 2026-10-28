@@ -4,6 +4,7 @@ import asyncio
 import hmac
 import logging
 import os
+import re
 from contextlib import asynccontextmanager, suppress
 from datetime import UTC, date, datetime, timedelta
 from email.message import EmailMessage
@@ -33,6 +34,7 @@ from stockbuddy.config import get_settings
 from stockbuddy.connections import ConnectionSetupError, ConnectionsService
 from stockbuddy.controls import normalize_settings
 from stockbuddy.emails import account_deleted as account_deleted_email
+from stockbuddy.emails import invite as invite_email
 from stockbuddy.emails import link_shared as link_shared_email
 from stockbuddy.emails import welcome as welcome_email
 from stockbuddy.market import SecurityNotFoundError, SecurityOverviewService
@@ -268,7 +270,9 @@ async def delete_my_account(
     return Response(status_code=204)
 
 
-async def send_email(settings, to: str, content: tuple[str, str, str], what: str) -> bool:
+async def send_email(
+    settings, to: str, content: tuple[str, str, str], what: str, reply_to: str | None = None
+) -> bool:
     """Sends one of our own emails (subject, HTML, text). Skipped without email settings;
     a failure is only logged, never raised, so it can't undo what the person just did."""
     if not to or not settings.email_enabled:
@@ -277,6 +281,8 @@ async def send_email(settings, to: str, content: tuple[str, str, str], what: str
     message = EmailMessage()
     message["From"] = settings.smtp_from
     message["To"] = to
+    if reply_to:
+        message["Reply-To"] = reply_to
     message["Subject"] = subject
     message.set_content(text)
     message.add_alternative(html, subtype="html")
@@ -315,6 +321,63 @@ async def send_welcome(request: Request, account: Annotated[Account, Depends(cur
         settings, account.email, welcome_email(account.email, settings.web_origin), "Welcome"
     )
     return {"sent": sent}
+
+
+class InviteInput(BaseModel):
+    name: str = ""
+    email: str
+
+
+# Invitations go out from our own address, so each account may send only a few a day.
+INVITES_PER_DAY = 10
+_EMAIL_SHAPE = re.compile(r"^[^@\s<>,;\"]+@[^@\s<>,;\"]+\.[^@\s<>,;\"]+$")
+_sent_invites: dict[str, list[datetime]] = {}
+
+
+@app.post("/api/invites")
+async def send_invite(
+    payload: InviteInput,
+    request: Request,
+    token: Annotated[str, Depends(bearer_token)],
+    account: Annotated[Account, Depends(current_account)],
+):
+    """Emails a friend an invitation to join, from the signed-in member."""
+    friend_email = payload.email.strip()
+    friend_name = " ".join(payload.name.split())[:60]
+    if len(friend_email) > 254 or not _EMAIL_SHAPE.match(friend_email):
+        raise HTTPException(status_code=422, detail="Enter a valid email address")
+    if friend_email.lower() == account.email.lower():
+        raise HTTPException(status_code=422, detail="That's your own email address")
+    settings = request.app.state.settings
+    if not settings.email_enabled:
+        raise HTTPException(
+            status_code=503, detail="Email isn't set up yet. Copy the link instead."
+        )
+    now = datetime.now(UTC)
+    recent = [
+        sent for sent in _sent_invites.get(str(account.id), []) if now - sent < timedelta(days=1)
+    ]
+    if len(recent) >= INVITES_PER_DAY:
+        raise HTTPException(
+            status_code=429, detail="You've sent today's invitations. Copy the link to share more."
+        )
+    profile = await request.app.state.repository.get_profile(token) or {}
+    shown_name = " ".join((profile.get("display_name") or "").split())[:60]
+    inviter = f"{shown_name} ({account.email})" if shown_name else account.email
+    join_url = f"{settings.web_origin.rstrip('/')}/login?join=1"
+    sent = await send_email(
+        settings,
+        friend_email,
+        invite_email(inviter, friend_name, join_url),
+        "Invite",
+        reply_to=account.email,
+    )
+    if not sent:
+        raise HTTPException(
+            status_code=502, detail="The invitation couldn't be sent. Try again later."
+        )
+    _sent_invites[str(account.id)] = [*recent, now]
+    return {"sent": True}
 
 
 @app.get("/api/me")

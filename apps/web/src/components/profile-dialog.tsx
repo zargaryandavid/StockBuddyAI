@@ -5,6 +5,7 @@ import { Check, Copy, Link2, Trash2 } from "lucide-react";
 
 import { api } from "@/lib/api";
 import { ageOn } from "@/lib/age";
+import { copyText } from "@/lib/copy";
 import { useT } from "@/lib/i18n/client";
 
 export type ProfileValues = { date_of_birth: string | null; display_name: string | null };
@@ -215,15 +216,7 @@ function ShareLinks({
   }
 
   async function copy(key: string, token: string) {
-    const url = shareUrl(token);
-    let done = false;
-    try {
-      await navigator.clipboard.writeText(url);
-      done = true;
-    } catch {
-      done = copyWithSelection(url);
-    }
-    if (!done) {
+    if (!(await copyText(shareUrl(token)))) {
       setError("Copy didn't work here. Select the link and copy it by hand.");
       return;
     }
@@ -373,22 +366,4 @@ function DeleteAccount({ allowed, onDeleted }: { allowed: boolean; onDeleted: ()
       )}
     </section>
   );
-}
-
-/** Older or locked-down browsers: copy through a temporary text selection. */
-function copyWithSelection(text: string) {
-  const field = document.createElement("textarea");
-  field.value = text;
-  field.setAttribute("readonly", "");
-  field.style.position = "fixed";
-  field.style.opacity = "0";
-  document.body.appendChild(field);
-  field.select();
-  try {
-    return document.execCommand("copy");
-  } catch {
-    return false;
-  } finally {
-    field.remove();
-  }
 }

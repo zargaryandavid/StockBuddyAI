@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Loader2, LogOut } from "lucide-react";
+import { Loader2, LogOut, UserPlus } from "lucide-react";
 
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useT } from "@/lib/i18n/client";
 import { BrandMark } from "@/components/brand-mark";
+import { InviteDialog } from "@/components/invite-dialog";
 
 export function AppHeader({
   email,
@@ -25,6 +26,7 @@ export function AppHeader({
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   // Signing out: the dialog stays, busy, until the sign-in page replaces this one.
   const [signingOut, setSigningOut] = useState(false);
+  const [inviting, setInviting] = useState(false);
   const shown = useRef<HTMLElement | null>(null);
   // On phones the menu is a sideways-scrolling row: bring the current page into view when
   // it changes, without fighting someone who is scrolling the row themselves.
@@ -70,11 +72,16 @@ export function AppHeader({
         {children}
       </nav>
       <div className="sidebar-footer">
+        <button type="button" className="sidebar-invite" onClick={() => setInviting(true)}>
+          <UserPlus size={16} aria-hidden="true" />
+          {t("Invite a friend")}
+        </button>
         <button type="button" onClick={() => setConfirmingSignOut(true)}>
           <LogOut size={16} aria-hidden="true" />
           {t("Sign out")}
         </button>
       </div>
+      {inviting && <InviteDialog onClose={() => setInviting(false)} />}
       {confirmingSignOut && (
         <SignOutDialog
           busy={signingOut}

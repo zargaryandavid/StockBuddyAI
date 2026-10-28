@@ -16,10 +16,11 @@ export const TERMS_VERSION = "2026-10-26";
 /** A message kept in English with its values, so it follows the chosen language. */
 type Message = { text: string; vars?: Vars };
 
-export function AuthForm({ notice }: { notice?: string } = {}) {
+export function AuthForm({ notice, join = false }: { notice?: string; join?: boolean } = {}) {
   const t = useT();
   const router = useRouter();
-  const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
+  // An invitation link (/login?join=1) opens on "Create account".
+  const [mode, setMode] = useState<"signin" | "signup" | "reset">(join ? "signup" : "signin");
   const [busy, setBusy] = useState(false);
   // Signed in and loading the next page: the button stays busy until that page shows.
   const [opening, setOpening] = useState(false);

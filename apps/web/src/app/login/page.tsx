@@ -21,12 +21,12 @@ const CONFIRM_NOTICES: Record<string, string> = {
 
 const BILL = "/login/hundred-dollar-bill.webp";
 
-type SearchParams = Promise<{ confirm?: string }>;
+type SearchParams = Promise<{ confirm?: string; join?: string }>;
 
 /** The form, with a note about the confirmation link the person just opened, if any. */
 async function FormWithNotice({ searchParams }: { searchParams: SearchParams }) {
-  const { confirm } = await searchParams;
-  return <AuthForm notice={confirm ? CONFIRM_NOTICES[confirm] : undefined} />;
+  const { confirm, join } = await searchParams;
+  return <AuthForm notice={confirm ? CONFIRM_NOTICES[confirm] : undefined} join={join === "1"} />;
 }
 
 export default async function LoginPage({ searchParams }: { searchParams: SearchParams }) {
