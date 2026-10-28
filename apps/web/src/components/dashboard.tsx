@@ -2679,7 +2679,6 @@ function BondsVsStocksCard({
           ? "—"
           : `${Math.round((bonds / total) * 100)}% / ${100 - Math.round((bonds / total) * 100)}%`}
       </strong>
-      <small>{t("bonds / stocks and funds")}</small>
     </article>
   );
 }

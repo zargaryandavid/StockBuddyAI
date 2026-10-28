@@ -141,7 +141,6 @@ const today: Record<string, string> = {
   "A rule of thumb, not advice; your own plan may differ.": "Սա պարզ կանոն է, ոչ թե խորհուրդ. ձեր պլանը կարող է տարբերվել։",
   "Prices as of {date}": "Գները՝ {date}-ի դրությամբ",
   "Bonds vs stocks": "Պարտատոմսեր և բաժնետոմսեր",
-  "bonds / stocks and funds": "պարտատոմսեր / բաժնետոմսեր և ֆոնդեր",
   "50/30/20 budget": "50/30/20 բյուջե",
   "About the 50/30/20 rule": "50/30/20 կանոնի մասին",
   "The 50/30/20 rule": "50/30/20 կանոնը",
