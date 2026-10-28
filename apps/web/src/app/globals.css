@@ -3735,3 +3735,4 @@ button.today-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px r
   .investor-quote { width: min(420px, 100%); }
 }
 @media (prefers-reduced-motion: reduce) { .investor-quote { animation: none; } }
+.password-rules { margin-top: -0.5rem; font-size: var(--text-xs); }

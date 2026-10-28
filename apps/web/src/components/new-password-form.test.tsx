@@ -36,8 +36,8 @@ describe("NewPasswordForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show passwords" }));
     expect([first.type, second.type]).toEqual(["text", "text"]);
 
-    fireEvent.change(first, { target: { value: "same-as-before" } });
-    fireEvent.change(second, { target: { value: "same-as-before" } });
+    fireEvent.change(first, { target: { value: "same-as-before-1" } });
+    fireEvent.change(second, { target: { value: "same-as-before-1" } });
     fireEvent.click(screen.getByRole("button", { name: "Save new password" }));
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toBe("New password should be different from the old password.");

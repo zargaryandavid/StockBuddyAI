@@ -48,8 +48,20 @@ describe("AuthForm email confirmation", () => {
 
   function fillIn(email: string) {
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: email } });
-    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "long-password" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "long-password-1" } });
   }
+
+  it("refuses a weak new password before asking the server", async () => {
+    auth.signUp.mockClear();
+    render(<AuthForm />);
+    fireEvent.click(screen.getByRole("button", { name: /Sign up/ }));
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "new@example.com" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "onlyletters" } });
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Create account" }));
+    expect(await screen.findByText("Use both letters and numbers.")).toBeTruthy();
+    expect(auth.signUp).not.toHaveBeenCalled();
+  });
 
   it("asks a new account to confirm its email, with a link back to the app, and can resend it", async () => {
     auth.signUp.mockResolvedValue({ data: { session: null, user: { id: "u1" } }, error: null });
@@ -63,7 +75,7 @@ describe("AuthForm email confirmation", () => {
     expect(await screen.findByText(/We sent a confirmation link to new@example.com/)).toBeTruthy();
     expect(auth.signUp).toHaveBeenCalledWith({
       email: "new@example.com",
-      password: "long-password",
+      password: "long-password-1",
       options: {
         emailRedirectTo: `${window.location.origin}/auth/confirm`,
         data: { terms_version: "2026-10-26", terms_accepted_at: expect.any(String) },
@@ -115,7 +127,7 @@ describe("AuthForm terms and password reset", () => {
     expect(screen.getByRole("link", { name: "Terms" }).getAttribute("href")).toBe("/terms");
     expect(screen.getByRole("link", { name: "Privacy Policy" }).getAttribute("href")).toBe("/privacy");
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "new@example.com" } });
-    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "long-password" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "long-password-1" } });
     fireEvent.submit(screen.getByRole("button", { name: "Create account" }).closest("form") as HTMLFormElement);
     expect(await screen.findByText(/Please agree to the Terms and Privacy Policy/)).toBeTruthy();
     expect(auth.signUp).not.toHaveBeenCalled();

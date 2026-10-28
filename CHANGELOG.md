@@ -178,6 +178,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Fixed
 
+- Stronger passwords: new accounts and new passwords need at least 10 characters with letters and numbers (shown under the field and checked before anything is sent; existing passwords still sign in). Local Supabase config matches: minimum 10, letters and digits, and a recent sign-in is required to change a password. The live project needs the same settings in the Supabase dashboard.
+
 - Privacy Policy matches the app again: self-serve account deletion, display name, net worth history, book ratings and comments, share links, AI usage counts, Vercel as host, the Ask Buddy AI provider (ticker and public company data only), Open Library covers and Amazon links, and what other people can see (share links you create, book comments without your name). The cron secret is now compared in constant time.
 
 - Growth calculator: 70% of the page width and fits the screen without scrolling (summary in one row, chart sized to the space left, the four settings side by side with labels, values and sliders each lined up). FIRE: "See the compound effect" next to Path to FIRE opens the calculator with your current assets, monthly investing and expected return.

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { EyeIcon, EyeOffIcon } from "@/components/auth-form";
 import { useT } from "@/lib/i18n/client";
 import { createClient } from "@/lib/supabase/client";
+import { MIN_PASSWORD_LENGTH, passwordProblem } from "@/lib/password";
 
 /** Sets a new password for the person signed in through a reset link. */
 export function NewPasswordForm() {
@@ -20,7 +21,8 @@ export function NewPasswordForm() {
     const data = new FormData(event.currentTarget);
     const password = String(data.get("password") ?? "");
     const repeat = String(data.get("repeat") ?? "");
-    if (password.length < 8) return setMessage("Use at least 8 characters.");
+    const problem = passwordProblem(password);
+    if (problem) return setMessage(problem);
     if (password !== repeat) return setMessage("The two passwords don't match.");
     setBusy(true);
     setMessage("");
@@ -36,7 +38,14 @@ export function NewPasswordForm() {
       <label>
         {t("New password")}
         <span className="password-field">
-          <input name="password" type={show ? "text" : "password"} minLength={8} autoComplete="new-password" required />
+          <input
+            name="password"
+            type={show ? "text" : "password"}
+            minLength={MIN_PASSWORD_LENGTH}
+            autoComplete="new-password"
+            aria-describedby="new-password-rules"
+            required
+          />
           <button
             className="password-toggle"
             type="button"
@@ -49,9 +58,12 @@ export function NewPasswordForm() {
           </button>
         </span>
       </label>
+      <small id="new-password-rules" className="muted password-rules">
+        {t("At least 10 characters, with letters and numbers.")}
+      </small>
       <label>
         {t("Repeat new password")}
-        <input name="repeat" type={show ? "text" : "password"} minLength={8} autoComplete="new-password" required />
+        <input name="repeat" type={show ? "text" : "password"} minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" required />
       </label>
       {message && (
         <p className="form-message error" role="alert">

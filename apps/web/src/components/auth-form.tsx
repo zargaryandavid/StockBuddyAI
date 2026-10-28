@@ -8,6 +8,7 @@ import { api } from "@/lib/api";
 import type { Vars } from "@/lib/i18n/core";
 import { useT } from "@/lib/i18n/client";
 import { createClient } from "@/lib/supabase/client";
+import { MIN_PASSWORD_LENGTH, passwordProblem } from "@/lib/password";
 
 /** Bumped when the Terms or Privacy Policy change, and saved with each sign-up. */
 export const TERMS_VERSION = "2026-10-26";
@@ -64,6 +65,12 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
       email: String(data.get("email") ?? ""),
       password: String(data.get("password") ?? ""),
     };
+    const weak = mode === "signup" ? passwordProblem(credentials.password) : null;
+    if (weak) {
+      setBusy(false);
+      fail(weak);
+      return;
+    }
     if (mode === "signup" && !data.get("consent")) {
       setBusy(false);
       fail("Please agree to the Terms and Privacy Policy to create an account.");
@@ -126,8 +133,10 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
           <input
             name="password"
             type={showPassword ? "text" : "password"}
-            minLength={8}
+            // Existing passwords made under the older, shorter rule still sign in.
+            minLength={mode === "signup" ? MIN_PASSWORD_LENGTH : undefined}
             autoComplete={mode === "signin" ? "current-password" : "new-password"}
+            aria-describedby={mode === "signup" ? "signup-password-rules" : undefined}
             required
           />
           <button
@@ -142,6 +151,11 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
           </button>
         </span>
       </label>
+      )}
+      {mode === "signup" && (
+        <small id="signup-password-rules" className="muted password-rules">
+          {t("At least 10 characters, with letters and numbers.")}
+        </small>
       )}
       {mode === "signin" && (
         <button

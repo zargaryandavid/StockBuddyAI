@@ -255,6 +255,9 @@ const account: Record<string, string> = {
     "Գրադարանի գրքերի շապիկները բեռնվում են Open Library-ից, իսկ «Գնել Amazon-ում»-ը ձեզ տանում է Amazon, որն ունի իր գաղտնիության քաղաքականությունը. մենք փոքր միջնորդավճար ենք ստանում համապատասխան գնումներից։",
   "Your financial entries are private to your account; other users can never see them. Two things are visible only if you choose: a share link shows the portfolio or FIRE plan you picked, with your display name, to anyone who has the link, until you cancel it; and a book comment is shown to other readers without your name or email. Our administrators manage shared content such as Education articles and do not browse individual accounts except to fix a problem you report or when the law requires it.":
     "Ձեր ֆինանսական գրառումները տեսանելի են միայն ձեր հաշվում. այլ օգտատերերը երբեք չեն կարող տեսնել դրանք։ Երկու բան տեսանելի է միայն ձեր ընտրությամբ՝ կիսման հղումը ցույց է տալիս ձեր ընտրած պորտֆելը կամ FIRE պլանը՝ ձեր ցուցադրվող անունով, հղումն ունեցող ցանկացածին, մինչև այն չեղարկեք, իսկ գրքի մեկնաբանությունը ցուցադրվում է այլ ընթերցողներին՝ առանց ձեր անվան կամ էլ. փոստի։ Մեր ադմինիստրատորները կառավարում են ընդհանուր բովանդակությունը, օրինակ՝ Կրթության հոդվածները, և չեն դիտում անհատական հաշիվներ, բացառությամբ ձեր հայտնած խնդիրը շտկելու կամ օրենքով պահանջվող դեպքերի։",
+  "Use at least 10 characters.": "Օգտագործեք առնվազն 10 նիշ։",
+  "Use both letters and numbers.": "Օգտագործեք և՛ տառեր, և՛ թվեր։",
+  "At least 10 characters, with letters and numbers.": "Առնվազն 10 նիշ՝ տառերով և թվերով։",
 };
 
 export default account;
