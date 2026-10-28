@@ -34,19 +34,34 @@ with `apps/web/src/lib/i18n/GLOSSARY.md`, and put words shared by several areas 
 
 ## Branded emails
 
-`supabase/templates/confirmation.html` (sign-up) and `supabase/templates/recovery.html`
-(password reset) are MyPortfolioBuddy-styled emails. Their links use `token_hash`, so they work
-even when opened in another browser, and go to the `/auth/confirm` or `/auth/reset`
-address the app asked for. Local Supabase loads them from `supabase/config.toml`. For the
-hosted project, in Supabase Dashboard -> Authentication -> Emails -> Templates:
+Every email shares one design, `apps/api/src/stockbuddy/emails.py`. The sign-in emails Supabase
+sends are generated from it into `supabase/templates/`:
 
-- **Confirm signup:** subject "Confirm your email for MyPortfolioBuddy"; body = the whole of
-  `confirmation.html`.
-- **Reset password:** subject "Reset your MyPortfolioBuddy password"; body = the whole of
-  `recovery.html`.
+```
+cd apps/api && uv run python scripts/build_auth_templates.py
+```
 
-Supabase's built-in sender is rate-limited and meant for testing; set up custom SMTP
-(Authentication -> Emails -> SMTP Settings) before inviting early adopters.
+Paste each file into **Supabase Dashboard → Authentication → Emails** (open the template, set
+the subject, paste the file's whole content into the message body, save):
+
+| Supabase template | File | Subject |
+|---|---|---|
+| Confirm signup | `confirmation.html` | Welcome to MyPortfolioBuddy! Confirm your email |
+| Reset password | `recovery.html` | Reset your MyPortfolioBuddy password |
+| Change email address | `email_change.html` | Confirm your new email for MyPortfolioBuddy |
+| Magic link | `magic_link.html` | Your MyPortfolioBuddy sign-in link |
+| Reauthentication | `reauthentication.html` | Your MyPortfolioBuddy security code |
+| Security: password changed (turn on) | `password_changed_notification.html` | Your MyPortfolioBuddy password was changed |
+| Security: email changed (turn on) | `email_changed_notification.html` | Your MyPortfolioBuddy email was changed |
+
+Links use `token_hash`, so they work in any browser, and point at `/auth/confirm` and
+`/auth/reset`, which must be in the Redirect URLs. The sender name and address come from
+custom SMTP (**Authentication → Emails → SMTP Settings**); without it Supabase sends from
+"Supabase Auth" and only a few emails an hour.
+
+The API sends one email itself: a goodbye after someone deletes their account, through the
+email settings in **Admin → Connections → Email**. It is skipped when those are not set, and
+never stops the deletion.
 
 ## Password reset and legal pages
 

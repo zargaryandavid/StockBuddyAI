@@ -6,6 +6,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Added
 
+- Emails: one shared MyPortfolioBuddy design (green header with the $ coin, gold button) for every sign-in email, generated into supabase/templates/: welcome and confirm, password reset, email change, magic link, security code, and password-changed and email-changed notices. A goodbye email is sent after an account is deleted (when email is set up in Admin). Paste-in steps are in docs/OPERATIONS.md.
+
 - Renamed to **MyPortfolioBuddy** everywhere people see it (logo, page titles, emails, legal pages, Admin, API title, Armenian text); internal code names stay. New logo and browser icon: a green coin with a gold $ (favicon, SVG icon, iPhone icon). Search and sharing: investor-focused title and description, keywords, Open Graph and X preview image, robots.txt (public pages only; Admin, share links, API kept out) and sitemap.xml. Set NEXT_PUBLIC_SITE_URL on Vercel once the domain is connected.
 
 - Sign-in page: a gold-edged card under the feature chips with Warren Buffett's photo and his "Rule No. 1" quote (the quote left the rotating messages so it is not shown twice). The photo is the one supplied by the site owner, who is responsible for having the rights to use it.
@@ -669,6 +671,8 @@ All notable project changes and user-visible functionality are recorded here.
 - Added a compact ticker-symbol list beneath every industry allocation.
 
 ### Added
+
+- Emails: one shared MyPortfolioBuddy design (green header with the $ coin, gold button) for every sign-in email, generated into supabase/templates/: welcome and confirm, password reset, email change, magic link, security code, and password-changed and email-changed notices. A goodbye email is sent after an account is deleted (when email is set up in Admin). Paste-in steps are in docs/OPERATIONS.md.
 
 - Renamed to **MyPortfolioBuddy** everywhere people see it (logo, page titles, emails, legal pages, Admin, API title, Armenian text); internal code names stay. New logo and browser icon: a green coin with a gold $ (favicon, SVG icon, iPhone icon). Search and sharing: investor-focused title and description, keywords, Open Graph and X preview image, robots.txt (public pages only; Admin, share links, API kept out) and sitemap.xml. Set NEXT_PUBLIC_SITE_URL on Vercel once the domain is connected.
 

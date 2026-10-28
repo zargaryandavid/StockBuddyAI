@@ -6,6 +6,7 @@ import logging
 import os
 from contextlib import asynccontextmanager, suppress
 from datetime import date, datetime, timedelta
+from email.message import EmailMessage
 from typing import Annotated
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
@@ -31,12 +32,13 @@ from stockbuddy.books import router as books_router
 from stockbuddy.config import get_settings
 from stockbuddy.connections import ConnectionSetupError, ConnectionsService
 from stockbuddy.controls import normalize_settings
+from stockbuddy.emails import account_deleted as account_deleted_email
 from stockbuddy.market import SecurityNotFoundError, SecurityOverviewService
 from stockbuddy.net_worth import router as net_worth_router
 from stockbuddy.personas import builtin_prompts
 from stockbuddy.portfolio_image import PortfolioImageError, PortfolioImageExtractor
 from stockbuddy.providers import EdgarClient, YahooPriceClient, YahooPriceError
-from stockbuddy.reminders import ReminderService
+from stockbuddy.reminders import ReminderService, SmtpMailer
 from stockbuddy.repository import MONTHLY_AI_FEATURES, Repository, ai_usage_period
 from stockbuddy.schemas import (
     AnalysisCreate,
@@ -260,7 +262,26 @@ async def delete_my_account(
     forget = getattr(request.app.state.gateway, "forget_identity", None)
     if forget:
         forget(token)
+    await send_goodbye(request.app.state.settings, account.email)
     return Response(status_code=204)
+
+
+async def send_goodbye(settings, email_address: str) -> None:
+    """The "your account was deleted" email; skipped without email settings, and never
+    allowed to undo or fail the deletion."""
+    if not email_address or not settings.email_enabled:
+        return
+    subject, html, text = account_deleted_email(email_address)
+    message = EmailMessage()
+    message["From"] = settings.smtp_from
+    message["To"] = email_address
+    message["Subject"] = subject
+    message.set_content(text)
+    message.add_alternative(html, subtype="html")
+    try:
+        await asyncio.to_thread(SmtpMailer(settings).send, message)
+    except Exception:  # the account is already gone; only note that the email failed
+        logger.warning("Goodbye email could not be sent")
 
 
 @app.get("/api/me")
