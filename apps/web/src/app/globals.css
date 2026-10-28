@@ -3436,7 +3436,9 @@ button.today-row:hover { background: var(--row-hover); }
   70% { transform: scaleX(0.85); opacity: 1; }
   100% { transform: scaleX(1); opacity: 0; }
 }
-.simple-page, .portfolio-workspace > *, .analytics-dashboard { animation: page-in 0.28s ease-out both; }
+/* "backwards", not "both": a finished entry animation must leave no transform behind, or
+   pop-ups inside the page would be placed against the page instead of the screen. */
+.simple-page, .portfolio-workspace > *, .analytics-dashboard { animation: page-in 0.28s ease-out backwards; }
 @keyframes page-in {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
@@ -3498,9 +3500,9 @@ button.today-card { transition: transform 0.18s ease, box-shadow 0.18s ease, bor
 button.today-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08); }
 
 /* Pop-ups grow in from where they open. */
-.modal-backdrop { animation: fade-in 0.18s ease-out both; }
-.modal-backdrop > section, .modal-backdrop > div, .modal-backdrop > form { animation: dialog-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-.today-info-popup { transform-origin: top right; animation: dialog-in 0.18s ease-out both; }
+.modal-backdrop { animation: fade-in 0.18s ease-out backwards; }
+.modal-backdrop > section, .modal-backdrop > div, .modal-backdrop > form { animation: dialog-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.today-info-popup { transform-origin: top right; animation: dialog-in 0.18s ease-out backwards; }
 @keyframes dialog-in { from { opacity: 0; transform: scale(0.96) translateY(4px); } }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3560,7 +3562,7 @@ button.today-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px r
 .reviewer-munger { background: #6b4f2a; }
 .reviewer-lynch { background: #2563a8; }
 .reviewer-druckenmiller { background: #7c3a5c; }
-.reviewer-line { margin: 0; color: var(--label); font-size: var(--text-sm); animation: page-in 0.3s ease-out both; }
+.reviewer-line { margin: 0; color: var(--label); font-size: var(--text-sm); animation: page-in 0.3s ease-out backwards; }
 
 @media (prefers-reduced-motion: reduce) {
   .flash-up, .flash-down, .empty-state-art, .empty-state-icon, .reviewer-line { animation: none; }
@@ -3602,7 +3604,7 @@ button.today-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px r
 .rotating-messages { display: grid; gap: 0.7rem; max-width: 40rem; }
 .rotating-message {
   min-height: 4.8em; margin: 0; color: #d7e6d2; font-size: 1.05rem; line-height: 1.6;
-  animation: message-in 0.6s ease-out both;
+  animation: message-in 0.6s ease-out backwards;
 }
 @keyframes message-in { from { opacity: 0; transform: translateY(8px); } }
 .rotating-dots { display: flex; gap: 0.45rem; }
@@ -3721,7 +3723,7 @@ button.today-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px r
   padding: 0.85rem 1.1rem; border: 1px solid rgba(232, 201, 122, 0.55); border-radius: 14px;
   background: rgba(10, 30, 20, 0.35); backdrop-filter: blur(4px);
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.25);
-  animation: quote-in 0.9s ease-out 0.4s both;
+  animation: quote-in 0.9s ease-out 0.4s backwards;
 }
 .investor-portrait {
   grid-area: art; width: 72px; height: 72px; border-radius: 50%; object-fit: cover; object-position: 50% 20%;
