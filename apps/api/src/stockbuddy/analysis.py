@@ -70,7 +70,7 @@ class AnalysisService:
         doesn't use anyone's tokens. A working key is re-checked every 10 minutes.
         """
         now = time.monotonic()
-        if self._ready and now - self._ready[0] < (600 if self._ready[1] is None else 30):
+        if self._ready and now - self._ready[0] < _recheck_after(self._ready[1]):
             return self._ready[1]
         studio = await self._load_settings() if self._load_settings else None
         model = (
@@ -157,7 +157,9 @@ class AnalysisService:
             )
             unanswered = _ai_unreachable(signals)
             if unanswered:
-                self._ready = None  # look at the key again before the next review
+                # Out of credits: refuse the next reviews up front, before a token is
+                # counted. Any other key problem: look at the key again first.
+                self._ready = (time.monotonic(), unanswered) if "credits" in unanswered else None
                 raise ValueError(unanswered)
             signal_rows = [{**signal, "run_id": str(run_id)} for signal in signals]
             recommendation_row = {**recommendation, "run_id": str(run_id)}
@@ -227,6 +229,14 @@ class AnalysisService:
                     }
                 )
         return decision.model_dump(mode="json"), signals, recommendation
+
+
+def _recheck_after(problem: str | None) -> int:
+    """Seconds before the AI key is checked again: a working key every 10 minutes, empty
+    credits every 5 (an admin has to top up), any other problem after 30 seconds."""
+    if problem is None:
+        return 600
+    return 300 if "credits" in problem else 30
 
 
 def _ai_unreachable(signals: list[dict[str, Any]]) -> str | None:

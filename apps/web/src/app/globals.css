@@ -235,6 +235,17 @@ input[type="number"] {
   font-size: var(--text-sm);
 }
 
+/* Icons keep their size, and a long label (e.g. Armenian "Settings") pushes the Soon badge
+   onto its own line instead of overflowing the menu. */
+.main-tabs svg {
+  flex-shrink: 0;
+}
+
+.main-tabs .nav-soon {
+  flex-wrap: wrap;
+  row-gap: 0.25rem;
+}
+
 .main-tabs .nav-soon,
 .main-tabs .nav-soon:hover {
   background: transparent;
@@ -2338,6 +2349,13 @@ textarea {
   min-height: 2rem;
   text-align: left;
 }
+/* Headings wrap inside their own column, so longer languages never run into the next one. */
+.holdings-header > [role="columnheader"],
+.holdings-header .sort-button span:first-child {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .holdings-primary-row.gain-up {
   box-shadow: inset 3px 0 0 #1f7048;
 }
@@ -2891,7 +2909,8 @@ textarea {
 }
 
 /* Page subtitles stay on one line; a narrow screen cuts them off with an ellipsis. */
-.page-subtitle { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Subtitles wrap: longer languages (Armenian) must neither be cut off nor widen the page. */
+.page-subtitle { max-width: 100%; overflow-wrap: anywhere; }
 
 .fire-asset-location { display: inline-flex; align-items: center; gap: 0.2rem; color: var(--navy); text-decoration: none; }
 .fire-asset-location:hover, .fire-asset-location:focus-visible { text-decoration: underline; }
@@ -3103,7 +3122,7 @@ textarea {
 @media (max-width: 720px) { .share-columns { grid-template-columns: 1fr; } }
 
 /* Run test: compact pickers, token counter, one review at a time with progress */
-.simple-page.run-test { width: 100%; display: grid; gap: 1rem; }
+.simple-page.run-test { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
 .run-test-panel { display: grid; gap: 0.85rem; overflow: visible; position: relative; z-index: 2; }
 .run-test-controls { position: relative; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.75rem 1rem; }
 .run-test-picker { position: relative; display: grid; gap: 0.35rem; min-width: 12rem; }
@@ -3239,6 +3258,11 @@ textarea {
 }
 .login-copy > p { color: #d7e6d2; }
 .principles span { border-color: #5f8f6b; color: #eef6ea; }
+/* The privacy promise stands out: filled gold, with a shield. */
+.principles .principle-key {
+  display: inline-flex; align-items: center; gap: 0.4rem; border-color: var(--gold); background: var(--gold);
+  color: #1b2b1f; font-weight: 700; box-shadow: 0 0 0 4px rgba(232, 201, 122, 0.18);
+}
 
 /* Real-note photo: rounded paper corners; never wider than about 58% of a real bill */
 .login-bill { border-radius: 4px; max-width: 340px; }

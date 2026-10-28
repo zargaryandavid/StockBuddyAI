@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { ShieldCheck } from "lucide-react";
 
 import { LanguageSwitcher } from "@/components/language-switcher";
 
@@ -55,7 +56,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
           ]}
         />
         <div className="principles">
-          <span>{t("No personalized information")}</span>
+          <span className="principle-key">
+            <ShieldCheck size={15} aria-hidden="true" />
+            {t("No personalized information")}
+          </span>
           <span>{t("User-friendly interface")}</span>
           <span>{t("Transparent analytics")}</span>
         </div>

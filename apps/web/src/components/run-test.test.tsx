@@ -140,6 +140,7 @@ describe("RunTest", () => {
   it("shows the monthly reset date", () => {
     expect(resetDate("2026-11-01")).toBe("Nov 1");
     expect(resetDate(null, new Date("2026-12-31T23:00:00Z"))).toBe("Jan 1");
+    expect(resetDate("2026-11-01", undefined, "hy")).toBe("1 նոյ");
   });
 
   it("reviews the holdings one at a time with a progress bar", async () => {

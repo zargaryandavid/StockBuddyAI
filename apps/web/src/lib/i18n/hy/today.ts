@@ -158,6 +158,7 @@ const today: Record<string, string> = {
   "Ideal {amount}": "Իդեալական՝ {amount}",
   "Yours {amount} ({share}%)": "Ձերը՝ {amount} ({share}%)",
   "Growth calculator": "Աճի հաշվիչ",
+  "See the compound effect": "Տեսնել բարդ տոկոսի ուժը",
   "About the growth calculator": "Աճի հաշվիչի մասին",
   "Shows how a starting amount and a monthly contribution could grow at a steady yearly return, compounded monthly. Real markets go up and down, so treat it as a picture of the long run, not a promise.":
     "Ցույց է տալիս, թե ինչպես կարող են աճել սկզբնական գումարը և ամսական ներդրումը կայուն տարեկան եկամտաբերությամբ՝ ամսական բարդ տոկոսով։ Իրական շուկաները բարձրանում և իջնում են, ուստի սա երկարաժամկետ պատկեր է, ոչ թե խոստում։",
@@ -178,7 +179,7 @@ const today: Record<string, string> = {
   "Monthly contribution, exact": "Ամսական ներդրում, ճշգրիտ",
   Years: "Տարիներ",
   "{count} years": "{count} տարի",
-  "Expected yearly return": "Սպասվող տարեկան եկամտաբերություն",
+  "Expected yearly return": "Տարեկան եկամտաբերություն",
   "The US stock market has returned about 10% a year over the long run before inflation, about 7% after. Past returns don't promise future ones.":
     "ԱՄՆ ֆոնդային շուկան երկար ժամանակահատվածում տարեկան մոտ 10% եկամտաբերություն է ունեցել մինչև գնաճը, մոտ 7%՝ գնաճից հետո։ Անցյալի արդյունքները չեն երաշխավորում ապագան։",
 };

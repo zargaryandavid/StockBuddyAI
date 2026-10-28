@@ -17,8 +17,8 @@ import {
 } from "lucide-react";
 
 import { api, type AnalysisRun, type Portfolio } from "@/lib/api";
-import { useT } from "@/lib/i18n/client";
-import type { Translate } from "@/lib/i18n/core";
+import { useI18n, useT } from "@/lib/i18n/client";
+import type { Locale, Translate } from "@/lib/i18n/core";
 import { ReviewerCrew } from "@/components/reviewer-crew";
 
 /** The newest close the AI review accepts: yesterday in New York, as YYYY-MM-DD. */
@@ -498,11 +498,15 @@ export function RunTest({
 
 /** When the monthly tokens come back, e.g. "Nov 1": the 1st of next month (UTC), or the
  *  date the server gives. */
-export function resetDate(resetsOn: string | null = null, now = new Date()) {
+export function resetDate(resetsOn: string | null = null, now = new Date(), locale: Locale = "en") {
   const day = resetsOn
     ? new Date(`${resetsOn}T00:00:00Z`)
     : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(day);
+  return new Intl.DateTimeFormat(locale === "hy" ? "hy-AM" : "en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(day);
 }
 
 /** This month's free tokens: a meter, when they come back, a way to buy more, and a warning
@@ -522,7 +526,7 @@ function TokenWallet({
   resetsOn: string | null;
   onBuy: () => void;
 }) {
-  const t = useT();
+  const { t, locale } = useI18n();
   const known = left !== null && limit !== null;
   const share = known && limit ? Math.min(100, Math.round(((used ?? limit - left) / limit) * 100)) : 0;
   const empty = known && left === 0;
@@ -545,7 +549,7 @@ function TokenWallet({
                     ? t("You've used this month's {count} free token.", { count: limit })
                     : t("You've used this month's {count} free tokens.", { count: limit ?? 0 })}
                 </strong>{" "}
-                {t("They come back on {date}, or you can buy more tokens.", { date: resetDate(resetsOn) })}
+                {t("They come back on {date}, or you can buy more tokens.", { date: resetDate(resetsOn, undefined, locale) })}
               </>
             ) : (
               <>
@@ -585,7 +589,7 @@ function TokenWallet({
                 ))}
               <span className="muted">
                 {" · "}
-                {t("{used} used · resets on {date}", { used: used ?? limit - left, date: resetDate(resetsOn) })}
+                {t("{used} used · resets on {date}", { used: used ?? limit - left, date: resetDate(resetsOn, undefined, locale) })}
               </span>
             </p>
             <div

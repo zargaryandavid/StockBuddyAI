@@ -6,7 +6,7 @@ import { getT } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("Terms · MyPortfolioBuddy") };
+  return { title: t("Terms") };
 }
 
 // Plain-language terms for the early-access period. Have them reviewed before a wider

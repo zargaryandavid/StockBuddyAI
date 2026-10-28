@@ -5,7 +5,7 @@ import { getT } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("Privacy Policy · MyPortfolioBuddy") };
+  return { title: t("Privacy Policy") };
 }
 
 // Plain-language policy written for what the app actually does. Have it reviewed for the

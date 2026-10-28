@@ -26,7 +26,7 @@ import {
 } from "@/lib/analytics";
 import { CashLabel, cashTargetNote } from "@/components/cash-target";
 import { api, type Portfolio, type PortfolioTransaction } from "@/lib/api";
-import { useT } from "@/lib/i18n/client";
+import { useI18n, useT } from "@/lib/i18n/client";
 import type { Translate } from "@/lib/i18n/core";
 import {
   holdingsPerformance,
@@ -98,7 +98,7 @@ export function PortfolioAnalyticsDashboard({
   onSelectPortfolio: (id: string) => void;
   onRefresh: () => Promise<void>;
 }) {
-  const t = useT();
+  const { t, locale } = useI18n();
   const selectedPortfolio = portfolios.find((item) => item.id === selectedId);
   const [benchmark, setBenchmark] = useState(selectedPortfolio?.benchmark ?? "SPY");
   const [customBenchmark, setCustomBenchmark] = useState("");
@@ -419,7 +419,7 @@ export function PortfolioAnalyticsDashboard({
           <div className="analytics-refresh">
             <span>
               {timestamp
-                ? t("Prices as of {date}", { date: new Date(timestamp).toLocaleString() })
+                ? t("Prices as of {date}", { date: new Date(timestamp).toLocaleString(locale === "hy" ? "hy-AM" : "en-US") })
                 : t("Prices as of unavailable")}
             </span>
             <button type="button" onClick={refresh} disabled={refreshing}>

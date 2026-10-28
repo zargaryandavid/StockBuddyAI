@@ -192,3 +192,28 @@ def test_review_blockers_explain_missing_or_too_few_filings():
     assert "funds and trusts" in blockers["TRUST"]
     assert blockers["AAPL"] is None
     assert blockers["DOWN"] is None  # an outage never blocks a review
+
+
+def test_empty_ai_credits_refuse_the_next_reviews_before_a_token_is_used(monkeypatch):
+    import stockbuddy.analysis as module
+
+    checked = []
+
+    async def key_fine(provider, settings):
+        checked.append(provider)
+        return None
+
+    monkeypatch.setattr(module, "_key_problem", key_fine)
+    repository = FakeRepository()
+    service = AnalysisService(Settings(), repository)
+    quota = "abstained: LLM call failed: Error code: 429 - insufficient_quota"
+    signals = [{"abstained": True, "reasoning": quota}] * 5
+    monkeypatch.setattr(service, "_analyze", lambda *args: ({}, signals, {}))
+    run_id = UUID("30000000-0000-0000-0000-000000000009")
+    asyncio.run(service.run(run_id, UUID(int=1), {}, "AAPL", "2026-10-27"))
+
+    assert repository.statuses[-1][1] == "failed"
+    assert "run out of credits" in repository.statuses[-1][2]
+    # The next review is refused up front, without asking the provider again.
+    assert "run out of credits" in asyncio.run(service.ready())
+    assert checked == []

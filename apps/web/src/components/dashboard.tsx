@@ -1605,7 +1605,10 @@ export function Dashboard({
                       <SortButton className="return-col" label={t("Day")} active={sortKey === "day"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("day")} />
                       <SortButton className="lifecycle-col" label={t("Lifecycle phase")} active={sortKey === "phase"} direction={sortDirection} defaultDirection="asc" onClick={() => sortPositions("phase")} />
                       <SortButton className="status-col" label={t("MyPortfolioBuddy status")} active={sortKey === "status"} direction={sortDirection} defaultDirection="asc" onClick={() => sortPositions("status")} />
-                      <span role="columnheader">{t("Actions")}</span>
+                      {/* The ⋯ menu column is too narrow for a visible word in every language. */}
+                      <span role="columnheader">
+                        <span className="sr-only">{t("Actions")}</span>
+                      </span>
                     </div>
                     {displayRows.map(({ position, originalIndex: index, metric, status }) => {
                       const expanded = expandedRows.has(index);
