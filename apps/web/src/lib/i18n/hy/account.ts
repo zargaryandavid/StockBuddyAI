@@ -131,15 +131,9 @@ const account: Record<string, string> = {
   "Terms of Use": "Օգտագործման պայմաններ",
   "What we collect": "Ինչ ենք մենք հավաքում",
   "Account:": "Հաշիվ․",
-  "your email address and a password (stored only as a secure hash by our authentication provider), and when you accepted these terms.":
-    "ձեր էլ. փոստի հասցեն և գաղտնաբառը (որը մեր նույնականացման մատակարարը պահում է միայն որպես անվտանգ հեշ), ինչպես նաև այն պահը, երբ դուք ընդունել եք այս պայմանները։",
-  "What you enter:": "Այն, ինչ դուք մուտքագրում եք․",
-  "your date of birth (if you add it), incomes, expenses, savings, bonds, assets and their locations, portfolio holdings and transactions, report reminders, and wishlist items.":
-    "ձեր ծննդյան ամսաթիվը (եթե այն ավելացնեք), եկամուտները, ծախսերը, խնայողությունները, պարտատոմսերը, ակտիվները և դրանց գտնվելու վայրերը, պորտֆելի դիրքերը և գործարքները, հաշվետվությունների հիշեցումները և ցանկությունների ցուցակի տարրերը։",
-  "Technical data:": "Տեխնիկական տվյալներ․",
-  "basic logs our servers keep to run and secure the service, such as request times and errors.":
-    "հիմնական գրանցամատյաններ, որոնք մեր սերվերները պահում են ծառայության աշխատանքն ու անվտանգությունն ապահովելու համար, օրինակ՝ հարցումների ժամերը և սխալները։",
-  "How we use it": "Ինչպես ենք դրանք օգտագործում",
+    "What you enter:": "Այն, ինչ դուք մուտքագրում եք․",
+    "Technical data:": "Տեխնիկական տվյալներ․",
+    "How we use it": "Ինչպես ենք դրանք օգտագործում",
   "Only to run StockBuddy for you: show your FIRE plan, portfolio, and analytics, send the reminder emails you ask for, and keep the service secure. We do not sell your data, show ads, or share it for marketing.":
     "Միայն StockBuddy-ն ձեզ համար գործարկելու նպատակով՝ ցույց տալու ձեր FIRE պլանը, պորտֆելը և վերլուծությունը, ուղարկելու ձեր խնդրած հիշեցման նամակները և ապահովելու ծառայության անվտանգությունը։ Մենք չենք վաճառում ձեր տվյալները, չենք ցուցադրում գովազդ և չենք տրամադրում դրանք մարքեթինգային նպատակներով։",
   "Who else processes it": "Ով է ևս մշակում դրանք",
@@ -157,12 +151,8 @@ const account: Record<string, string> = {
   "These providers act on our instructions and may process data outside your country.":
     "Այս մատակարարները գործում են մեր հրահանգներով և կարող են մշակել տվյալները ձեր երկրից դուրս։",
   "Who can see your data": "Ով կարող է տեսնել ձեր տվյալները",
-  "Your financial entries are private to your account; other users can never see them. Our administrators manage shared content such as Education articles and do not browse individual accounts except to fix a problem you report or when the law requires it.":
-    "Ձեր ֆինանսական գրառումները տեսանելի են միայն ձեր հաշվում, և այլ օգտատերերը երբեք չեն կարող դրանք տեսնել։ Մեր ադմինիստրատորները կառավարում են ընդհանուր բովանդակությունը, օրինակ՝ Կրթություն բաժնի հոդվածները, և չեն դիտում առանձին հաշիվներ, բացառությամբ այն դեպքերի, երբ անհրաժեշտ է շտկել ձեր հայտնած խնդիրը, կամ երբ դա պահանջում է օրենքը։",
-  "How long we keep it, and your choices": "Որքան ժամանակ ենք պահում դրանք, և ձեր ընտրությունները",
-  "We keep your data while your account is open. You can edit or delete any entry at any time. To delete your whole account, or to get a copy of your data, email {email} from your account's address and we will do it within 30 days. Backups that contain deleted data expire on their own schedule.":
-    "Մենք պահում ենք ձեր տվյալները, քանի դեռ ձեր հաշիվը բաց է։ Դուք կարող եք ցանկացած պահի խմբագրել կամ ջնջել ցանկացած գրառում։ Ձեր ամբողջ հաշիվը ջնջելու կամ ձեր տվյալների պատճենը ստանալու համար ձեր հաշվի հասցեից նամակ գրեք {email} հասցեին, և մենք դա կանենք 30 օրվա ընթացքում։ Ջնջված տվյալներ պարունակող պահուստային պատճենները ջնջվում են իրենց սեփական ժամանակացույցով։",
-  Security: "Անվտանգություն",
+    "How long we keep it, and your choices": "Որքան ժամանակ ենք պահում դրանք, և ձեր ընտրությունները",
+    Security: "Անվտանգություն",
   "Data travels encrypted, every account's records are isolated at the database level, and service keys are stored encrypted. No system is perfectly secure; if we learn of a breach that affects you, we will tell you.":
     "Տվյալները փոխանցվում են գաղտնագրված, յուրաքանչյուր հաշվի գրառումները մեկուսացված են տվյալների բազայի մակարդակում, իսկ ծառայության բանալիները պահվում են գաղտնագրված։ Ոչ մի համակարգ կատարելապես անվտանգ չէ։ Եթե մենք իմանանք ձեզ առնչվող տվյալների արտահոսքի մասին, կտեղեկացնենք ձեզ։",
   Children: "Երեխաներ",
@@ -249,6 +239,22 @@ const account: Record<string, string> = {
   Value: "Արժեք",
   Weight: "Կշիռ",
   Gain: "Շահույթ",
+  "We keep your data while your account is open. You can edit or delete any entry at any time, and delete your whole account and all its data yourself from your profile (click your email in the menu). To get a copy of your data, email {email} from your account's address and we will send it within 30 days. Backups that contain deleted data expire on their own schedule.":
+    "Մենք պահում ենք ձեր տվյալները, քանի դեռ ձեր հաշիվը բաց է։ Կարող եք ցանկացած պահի խմբագրել կամ ջնջել ցանկացած գրառում, ինչպես նաև ինքներդ ջնջել ձեր ամբողջ հաշիվը և բոլոր տվյալները ձեր պրոֆիլից (սեղմեք ձեր էլ. փոստի վրա ընտրացանկում)։ Ձեր տվյալների պատճենը ստանալու համար գրեք {email} հասցեին ձեր հաշվի հասցեից, և մենք այն կուղարկենք 30 օրվա ընթացքում։ Ջնջված տվյալներ պարունակող պահուստային պատճենները ժամկետանց են դառնում իրենց ժամանակացույցով։",
+  "your email address, a password (stored only as a secure hash by our authentication provider), the name you choose to show (if any), and when you accepted these terms.":
+    "ձեր էլ. փոստի հասցեն, գաղտնաբառը (պահվում է միայն որպես անվտանգ հեշ մեր նույնականացման մատակարարի մոտ), ձեր ընտրած ցուցադրվող անունը (եթե կա) և երբ եք ընդունել այս պայմանները։",
+  "your date of birth (if you add it), incomes, expenses, savings, bonds, assets and their locations, portfolio holdings, cash and transactions, a daily reading of your net worth for the chart, report reminders, wishlist items, book ratings and comments, and the share links you create.":
+    "ձեր ծննդյան ամսաթիվը (եթե ավելացնեք), եկամուտները, ծախսերը, խնայողությունները, պարտատոմսերը, ակտիվները և դրանց գտնվելու վայրը, պորտֆելի դիրքերը, կանխիկը և գործարքները, գրաֆիկի համար ձեր զուտ կարողության օրական արժեքը, հաշվետվությունների հիշեցումները, ցանկությունների ցուցակը, գրքերի գնահատականներն ու մեկնաբանությունները և ձեր ստեղծած կիսման հղումները։",
+  "basic logs our servers keep to run and secure the service, such as request times and errors, and how many AI features you used this month.":
+    "հիմնական գրառումներ, որոնք մեր սերվերները պահում են ծառայությունն աշխատեցնելու և պաշտպանելու համար, օրինակ՝ հարցումների ժամերը և սխալները, ինչպես նաև թե քանի անգամ եք այս ամիս օգտագործել AI գործառույթները։",
+  "hosts the website and runs our servers.": "հյուրընկալում է կայքը և աշխատեցնում մեր սերվերները։",
+  "The AI provider set for Ask Buddy": "Հարցրեք Buddy-ին գործառույթի AI մատակարարը",
+  "(currently OpenAI) receives the ticker you ask about and that company's public filings and prices, not your holdings, amounts, or anything about you.":
+    "(այժմ՝ OpenAI) ստանում է ձեր հարցրած տիկերը և այդ ընկերության հրապարակային հաշվետվություններն ու գները, ոչ թե ձեր դիրքերը, գումարները կամ որևէ բան ձեր մասին։",
+  "Book covers in the Library load from Open Library, and \"Buy on Amazon\" takes you to Amazon, which has its own privacy policy; we earn a small commission on qualifying purchases.":
+    "Գրադարանի գրքերի շապիկները բեռնվում են Open Library-ից, իսկ «Գնել Amazon-ում»-ը ձեզ տանում է Amazon, որն ունի իր գաղտնիության քաղաքականությունը. մենք փոքր միջնորդավճար ենք ստանում համապատասխան գնումներից։",
+  "Your financial entries are private to your account; other users can never see them. Two things are visible only if you choose: a share link shows the portfolio or FIRE plan you picked, with your display name, to anyone who has the link, until you cancel it; and a book comment is shown to other readers without your name or email. Our administrators manage shared content such as Education articles and do not browse individual accounts except to fix a problem you report or when the law requires it.":
+    "Ձեր ֆինանսական գրառումները տեսանելի են միայն ձեր հաշվում. այլ օգտատերերը երբեք չեն կարող տեսնել դրանք։ Երկու բան տեսանելի է միայն ձեր ընտրությամբ՝ կիսման հղումը ցույց է տալիս ձեր ընտրած պորտֆելը կամ FIRE պլանը՝ ձեր ցուցադրվող անունով, հղումն ունեցող ցանկացածին, մինչև այն չեղարկեք, իսկ գրքի մեկնաբանությունը ցուցադրվում է այլ ընթերցողներին՝ առանց ձեր անվան կամ էլ. փոստի։ Մեր ադմինիստրատորները կառավարում են ընդհանուր բովանդակությունը, օրինակ՝ Կրթության հոդվածները, և չեն դիտում անհատական հաշիվներ, բացառությամբ ձեր հայտնած խնդիրը շտկելու կամ օրենքով պահանջվող դեպքերի։",
 };
 
 export default account;

@@ -13,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function PrivacyPage() {
   const t = await getT();
   const [beforeEmail, afterEmail = ""] = t(
-    "We keep your data while your account is open. You can edit or delete any entry at any time. To delete your whole account, or to get a copy of your data, email {email} from your account's address and we will do it within 30 days. Backups that contain deleted data expire on their own schedule.",
+    "We keep your data while your account is open. You can edit or delete any entry at any time, and delete your whole account and all its data yourself from your profile (click your email in the menu). To get a copy of your data, email {email} from your account's address and we will send it within 30 days. Backups that contain deleted data expire on their own schedule.",
   ).split("{email}");
   return (
     <LegalPage title="Privacy Policy">
@@ -22,18 +22,20 @@ export default async function PrivacyPage() {
         <li>
           <strong>{t("Account:")}</strong>{" "}
           {t(
-            "your email address and a password (stored only as a secure hash by our authentication provider), and when you accepted these terms.",
+            "your email address, a password (stored only as a secure hash by our authentication provider), the name you choose to show (if any), and when you accepted these terms.",
           )}
         </li>
         <li>
           <strong>{t("What you enter:")}</strong>{" "}
           {t(
-            "your date of birth (if you add it), incomes, expenses, savings, bonds, assets and their locations, portfolio holdings and transactions, report reminders, and wishlist items.",
+            "your date of birth (if you add it), incomes, expenses, savings, bonds, assets and their locations, portfolio holdings, cash and transactions, a daily reading of your net worth for the chart, report reminders, wishlist items, book ratings and comments, and the share links you create.",
           )}
         </li>
         <li>
           <strong>{t("Technical data:")}</strong>{" "}
-          {t("basic logs our servers keep to run and secure the service, such as request times and errors.")}
+          {t(
+            "basic logs our servers keep to run and secure the service, such as request times and errors, and how many AI features you used this month.",
+          )}
         </li>
       </ul>
 
@@ -50,11 +52,20 @@ export default async function PrivacyPage() {
           <strong>Supabase</strong> {t("hosts our database, sign-in, and file storage.")}
         </li>
         <li>
+          <strong>Vercel</strong> {t("hosts the website and runs our servers.")}
+        </li>
+        <li>
           <strong>Anthropic</strong>{" "}
           {t("receives the text of your 300-wishes list when we check a new wish for repeats.")}
         </li>
         <li>
           <strong>OpenAI</strong> {t("receives a portfolio screenshot when you choose to import one.")}
+        </li>
+        <li>
+          <strong>{t("The AI provider set for Ask Buddy")}</strong>{" "}
+          {t(
+            "(currently OpenAI) receives the ticker you ask about and that company's public filings and prices, not your holdings, amounts, or anything about you.",
+          )}
         </li>
         <li>
           <strong>{t("Market data sources")}</strong>{" "}
@@ -67,11 +78,16 @@ export default async function PrivacyPage() {
         </li>
       </ul>
       <p>{t("These providers act on our instructions and may process data outside your country.")}</p>
+      <p>
+        {t(
+          "Book covers in the Library load from Open Library, and \"Buy on Amazon\" takes you to Amazon, which has its own privacy policy; we earn a small commission on qualifying purchases.",
+        )}
+      </p>
 
       <h2>{t("Who can see your data")}</h2>
       <p>
         {t(
-          "Your financial entries are private to your account; other users can never see them. Our administrators manage shared content such as Education articles and do not browse individual accounts except to fix a problem you report or when the law requires it.",
+          "Your financial entries are private to your account; other users can never see them. Two things are visible only if you choose: a share link shows the portfolio or FIRE plan you picked, with your display name, to anyone who has the link, until you cancel it; and a book comment is shown to other readers without your name or email. Our administrators manage shared content such as Education articles and do not browse individual accounts except to fix a problem you report or when the law requires it.",
         )}
       </p>
 

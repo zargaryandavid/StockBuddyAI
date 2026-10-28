@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hmac
 import logging
 import os
 from contextlib import asynccontextmanager, suppress
@@ -1164,7 +1165,8 @@ async def reset_my_ai_usage(request: Request, account: Annotated[Account, Depend
 async def cron_reminders(request: Request, authorization: Annotated[str | None, Header()] = None):
     """Sends due report reminders; Vercel Cron calls this once a day with CRON_SECRET."""
     secret = request.app.state.settings.cron_secret
-    if not secret or authorization != f"Bearer {secret}":
+    # Constant-time comparison, so response timing can't reveal the secret.
+    if not secret or not hmac.compare_digest(authorization or "", f"Bearer {secret}"):
         raise HTTPException(status_code=401, detail="Not allowed")
     return {"sent": await request.app.state.reminders.send_due()}
 

@@ -178,6 +178,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Fixed
 
+- Privacy Policy matches the app again: self-serve account deletion, display name, net worth history, book ratings and comments, share links, AI usage counts, Vercel as host, the Ask Buddy AI provider (ticker and public company data only), Open Library covers and Amazon links, and what other people can see (share links you create, book comments without your name). The cron secret is now compared in constant time.
+
 - Growth calculator: 70% of the page width and fits the screen without scrolling (summary in one row, chart sized to the space left, the four settings side by side with labels, values and sliders each lined up). FIRE: "See the compound effect" next to Path to FIRE opens the calculator with your current assets, monthly investing and expected return.
 
 - Net worth chart: the line is drawn all the way across again (the draw-in animation cut it off on the stretched chart), and the scale is at least 2% of your net worth, so days a few cents apart show as a flat line instead of a cliff.
