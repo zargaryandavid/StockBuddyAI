@@ -178,6 +178,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Fixed
 
+- Speed: the API read its settings with three database queries one after another on nearly every request (about 0.4s from Los Angeles to the database). They now go out together and are kept for 30 seconds (cleared when Admin saves), so pages wait on one fewer round trip chain.
+
 - Pop-ups opened from inside a page (FIRE income and expense charts, and others) appeared far below the screen and blocked clicks: the page fade-in left an invisible transform behind, which made the page the frame for pop-ups. Entry animations now leave nothing behind, and a test guards it.
 
 - Stronger passwords: new accounts and new passwords need at least 10 characters with letters and numbers (shown under the field and checked before anything is sent; existing passwords still sign in). Local Supabase config matches: minimum 10, letters and digits, and a recent sign-in is required to change a password. The live project needs the same settings in the Supabase dashboard.

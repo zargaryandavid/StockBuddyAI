@@ -446,6 +446,9 @@ async def save_library_settings(
         json={"amazon_affiliate_tag": tag},
         prefer="return=minimal",
     )
+    forget = getattr(request.app.state.repository, "forget_settings", None)
+    if forget:
+        forget()
     return {"amazon_affiliate_tag": tag}
 
 

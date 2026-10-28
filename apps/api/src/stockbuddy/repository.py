@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import time
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -48,9 +50,19 @@ _ARTICLE_ORDER = "position.asc,created_at.desc"
 _FIRE_ASSET_SELECT = "id,asset_type,name,market_value,currency,location,note,created_at,updated_at"
 
 
+# Settings are read on almost every request; keep them briefly instead of asking the
+# database three times each time. Saving settings clears the copy at once.
+SETTINGS_TTL_SECONDS = 30
+
+
 class Repository:
     def __init__(self, db: SupabaseGateway) -> None:
         self.db = db
+        self._settings: tuple[float, StudioSettings] | None = None
+
+    def forget_settings(self) -> None:
+        """Call after anything changes app_settings, industries, or persona prompts."""
+        self._settings = None
 
     async def create_portfolio(self, token: str, payload: PortfolioCreate) -> dict[str, Any]:
         rows = await self.db.rest(
@@ -678,19 +690,29 @@ class Repository:
         return rows[0] if rows else None
 
     async def load_settings(self) -> StudioSettings:
+        cached = self._settings
+        if cached and time.monotonic() - cached[0] < SETTINGS_TTL_SECONDS:
+            return cached[1]
+        settings = await self._read_settings()
+        self._settings = (time.monotonic(), settings)
+        return settings
+
+    async def _read_settings(self) -> StudioSettings:
         defaults = builtin_prompts()
-        settings_rows = await self.db.rest(
-            "GET",
-            "app_settings",
-            params={"id": "eq.1", "select": "*", "limit": "1"},
+        # The three reads don't depend on each other, so they go out together.
+        settings_rows, prompt_rows, industry_rows = await asyncio.gather(
+            self.db.rest("GET", "app_settings", params={"id": "eq.1", "select": "*", "limit": "1"}),
+            self.db.rest(
+                "GET", "persona_prompts", params={"select": "persona,display_name,strategy,prompt"}
+            ),
+            self.db.rest(
+                "GET",
+                "industries",
+                params={"select": "name,icon,sort_order", "order": "sort_order"},
+            ),
         )
         if not settings_rows:
             raise RuntimeError("Studio settings have not been migrated")
-        prompt_rows = await self.db.rest(
-            "GET",
-            "persona_prompts",
-            params={"select": "persona,display_name,strategy,prompt"},
-        )
         stored = {row["persona"] for row in prompt_rows}
         missing = [persona for persona in PERSONAS if persona.persona not in stored]
         if missing:
@@ -713,11 +735,6 @@ class Repository:
                 "persona_prompts",
                 params={"select": "persona,display_name,strategy,prompt"},
             )
-        industry_rows = await self.db.rest(
-            "GET",
-            "industries",
-            params={"select": "name,icon,sort_order", "order": "sort_order"},
-        )
         row = settings_rows[0]
         industries = tuple(
             IndustrySetting(
@@ -800,6 +817,7 @@ class Repository:
             ],
             prefer="resolution=merge-duplicates,return=minimal",
         )
+        self.forget_settings()
         return await self.load_settings()
 
 

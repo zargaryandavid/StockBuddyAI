@@ -178,3 +178,56 @@ def test_cash_in_other_currencies_is_saved_beside_the_portfolio_as_its_owner():
     assert kwargs["params"] == {"id": "eq.10000000-0000-0000-0000-000000000001"}
     assert kwargs["json"] == {"other_cash": [{"currency": "AMD", "amount": 500000.0}]}
     assert saved["other_cash"] == [{"currency": "AMD", "amount": 500000.0}]
+
+
+def test_settings_are_read_together_and_kept_briefly():
+    from stockbuddy.personas import PERSONAS, builtin_prompts
+
+    class SettingsGateway:
+        def __init__(self):
+            self.calls = []
+
+        async def rest(self, method, path, **kwargs):
+            self.calls.append((method, path))
+            if path == "app_settings" and method == "GET":
+                return [
+                    {
+                        "max_position_pct": "0.25",
+                        "max_industry_pct": "0.25",
+                        "deep_value_weight": "0.7",
+                        "trajectory_weight": "0.3",
+                        "llm_model": "gpt-6-sol",
+                    }
+                ]
+            if path == "persona_prompts" and method == "GET":
+                prompts = builtin_prompts()
+                return [
+                    {
+                        "persona": persona.persona,
+                        "display_name": persona.display_name,
+                        "strategy": persona.strategy,
+                        "prompt": prompts[persona.persona],
+                    }
+                    for persona in PERSONAS
+                ]
+            if path == "industries" and method == "GET":
+                return [{"name": "Energy", "icon": "zap", "sort_order": 1}]
+            return []
+
+    gateway = SettingsGateway()
+    repository = Repository(gateway)
+
+    async def run():
+        first = await repository.load_settings()
+        second = await repository.load_settings()
+        repository.forget_settings()
+        await repository.load_settings()
+        return first, second
+
+    first, second = asyncio.run(run())
+    assert second is first  # the second read came from memory
+    assert first.llm_model == "gpt-6-sol"
+    # Two loads from the database (before and after forget), three reads each.
+    assert sorted(gateway.calls) == sorted(
+        [("GET", "app_settings"), ("GET", "persona_prompts"), ("GET", "industries")] * 2
+    )
