@@ -37,6 +37,14 @@ describe("InviteDialog", () => {
     expect(apiMock).not.toHaveBeenCalled();
   });
 
+  it("sends Email through our designed invitation, not a mail-app draft", () => {
+    render(<InviteDialog onClose={() => {}} />);
+    expect(document.querySelector("a[href^='mailto:']")).toBeNull();
+    (screen.getByLabelText("Invitation link") as HTMLInputElement).focus();
+    fireEvent.click(screen.getByRole("button", { name: "Email" }));
+    expect(document.activeElement).toBe(screen.getByLabelText("Their email"));
+  });
+
   it("copies the sign-up link", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });

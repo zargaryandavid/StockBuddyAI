@@ -273,7 +273,6 @@ const account: Record<string, string> = {
   "Invitation link": "Հրավերի հղումը",
   Copy: "Պատճենել",
   "Share…": "Կիսվել…",
-  "Join me on MyPortfolioBuddy": "Միացիր ինձ MyPortfolioBuddy-ում",
   "I use MyPortfolioBuddy to see my portfolio and my path to financial freedom. It's free. Join me:":
     "Ես օգտագործում եմ MyPortfolioBuddy-ն՝ տեսնելու իմ պորտֆելը և ֆինանսական ազատության ճանապարհը։ Այն անվճար է։ Միացիր ինձ՝",
   "Enter a valid email address": "Մուտքագրեք ճիշտ էլ. փոստի հասցե",

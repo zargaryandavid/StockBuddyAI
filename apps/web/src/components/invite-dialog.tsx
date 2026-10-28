@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, Copy, Loader2, Mail, Send, Share2 } from "lucide-react";
 
 import { api } from "@/lib/api";
@@ -22,6 +22,7 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [link] = useState(inviteUrl);
+  const emailField = useRef<HTMLInputElement>(null);
   const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
   const message = t("I use MyPortfolioBuddy to see my portfolio and my path to financial freedom. It's free. Join me:");
 
@@ -110,6 +111,7 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
               maxLength={254}
               autoComplete="off"
               placeholder="friend@example.com"
+              ref={emailField}
               onChange={(event) => {
                 setEmail(event.target.value);
                 setSentTo(null);
@@ -153,9 +155,17 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
               {place.name}
             </a>
           ))}
-          <a className="invite-place" href={`mailto:?subject=${encodeURIComponent(t("Join me on MyPortfolioBuddy"))}&body=${text}`}>
+          {/* A mail-app draft can only be plain text, so Email sends our designed invitation. */}
+          <button
+            type="button"
+            className="invite-place"
+            onClick={() => {
+              emailField.current?.scrollIntoView?.({ block: "center" });
+              emailField.current?.focus();
+            }}
+          >
             <Mail size={14} aria-hidden="true" /> {t("Email")}
-          </a>
+          </button>
         </div>
         {error && (
           <p className="alert" role="alert">
