@@ -2,6 +2,7 @@
 
 import { Info } from "lucide-react";
 
+import { InfoPopover } from "@/components/info-popover";
 import { cashShortfall } from "@/lib/analytics";
 import type { Translate } from "@/lib/i18n/core";
 
@@ -21,7 +22,7 @@ export function CashLabel({ target, t }: { target: number; t: Translate }) {
   );
 }
 
-/** Next to the Cash field: "$0.00 / 0.0% · Target 5%: $4,980.17 (i)". */
+/** The cash numbers behind the (i) beside the Cash field: amount, share and target. */
 export function CashSummary({
   cash,
   share,
@@ -37,22 +38,29 @@ export function CashSummary({
   formatMoney: (value: number) => string;
   t: Translate;
 }) {
-  const short = cashShortfall(cash, totalValue, target) > 0.005;
-  const help = t(
-    "We suggest keeping at least {target}% of your portfolio in cash for emergencies and buying chances. Change it in Portfolio settings under Min cash (%).",
-    { target: percent(target) },
-  );
+  const missing = cashShortfall(cash, totalValue, target);
   return (
-    <span className={`cash-summary${short ? " short" : ""}`}>
-      {formatMoney(cash)} / {(share * 100).toFixed(1)}% ·{" "}
-      {t("Target {target}%: {amount}", {
-        target: percent(target),
-        amount: formatMoney(target * totalValue),
-      })}
-      <span className="cash-info" role="img" tabIndex={0} title={help} aria-label={help}>
-        <Info size={13} aria-hidden="true" />
+    <InfoPopover label={t("About the cash target")} align="right">
+      <span className={`cash-summary${missing > 0.005 ? " short" : ""}`}>
+        <strong>
+          {formatMoney(cash)} / {(share * 100).toFixed(1)}%
+        </strong>
+        <span>
+          {t("Target {target}%: {amount}", { target: percent(target), amount: formatMoney(target * totalValue) })}
+        </span>
+        <span>
+          {missing > 0.005
+            ? t("{amount} to add to reach the target", { amount: formatMoney(missing) })
+            : t("Target met · {amount} above it", { amount: formatMoney(Math.max(0, cash - target * totalValue)) })}
+        </span>
       </span>
-    </span>
+      <span>
+        {t(
+          "We suggest keeping at least {target}% of your portfolio in cash for emergencies and buying chances. Change it in Portfolio settings under Min cash (%).",
+          { target: percent(target) },
+        )}
+      </span>
+    </InfoPopover>
   );
 }
 

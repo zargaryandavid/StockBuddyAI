@@ -124,6 +124,39 @@ const today: Record<string, string> = {
   "No assets yet": "Ակտիվներ դեռ չկան",
   "No bonds yet": "Պարտատոմսեր դեռ չկան",
   "The admin adds books to the Library in Admin.": "Ադմինը գրքերն ավելացնում է Գրադարանում՝ Ադմին բաժնից։",
+  "Why StockBuddy": "Ինչու StockBuddy",
+  "Take care of your finances now and build your “F-you money”, so one day you never have to work again. Many of our parents never had the chance to plan for that. You do.":
+    "Հոգացեք ձեր ֆինանսների մասին հիմա և կուտակեք ձեր «ազատության գումարը», որպեսզի մի օր այլևս ստիպված չլինեք աշխատել։ Մեր ծնողներից շատերը դրա համար պլանավորելու հնարավորություն չեն ունեցել։ Դուք ունեք։",
+  "“Rule No. 1: Never lose money. Rule No. 2: Never forget rule No. 1.” — Warren Buffett":
+    "«Կանոն №1՝ երբեք մի կորցրեք գումար։ Կանոն №2՝ երբեք մի մոռացեք կանոն №1-ը»։ — Ուորեն Բաֆեթ",
+  "The stock market is the most powerful wealth-building tool of all time. Be patient and disciplined.":
+    "Ֆոնդային շուկան հարստություն կուտակելու ամենաուժեղ գործիքն է բոլոր ժամանակներում։ Եղեք համբերատար և կարգապահ։",
+  "About bonds and your age": "Պարտատոմսերի և ձեր տարիքի մասին",
+  "Rule of thumb: your age in bonds": "Պարզ կանոն՝ ձեր տարիքը՝ պարտատոմսերում",
+  "Keep roughly your age as a percentage in bonds and the rest in stocks (the \"100 minus your age\" rule). Bonds swing less, so the share grows as you get closer to needing the money.":
+    "Պահեք մոտավորապես ձեր տարիքին հավասար տոկոս պարտատոմսերում, իսկ մնացածը՝ բաժնետոմսերում («100 հանած ձեր տարիքը» կանոն)։ Պարտատոմսերն ավելի քիչ են տատանվում, ուստի դրանց մասնաբաժինն աճում է, երբ մոտենում է գումարի կարիքի ժամանակը։",
+  "Add your date of birth in your profile to see your own numbers.": "Ավելացրեք ձեր ծննդյան ամսաթիվը պրոֆիլում՝ ձեր թվերը տեսնելու համար։",
+  "At {age}: about {bonds}% bonds and {stocks}% stocks.": "{age} տարեկանում՝ մոտ {bonds}% պարտատոմսեր և {stocks}% բաժնետոմսեր։",
+  "You have {share}% in bonds now.": "Հիմա ձեր {share}%-ը պարտատոմսերում է։",
+  "A rule of thumb, not advice; your own plan may differ.": "Սա պարզ կանոն է, ոչ թե խորհուրդ. ձեր պլանը կարող է տարբերվել։",
+  "Prices as of {date}": "Գները՝ {date}-ի դրությամբ",
+  "Bonds vs stocks": "Պարտատոմսեր և բաժնետոմսեր",
+  "bonds / stocks and funds": "պարտատոմսեր / բաժնետոմսեր և ֆոնդեր",
+  "50/30/20 budget": "50/30/20 բյուջե",
+  "About the 50/30/20 rule": "50/30/20 կանոնի մասին",
+  "The 50/30/20 rule": "50/30/20 կանոնը",
+  "Spend about half of what you earn on needs, up to 30% on wants, and put at least 20% into saving and investing. It is a simple starting point; raising the 20% gets you to financial freedom sooner.":
+    "Ծախսեք վաստակածի մոտ կեսը անհրաժեշտ ծախսերի, մինչև 30%-ը՝ ցանկությունների վրա, իսկ առնվազն 20%-ը ուղղեք խնայողությունների և ներդրումների։ Սա պարզ մեկնակետ է. 20%-ը մեծացնելով՝ ավելի շուտ կհասնեք ֆինանսական ազատության։",
+  "Based on your income of {amount} a month.": "Հիմնված է ձեր ամսական {amount} եկամտի վրա։",
+  "Add your income in FIRE to see your budget.": "Ավելացրեք ձեր եկամուտը FIRE-ում՝ ձեր բյուջեն տեսնելու համար։",
+  Needs: "Անհրաժեշտ ծախսեր",
+  Wants: "Ցանկություններ",
+  "Saving and investing": "Խնայողություն և ներդրում",
+  "Rent, bills, food, transport, insurance, health, loans, taxes": "Վարձ, կոմունալ, սնունդ, տրանսպորտ, ապահովագրություն, առողջություն, վարկեր, հարկեր",
+  "Shopping, travel, fun and other": "Գնումներ, ճամփորդություն, ժամանց և այլն",
+  "Saving and investment expenses, plus what is left over": "Խնայողության և ներդրման ծախսեր, գումարած մնացորդը",
+  "Ideal {amount}": "Իդեալական՝ {amount}",
+  "Yours {amount} ({share}%)": "Ձերը՝ {amount} ({share}%)",
 };
 
 export default today;

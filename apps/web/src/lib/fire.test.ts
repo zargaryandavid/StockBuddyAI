@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   bondHoldings,
+  budgetSplit,
   assetMix,
   buildPlan,
   heldAssets,
@@ -460,5 +461,24 @@ describe("bondHoldings", () => {
     expect(rows[0].faceValue).toBeCloseTo(5500);
     expect(rows[0].yearlyIncome).toBeCloseTo(220);
     expect(rows[1].yearlyIncome).toBe(400);
+  });
+});
+
+describe("budgetSplit", () => {
+  const expense = (category: string, amount: number) => ({
+    id: category, kind: "expense" as const, category, name: category, amount, currency: "USD",
+    frequency: "monthly" as const, starts_on: "2026-01-01", ends_on: null, principal: null,
+    yield_pct: null, note: null,
+  });
+
+  it("splits income 50/30/20 and sorts expenses into needs, wants and savings", () => {
+    const split = budgetSplit(
+      [expense("rent", 2000), expense("food", 600), expense("travel", 400), expense("investment", 500)],
+      5000,
+      "2026-10-27",
+    );
+    expect(split.ideal).toEqual({ needs: 2500, wants: 1500, savings: 1000 });
+    // What is left over (5000 − 3500 = 1500) counts as saving too.
+    expect(split.actual).toEqual({ needs: 2600, wants: 400, savings: 2000 });
   });
 });

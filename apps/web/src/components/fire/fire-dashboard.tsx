@@ -44,6 +44,7 @@ import {
   INCOME_CATEGORIES,
   assetMix,
   assetTypeFor,
+  budgetSplit,
   buildPlan,
   categoryFor,
   monthEvents,
@@ -74,6 +75,7 @@ import { TimelineDialog } from "./timeline-dialog";
 import { DonutRing } from "./donut";
 import { AnimatedNumber } from "@/components/animated-number";
 
+import { BudgetRule } from "./budget-rule";
 import { FireProgressPanel } from "./fire-progress";
 import { ProjectionChart } from "./projection-chart";
 
@@ -923,6 +925,11 @@ export function FireDashboard({
           ))}
         </ul>
       </section>
+
+      <BudgetRule
+        split={budgetSplit(entries, plan.monthlyIncome, today, rates, currency)}
+        currency={currency}
+      />
 
       <FireProgressPanel
         currentAssets={plan.currentAssets}

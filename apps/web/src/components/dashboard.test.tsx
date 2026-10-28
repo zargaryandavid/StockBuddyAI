@@ -633,6 +633,9 @@ describe("Dashboard navigation", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Portfolio" }));
     expect(document.body.textContent).not.toContain("10,000");
+    // The cash numbers sit behind the (i) beside the Cash title.
+    expect(screen.queryByText(/Target 5%: \$0\.00/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "About the cash target" }));
     expect(screen.getByText(/Target 5%: \$0\.00/)).toBeTruthy();
   });
 });

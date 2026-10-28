@@ -6,6 +6,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Added
 
+- Sign-in page: four short messages take turns under the headline (fade in every 7 seconds, pause on hover, dots to pick one). FIRE: a 50/30/20 budget comparing your income's ideal split (needs, wants, saving and investing) with what your plan spends. Portfolio: an (i) on Bonds explains the "your age in bonds" rule with your own numbers; the price date sits beside the Portfolio title and its card became Bonds vs stocks; the cash numbers moved behind an (i) beside Cash.
+
 - More life in the app: holding prices and values flash green or red when a refresh changes them; empty pages (Portfolio, Transactions, Wishlist, Assets, Bonds, Library) show a small drawing with a line about what goes there; Today greets you by the time of your own clock and name ("Good morning, Davit. Your net worth is up $1,240 since …"); and Ask Buddy shows the five reviewers taking turns while a holding is reviewed. Motion switches off for reduced motion.
 
 - Livelier pages: net worth, cash, portfolio value, FIRE progress, current assets and the FIRE number count up to their value (and roll to a new one after a change); loading spots show a soft shimmer instead of "…"; the net worth line draws itself and progress bars fill; the Save button turns green with a small pop; Library stars light up under the pointer and bounce when chosen; clickable cards lift on hover; pop-ups grow in. All of it switches off for reduced motion.
@@ -643,6 +645,8 @@ All notable project changes and user-visible functionality are recorded here.
 - Added a compact ticker-symbol list beneath every industry allocation.
 
 ### Added
+
+- Sign-in page: four short messages take turns under the headline (fade in every 7 seconds, pause on hover, dots to pick one). FIRE: a 50/30/20 budget comparing your income's ideal split (needs, wants, saving and investing) with what your plan spends. Portfolio: an (i) on Bonds explains the "your age in bonds" rule with your own numbers; the price date sits beside the Portfolio title and its card became Bonds vs stocks; the cash numbers moved behind an (i) beside Cash.
 
 - More life in the app: holding prices and values flash green or red when a refresh changes them; empty pages (Portfolio, Transactions, Wishlist, Assets, Bonds, Library) show a small drawing with a line about what goes there; Today greets you by the time of your own clock and name ("Good morning, Davit. Your net worth is up $1,240 since …"); and Ask Buddy shows the five reviewers taking turns while a holding is reviewed. Motion switches off for reduced motion.
 

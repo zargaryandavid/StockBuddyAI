@@ -4,6 +4,7 @@ import Link from "next/link";
 import { LanguageSwitcher } from "@/components/language-switcher";
 
 import { AuthForm } from "@/components/auth-form";
+import { RotatingMessages } from "@/components/rotating-messages";
 import { getT } from "@/lib/i18n/server";
 import Image from "next/image";
 
@@ -36,11 +37,21 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
         </Link>
         <p className="eyebrow">{t("Fundamentals, not hype")}</p>
         <h1>{t("Your AI buddy for portfolio and financial management.")}</h1>
-        <p>
-          {t(
-            "Reach financial freedom and learn more about your current portfolio. Let your money work for you: a simple website for a simple path to wealth.",
-          )}
-        </p>
+        <RotatingMessages
+          label={t("Why StockBuddy")}
+          messages={[
+            t(
+              "Reach financial freedom and learn more about your current portfolio. Let your money work for you: a simple website for a simple path to wealth.",
+            ),
+            t(
+              "Take care of your finances now and build your “F-you money”, so one day you never have to work again. Many of our parents never had the chance to plan for that. You do.",
+            ),
+            t("“Rule No. 1: Never lose money. Rule No. 2: Never forget rule No. 1.” — Warren Buffett"),
+            t(
+              "The stock market is the most powerful wealth-building tool of all time. Be patient and disciplined.",
+            ),
+          ]}
+        />
         <div className="principles">
           <span>{t("No personalized information")}</span>
           <span>{t("User-friendly interface")}</span>

@@ -836,3 +836,41 @@ export function bondHoldings(
     })
     .sort((a, b) => (a.maturity ?? "9999").localeCompare(b.maturity ?? "9999"));
 }
+
+/** Expense categories counted as needs in the 50/30/20 budget; saving categories are savings. */
+const NEEDS = new Set(["rent", "bills", "food", "transport", "insurance", "health", "lease", "finance", "tax", "education", "home"]);
+const SAVINGS = new Set(["investment", "saving"]);
+
+export type BudgetSplit = {
+  income: number;
+  /** Ideal monthly amounts: 50% needs, 30% wants, 20% saving and investing. */
+  ideal: { needs: number; wants: number; savings: number };
+  /** What the entries actually spend each month; savings include what is left over. */
+  actual: { needs: number; wants: number; savings: number };
+};
+
+/** The 50/30/20 rule applied to a month of the plan's income and expenses. */
+export function budgetSplit(
+  entries: FireEntry[],
+  monthlyIncome: number,
+  today: string,
+  rates: FxRates = {},
+  baseCurrency = "USD",
+): BudgetSplit {
+  let needs = 0;
+  let wants = 0;
+  let saved = 0;
+  for (const entry of entries) {
+    if (entry.kind !== "expense") continue;
+    const monthly = monthlyAmount(entry, today, rates, baseCurrency);
+    if (SAVINGS.has(entry.category)) saved += monthly;
+    else if (NEEDS.has(entry.category)) needs += monthly;
+    else wants += monthly;
+  }
+  const leftover = Math.max(0, monthlyIncome - needs - wants - saved);
+  return {
+    income: monthlyIncome,
+    ideal: { needs: monthlyIncome * 0.5, wants: monthlyIncome * 0.3, savings: monthlyIncome * 0.2 },
+    actual: { needs, wants, savings: saved + leftover },
+  };
+}

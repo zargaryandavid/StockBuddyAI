@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { ArrowRight, ScrollText } from "lucide-react";
 
 import { api } from "@/lib/api";
 import { bondHoldings, type BondHolding, type FireEntry, type FxRates } from "@/lib/fire";
 import { useT } from "@/lib/i18n/client";
+import { InfoPopover } from "@/components/info-popover";
 import { EmptyState } from "@/components/empty-state";
 import { ShimmerLines } from "@/components/shimmer";
 import { money } from "@/lib/portfolio-metrics";
@@ -74,25 +75,8 @@ const FREQUENCY_LABELS: Record<string, string> = {
   once: "At maturity",
 };
 
-/** Read-only list of the bonds from FIRE, under the holdings on the Portfolio page. */
-export function BondsSection({
-  bonds,
-  total,
-  loading,
-  currency,
-  onEdit,
-  onVisible,
-}: {
-  bonds: BondHolding[];
-  total: number;
-  loading: boolean;
-  currency: string;
-  onEdit: () => void;
-  /** Called once when the section first scrolls into view. */
-  onVisible?: () => void;
-}) {
-  const t = useT();
-  const box = useRef<HTMLElement>(null);
+/** Calls `onVisible` once, the first time the element scrolls into view. */
+export function useOnVisible(box: RefObject<HTMLElement | null>, onVisible?: () => void) {
   useEffect(() => {
     const node = box.current;
     if (!node || !onVisible || typeof IntersectionObserver === "undefined") return;
@@ -104,7 +88,80 @@ export function BondsSection({
     });
     watcher.observe(node);
     return () => watcher.disconnect();
-  }, [onVisible]);
+  }, [box, onVisible]);
+}
+
+/** Your age in bonds, the rest in stocks: the rule of thumb, with your own numbers. */
+function AgeInBondsInfo({ bondShare }: { bondShare: number | null }) {
+  const t = useT();
+  const [age, setAge] = useState<number | null | undefined>(undefined);
+  return (
+    <span
+      onClickCapture={() => {
+        if (age !== undefined) return;
+        api<{ date_of_birth?: string | null }>("/api/profile")
+          .then((profile) => setAge(ageFrom(profile?.date_of_birth ?? null)))
+          .catch(() => setAge(null));
+      }}
+    >
+      <InfoPopover label={t("About bonds and your age")} align="left">
+        <strong>{t("Rule of thumb: your age in bonds")}</strong>
+        <span>
+          {t(
+            "Keep roughly your age as a percentage in bonds and the rest in stocks (the \"100 minus your age\" rule). Bonds swing less, so the share grows as you get closer to needing the money.",
+          )}
+        </span>
+        {age === undefined ? null : age == null ? (
+          <span className="muted">{t("Add your date of birth in your profile to see your own numbers.")}</span>
+        ) : (
+          <span>
+            {t("At {age}: about {bonds}% bonds and {stocks}% stocks.", {
+              age,
+              bonds: Math.min(100, age),
+              stocks: Math.max(0, 100 - age),
+            })}
+            {bondShare != null && ` ${t("You have {share}% in bonds now.", { share: (bondShare * 100).toFixed(0) })}`}
+          </span>
+        )}
+        <span className="muted">{t("A rule of thumb, not advice; your own plan may differ.")}</span>
+      </InfoPopover>
+    </span>
+  );
+}
+
+function ageFrom(dateOfBirth: string | null) {
+  if (!dateOfBirth) return null;
+  const born = new Date(`${dateOfBirth.slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(born.getTime())) return null;
+  const now = new Date();
+  let age = now.getUTCFullYear() - born.getUTCFullYear();
+  if (now.getUTCMonth() < born.getUTCMonth() || (now.getUTCMonth() === born.getUTCMonth() && now.getUTCDate() < born.getUTCDate())) age -= 1;
+  return age >= 0 && age < 130 ? age : null;
+}
+
+/** Read-only list of the bonds from FIRE, under the holdings on the Portfolio page. */
+export function BondsSection({
+  bonds,
+  total,
+  loading,
+  currency,
+  stocksValue = null,
+  onEdit,
+  onVisible,
+}: {
+  bonds: BondHolding[];
+  total: number;
+  loading: boolean;
+  currency: string;
+  /** Holdings value, for "you have X% in bonds now". */
+  stocksValue?: number | null;
+  onEdit: () => void;
+  /** Called once when the section first scrolls into view. */
+  onVisible?: () => void;
+}) {
+  const t = useT();
+  const box = useRef<HTMLElement>(null);
+  useOnVisible(box, onVisible);
   const yearly = bonds.reduce((sum, bond) => sum + (bond.yearlyIncome ?? 0), 0);
   return (
     <section ref={box} className="panel bonds-section" aria-labelledby="bonds-title">
@@ -113,6 +170,9 @@ export function BondsSection({
           <h2 id="bonds-title">
             <ScrollText size={17} aria-hidden="true" />
             {t("Bonds")}
+            <AgeInBondsInfo
+              bondShare={!loading && stocksValue != null && total + stocksValue > 0 ? total / (total + stocksValue) : null}
+            />
           </h2>
           <p className="muted">
             {t("Entered in FIRE and shown here so your mix is complete. Valued at face value; not part of the portfolio value above.")}

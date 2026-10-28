@@ -30,7 +30,7 @@ import { AmountInput } from "@/components/amount-input";
 import { AnimatedNumber } from "@/components/animated-number";
 import { EmptyState } from "@/components/empty-state";
 import { FlashValue } from "@/components/flash-value";
-import { BondsSection, useBondHoldings } from "@/components/bonds-section";
+import { BondsSection, useBondHoldings, useOnVisible } from "@/components/bonds-section";
 import { CashLabel, CashSummary, cashTargetNote } from "@/components/cash-target";
 import { cashShortfall, cashTarget, DEFAULT_CASH_TARGET } from "@/lib/analytics";
 import { ReportReminderDialog } from "@/components/report-reminder-dialog";
@@ -1238,6 +1238,11 @@ export function Dashboard({
           {portfolioView === "current" && (
             <header className="portfolio-page-head">
               <h1>{t("Portfolio")}</h1>
+              {latestPriceDate(positions) && (
+                <span className="portfolio-price-date">
+                  {t("Prices as of {date}", { date: latestPriceDate(positions) as string })}
+                </span>
+              )}
               <button type="button" className="button portfolio-analytics-link" onClick={openAnalytics}>
                 <IndustryIcon icon="chart-line" size={16} />
                 {t("See analytics")}
@@ -1262,9 +1267,9 @@ export function Dashboard({
                       required
                     />
                   </label>
-                  <label>
+                  <div className="cash-field">
                     <span className="cash-field-label">
-                      {t("Cash")}
+                      <span>{t("Cash")}</span>
                       <CashSummary
                         cash={totalCash}
                         share={metrics.cashPercentage ?? 0}
@@ -1374,7 +1379,7 @@ export function Dashboard({
                         </small>
                       )
                     )}
-                  </label>
+                  </div>
                 </div>
 
                 {loadingPortfolios ? (
@@ -1429,9 +1434,10 @@ export function Dashboard({
                       }
                     />
                     <SummaryCard label={t("Benchmark")} value={benchmarkLabel(benchmark, t)} />
-                    <SummaryCard
-                      label={t("Last price update")}
-                      value={latestPriceDate(positions) ?? t("No prices")}
+                    <BondsVsStocksCard
+                      bonds={bondData.loading ? null : bondData.total}
+                      stocks={metrics.holdingsValue}
+                      onVisible={wantBonds}
                     />
                   </section>
                 )}
@@ -1742,6 +1748,7 @@ export function Dashboard({
                 total={bondData.total}
                 loading={bondData.loading}
                 currency={baseCurrency}
+                stocksValue={metrics.holdingsValue}
                 onEdit={() => setActiveTab("fire")}
                 onVisible={wantBonds}
               />
@@ -2648,6 +2655,33 @@ function withOverview(position: Position, overview: Omit<Position, "shares">): P
     classification_source: manual ? "manual" : "automatic",
     resolve_error: null,
   };
+}
+
+/** Bonds (from FIRE) against stocks and funds, as shares of the two together. */
+function BondsVsStocksCard({
+  bonds,
+  stocks,
+  onVisible,
+}: {
+  bonds: number | null;
+  stocks: number;
+  onVisible: () => void;
+}) {
+  const t = useT();
+  const box = useRef<HTMLElement>(null);
+  useOnVisible(box, onVisible);
+  const total = (bonds ?? 0) + stocks;
+  return (
+    <article ref={box} className="summary-card">
+      <span>{t("Bonds vs stocks")}</span>
+      <strong>
+        {bonds == null || !total
+          ? "—"
+          : `${Math.round((bonds / total) * 100)}% / ${100 - Math.round((bonds / total) * 100)}%`}
+      </strong>
+      <small>{t("bonds / stocks and funds")}</small>
+    </article>
+  );
 }
 
 function SummaryCard({
