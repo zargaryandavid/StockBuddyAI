@@ -174,6 +174,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Fixed
 
+- Net worth chart: the line is drawn all the way across again (the draw-in animation cut it off on the stretched chart), and the scale is at least 2% of your net worth, so days a few cents apart show as a flat line instead of a cliff.
+
 - Today Cash card: the "why" explanation opens from an (i) button at the right of the Cash title (Escape or Close shuts it), and the card no longer opens the Portfolio page when clicked.
 
 - Today Cash card: shows the cash share of your portfolios, the target and what it means in dollars ("7.7% of your portfolios · target 5% = $5,397"), a progress bar, how much is missing or above the target, and why the target exists and where to change it. Switching pages now shows a short loading bar at the top and the new page fades in (off for reduced motion).

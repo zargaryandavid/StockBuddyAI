@@ -76,9 +76,12 @@ export function NetWorthChart({
   const values = shown.map((point) => point.total);
   const low = Math.min(...values);
   const high = Math.max(...values);
-  const pad = (high - low) * 0.1 || Math.abs(high) * 0.05 || 1;
-  const min = low - pad;
-  const max = high + pad;
+  // At least 2% of the value from top to bottom, so a change of a few cents draws a flat
+  // line instead of filling the whole chart.
+  const height = Math.max((high - low) * 1.2, Math.abs(high) * 0.02, 1);
+  const middle = (high + low) / 2;
+  const min = middle - height / 2;
+  const max = middle + height / 2;
   const x = (day: string) => PAD.left + ((Date.parse(day) - start) / span) * (WIDTH - PAD.left - PAD.right);
   const y = (value: number) => PAD.top + (1 - (value - min) / (max - min)) * (HEIGHT - PAD.top - PAD.bottom);
   const line = shown.map((point, index) => `${index ? "L" : "M"}${x(point.day).toFixed(1)},${y(point.total).toFixed(1)}`).join(" ");
@@ -138,7 +141,7 @@ export function NetWorthChart({
       >
         {/* Keyed by range so the line draws itself again when the range changes. */}
         <path key={`area-${range}`} d={area} className="net-worth-area" />
-        <path key={`line-${range}`} d={line} className="net-worth-line" pathLength={1} />
+        <path key={`line-${range}`} d={line} className="net-worth-line" />
       </svg>
       {hover != null && (
         // Drawn outside the stretched chart so it stays round.

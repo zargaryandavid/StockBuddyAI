@@ -3476,9 +3476,11 @@ button.today-row:hover { background: var(--row-hover); }
 @media (prefers-reduced-motion: reduce) { .shimmer { animation: none; } }
 
 /* The net worth line draws from left to right; bars fill up to their value. */
-.net-worth-line { stroke-dasharray: 1; stroke-dashoffset: 0; animation: line-draw 1.1s ease-out both; }
-.net-worth-area { animation: fade-in 0.9s ease-out 0.3s both; }
-@keyframes line-draw { from { stroke-dashoffset: 1; } }
+/* Revealed left to right with a clip, which works on the stretched chart (a dash
+   animation does not when the stroke keeps its width while the chart stretches). */
+.net-worth-line { animation: line-draw 1.1s ease-out both; }
+.net-worth-area { animation: line-draw 1.1s ease-out both, fade-in 0.9s ease-out both; }
+@keyframes line-draw { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 @keyframes fade-in { from { opacity: 0; } }
 .today-progress span, .investment-mix-bar span, .fire-progress-bar span { transform-origin: left; animation: bar-fill 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .investment-mix-bar span + span { animation-delay: 0.1s; }
