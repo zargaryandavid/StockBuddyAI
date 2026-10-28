@@ -27,7 +27,7 @@ import { SupportPage } from "@/components/support-page";
 import { TodayPage, type TodayDestination } from "@/components/today/today-page";
 import { parseBrokerCsv } from "@/lib/broker-csv";
 import { AmountInput } from "@/components/amount-input";
-import { GrowthCalculator } from "@/components/growth-calculator";
+import { GrowthCalculator, type GrowthStart } from "@/components/growth-calculator";
 import { AnimatedNumber } from "@/components/animated-number";
 import { EmptyState } from "@/components/empty-state";
 import { FlashValue } from "@/components/flash-value";
@@ -304,6 +304,8 @@ export function Dashboard({
   );
   // Bonds are entered in FIRE; the Portfolio page and Analytics show them for the full mix.
   const [bondsWanted, setBondsWanted] = useState(false);
+  // Set when FIRE opens the Growth calculator with its own numbers.
+  const [growthStart, setGrowthStart] = useState<GrowthStart | null>(null);
   const wantBonds = useCallback(() => setBondsWanted(true), []);
   const bondData = useBondHoldings(
     baseCurrency,
@@ -1213,7 +1215,12 @@ export function Dashboard({
         </section>
       ) : activeTab === "growth" ? (
         <section className="simple-page growth-shell">
-          <GrowthCalculator portfolioValue={metrics.totalValue} currency={baseCurrency} />
+          <GrowthCalculator
+            key={growthStart ? JSON.stringify(growthStart) : "own"}
+            portfolioValue={metrics.totalValue}
+            currency={baseCurrency}
+            start={growthStart}
+          />
         </section>
       ) : activeTab === "wishlist" ? (
         <section className="simple-page wishlist-shell">
@@ -1246,6 +1253,10 @@ export function Dashboard({
             currency={baseCurrency}
             dateOfBirth={dateOfBirth}
             onEditProfile={() => setShowProfile(true)}
+            onSeeGrowth={(start) => {
+              setGrowthStart(start);
+              setActiveTab("growth");
+            }}
           />
         </section>
       ) : activeTab === "portfolio" ? (

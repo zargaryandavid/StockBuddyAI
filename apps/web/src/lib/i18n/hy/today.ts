@@ -171,6 +171,7 @@ const today: Record<string, string> = {
   "Yr {year}": "Տ {year}",
   "Starting amount": "Սկզբնական գումար",
   "Starting amount, exact": "Սկզբնական գումար, ճշգրիտ",
+  "Use mine": "Իմը",
   "Use my portfolio ({amount})": "Օգտագործել իմ պորտֆելը ({amount})",
   "Monthly contribution": "Ամսական ներդրում",
   "Monthly contribution, exact": "Ամսական ներդրում, ճշգրիտ",

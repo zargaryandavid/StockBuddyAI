@@ -69,6 +69,23 @@ describe("FireDashboard", () => {
     );
   }
 
+  it("opens the Growth calculator with this plan's numbers", async () => {
+    const onSeeGrowth = vi.fn();
+    render(
+      <FireDashboard
+        portfolioValue={50000}
+        cash={1000}
+        reports={[]}
+        today="2026-10-24"
+        onSeeGrowth={onSeeGrowth}
+      />,
+    );
+    await screen.findByText("Paycheck");
+    fireEvent.click(screen.getByRole("button", { name: "See the compound effect" }));
+    // Current assets, the automatic monthly investment (income − expenses) and the return.
+    expect(onSeeGrowth).toHaveBeenCalledWith({ principal: 50000, monthly: 4000, rate: 0 });
+  });
+
   it("summarizes incomes and expenses into a FIRE number and timeline", async () => {
     renderPage();
 

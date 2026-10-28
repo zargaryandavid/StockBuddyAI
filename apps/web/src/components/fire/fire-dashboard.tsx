@@ -74,6 +74,7 @@ import { BreakdownDialog } from "./breakdown-dialog";
 import { TimelineDialog } from "./timeline-dialog";
 import { DonutRing } from "./donut";
 import { AnimatedNumber } from "@/components/animated-number";
+import type { GrowthStart } from "@/components/growth-calculator";
 
 import { BudgetRule } from "./budget-rule";
 import { FireProgressPanel } from "./fire-progress";
@@ -285,6 +286,7 @@ export function FireDashboard({
   currency = "USD",
   dateOfBirth = null,
   onEditProfile,
+  onSeeGrowth,
 }: {
   portfolioValue: number;
   cash: number;
@@ -294,6 +296,8 @@ export function FireDashboard({
   /** From the user's profile; ages are hidden without it. */
   dateOfBirth?: string | null;
   onEditProfile?: () => void;
+  /** Opens the Growth calculator with this plan's assets, monthly investing and return. */
+  onSeeGrowth?: (start: GrowthStart) => void;
 }) {
   const t = useT();
   const [entries, setEntries] = useState<FireEntry[]>([]);
@@ -783,6 +787,22 @@ export function FireDashboard({
             label={t("How is the path to FIRE calculated?")}
             onClick={() => setShowInfo(true)}
           />
+          {onSeeGrowth && (
+            <button
+              type="button"
+              className="text-button fire-growth-link"
+              onClick={() =>
+                onSeeGrowth({
+                  principal: plan.currentAssets,
+                  monthly: plan.monthlyInvest,
+                  rate: previewSettings.expected_return_pct,
+                })
+              }
+            >
+              <TrendingUp size={15} aria-hidden="true" />
+              {t("See the compound effect")}
+            </button>
+          )}
         </div>
         <div className="fire-assumptions">
           <label>

@@ -24,14 +24,25 @@ function short(value: number, currency: string) {
   }).format(value);
 }
 
+/** Values to open the calculator with, e.g. from the FIRE plan. */
+export type GrowthStart = { principal: number; monthly: number; rate: number };
+
 /** How money grows with a starting amount, a monthly contribution and a yearly return. */
-export function GrowthCalculator({ portfolioValue, currency }: { portfolioValue: number; currency: string }) {
+export function GrowthCalculator({
+  portfolioValue,
+  currency,
+  start = null,
+}: {
+  portfolioValue: number;
+  currency: string;
+  start?: GrowthStart | null;
+}) {
   const t = useT();
   const startingGuess = portfolioValue > 0 ? Math.round(portfolioValue / 1000) * 1000 : 10000;
-  const [principal, setPrincipal] = useState(startingGuess);
-  const [monthly, setMonthly] = useState(500);
+  const [principal, setPrincipal] = useState(() => (start ? Math.round(start.principal) : startingGuess));
+  const [monthly, setMonthly] = useState(() => (start ? Math.round(start.monthly) : 500));
   const [years, setYears] = useState(20);
-  const [rate, setRate] = useState(7);
+  const [rate, setRate] = useState(() => (start ? Math.min(20, Math.max(0, start.rate)) : 7));
   const [hover, setHover] = useState<number | null>(null);
 
   const result = useMemo(
@@ -169,7 +180,21 @@ export function GrowthCalculator({ portfolioValue, currency }: { portfolioValue:
         </div>
 
         <div className="growth-controls">
-          <Control label={t("Starting amount")}>
+          <Control
+            label={t("Starting amount")}
+            extra={
+              portfolioValue > 0 && Math.round(portfolioValue) !== principal ? (
+                <button
+                  type="button"
+                  className="text-button growth-use"
+                  title={t("Use my portfolio ({amount})", { amount: money(portfolioValue) })}
+                  onClick={() => setPrincipal(Math.round(portfolioValue))}
+                >
+                  {t("Use mine")}
+                </button>
+              ) : null
+            }
+          >
             <input
               type="range"
               min={0}
@@ -180,11 +205,6 @@ export function GrowthCalculator({ portfolioValue, currency }: { portfolioValue:
               onChange={(event) => setPrincipal(Number(event.target.value))}
             />
             <AmountInput aria-label={t("Starting amount, exact")} value={principal} onChange={setPrincipal} />
-            {portfolioValue > 0 && Math.round(portfolioValue) !== principal && (
-              <button type="button" className="text-button growth-use" onClick={() => setPrincipal(Math.round(portfolioValue))}>
-                {t("Use my portfolio ({amount})", { amount: money(portfolioValue) })}
-              </button>
-            )}
           </Control>
           <Control label={t("Monthly contribution")}>
             <input
@@ -231,10 +251,14 @@ export function GrowthCalculator({ portfolioValue, currency }: { portfolioValue:
   );
 }
 
-function Control({ label, children }: { label: string; children: React.ReactNode }) {
+/** One setting: its label (and an optional link) on top, then the value, then the slider. */
+function Control({ label, extra, children }: { label: string; extra?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="growth-control">
-      <span className="growth-control-label">{label}</span>
+      <span className="growth-control-label">
+        {label}
+        {extra}
+      </span>
       <div className="growth-control-row">{children}</div>
     </div>
   );

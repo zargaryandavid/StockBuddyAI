@@ -176,6 +176,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Fixed
 
+- Growth calculator: 70% of the page width and fits the screen without scrolling (summary in one row, chart sized to the space left, the four settings side by side with labels, values and sliders each lined up). FIRE: "See the compound effect" next to Path to FIRE opens the calculator with your current assets, monthly investing and expected return.
+
 - Net worth chart: the line is drawn all the way across again (the draw-in animation cut it off on the stretched chart), and the scale is at least 2% of your net worth, so days a few cents apart show as a flat line instead of a cliff.
 
 - Today Cash card: the "why" explanation opens from an (i) button at the right of the Cash title (Escape or Close shuts it), and the card no longer opens the Portfolio page when clicked.

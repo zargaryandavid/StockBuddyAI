@@ -3664,3 +3664,51 @@ button.today-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px r
   .growth-controls, .growth-split { grid-template-columns: minmax(0, 1fr); }
   .growth-chart { padding-left: 0.5rem; padding-right: 1rem; }
 }
+
+/* Growth calculator: 70% of the page width, centered, and short enough to fit the screen
+   without scrolling. The chart takes whatever height is left. */
+.simple-page.growth-shell { width: min(70%, 1000px); min-width: min(640px, 100%); padding: 0.25rem 0 1rem; }
+.growth-page { gap: 0.5rem; padding-top: 0.5rem; }
+.growth-heading h1 { font-size: var(--text-xl); margin: 0; }
+.growth-heading p { font-size: var(--text-sm); }
+.growth-summary {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "label split" "future split";
+  align-items: end; gap: 0 2rem; padding: 0.9rem 1.4rem 0.8rem;
+}
+.growth-summary > .growth-label { grid-area: label; }
+.growth-future { grid-area: future; margin: 0; font-size: clamp(1.6rem, 3vw, 2.2rem); }
+.growth-split { grid-area: split; padding-top: 0; border-top: 0; gap: 1rem; }
+.growth-split strong { font-size: var(--text-lg); }
+.growth-legend { padding: 0.5rem 1.4rem; }
+.growth-chart { --growth-chart-height: clamp(140px, calc(100vh - 560px), 260px); padding: 0.7rem 1.4rem 1.6rem 0.6rem; }
+.growth-y-axis, .growth-plot svg { height: var(--growth-chart-height); }
+.growth-controls { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.6rem 1.25rem; padding: 0.8rem 1.4rem 0.4rem; }
+.growth-control { gap: 0.3rem; }
+.growth-control-label { font-size: var(--text-sm); }
+.growth-control-row { grid-template-columns: minmax(0, 1fr); gap: 0.3rem; }
+.growth-control-row .growth-value, .growth-control-row input[type="text"] { text-align: left; }
+.growth-control-row input[type="text"] { width: 100%; padding: 0.25rem 0.5rem; }
+.growth-note { padding: 0 1.4rem 0.8rem; }
+@media (max-width: 1100px) {
+  .simple-page.growth-shell { width: 100%; min-width: 0; }
+  .growth-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .growth-summary { grid-template-columns: minmax(0, 1fr); grid-template-areas: "label" "future" "split"; }
+  .growth-controls { grid-template-columns: minmax(0, 1fr); }
+}
+.app-shell:has(.growth-shell) { padding-bottom: 1rem; }
+.growth-use { white-space: nowrap; }
+
+/* Each setting: label, value, slider, in the same three rows across all four columns. */
+.growth-control { grid-template-rows: auto; }
+.growth-control-label { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; min-height: 1.4rem; white-space: nowrap; }
+.growth-control-label .growth-use { overflow: hidden; text-overflow: ellipsis; font-size: var(--text-xs); }
+.growth-control-row { grid-template-rows: 2.1rem auto; align-items: center; }
+.growth-control-row input[type="range"] { order: 2; }
+.growth-control-row input[type="text"], .growth-control-row .growth-value { order: 1; height: 2.1rem; display: flex; align-items: center; }
+.fire-growth-link { display: inline-flex; align-items: center; gap: 0.35rem; margin-left: auto; font-size: var(--text-sm); white-space: nowrap; }
+.growth-control, .growth-control-row { min-width: 0; }
+.growth-control-row input { min-width: 0; box-sizing: border-box; }
+.growth-control-label { overflow: hidden; }
+.growth-control-label .growth-use { flex: 0 1 auto; min-width: 0; }

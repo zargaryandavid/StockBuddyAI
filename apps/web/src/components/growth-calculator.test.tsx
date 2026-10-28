@@ -22,7 +22,7 @@ describe("GrowthCalculator", () => {
   it("starts from the portfolio's value when there is one", () => {
     render(<GrowthCalculator portfolioValue={107948.6} currency="USD" />);
     expect((screen.getByRole("textbox", { name: "Starting amount, exact" }) as HTMLInputElement).value).toBe("108,000");
-    fireEvent.click(screen.getByRole("button", { name: /Use my portfolio/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Use mine" }));
     expect((screen.getByRole("textbox", { name: "Starting amount, exact" }) as HTMLInputElement).value).toBe("107,949");
   });
 });
