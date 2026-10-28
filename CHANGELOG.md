@@ -6,6 +6,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Added
 
+- Sign-in page: a gold-edged card under the feature chips with Warren Buffett's photo and his "Rule No. 1" quote (the quote left the rotating messages so it is not shown twice). The photo is the one supplied by the site owner, who is responsible for having the rights to use it.
+
 - Growth calculator (Portfolio tools in the menu): future value, total contributions and total growth for a starting amount, a monthly contribution, years and an expected yearly return (compounded monthly), with a chart of the value against what you put in, a hover readout per year, sliders plus exact amounts, and "Use my portfolio" to start from your portfolio's value.
 
 - Sign-in page: four short messages take turns under the headline (fade in every 7 seconds, pause on hover, dots to pick one). FIRE: a 50/30/20 budget comparing your income's ideal split (needs, wants, saving and investing) with what your plan spends. Portfolio: an (i) on Bonds explains the "your age in bonds" rule with your own numbers; the price date sits beside the Portfolio title and its card became Bonds vs stocks; the cash numbers moved behind an (i) beside Cash.
@@ -651,6 +653,8 @@ All notable project changes and user-visible functionality are recorded here.
 - Added a compact ticker-symbol list beneath every industry allocation.
 
 ### Added
+
+- Sign-in page: a gold-edged card under the feature chips with Warren Buffett's photo and his "Rule No. 1" quote (the quote left the rotating messages so it is not shown twice). The photo is the one supplied by the site owner, who is responsible for having the rights to use it.
 
 - Growth calculator (Portfolio tools in the menu): future value, total contributions and total growth for a starting amount, a monthly contribution, years and an expected yearly return (compounded monthly), with a chart of the value against what you put in, a hover readout per year, sliders plus exact amounts, and "Use my portfolio" to start from your portfolio's value.
 

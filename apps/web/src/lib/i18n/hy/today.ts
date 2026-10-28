@@ -127,8 +127,9 @@ const today: Record<string, string> = {
   "Why StockBuddy": "Ինչու StockBuddy",
   "Take care of your finances now and build your “F-you money”, so one day you never have to work again. Many of our parents never had the chance to plan for that. You do.":
     "Հոգացեք ձեր ֆինանսների մասին հիմա և կուտակեք ձեր «ազատության գումարը», որպեսզի մի օր այլևս ստիպված չլինեք աշխատել։ Մեր ծնողներից շատերը դրա համար պլանավորելու հնարավորություն չեն ունեցել։ Դուք ունեք։",
-  "“Rule No. 1: Never lose money. Rule No. 2: Never forget rule No. 1.” — Warren Buffett":
-    "«Կանոն №1՝ երբեք մի կորցրեք գումար։ Կանոն №2՝ երբեք մի մոռացեք կանոն №1-ը»։ — Ուորեն Բաֆեթ",
+  "“Rule No. 1: Never lose money. Rule No. 2: Never forget rule No. 1.”":
+    "«Կանոն №1՝ երբեք մի կորցրեք գումար։ Կանոն №2՝ երբեք մի մոռացեք կանոն №1-ը»։",
+  "Warren Buffett": "Ուորեն Բաֆեթ",
   "The stock market is the most powerful wealth-building tool of all time. Be patient and disciplined.":
     "Ֆոնդային շուկան հարստություն կուտակելու ամենաուժեղ գործիքն է բոլոր ժամանակներում։ Եղեք համբերատար և կարգապահ։",
   "About bonds and your age": "Պարտատոմսերի և ձեր տարիքի մասին",

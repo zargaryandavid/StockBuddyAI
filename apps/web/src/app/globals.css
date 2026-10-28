@@ -3712,3 +3712,26 @@ button.today-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px r
 .growth-control-row input { min-width: 0; box-sizing: border-box; }
 .growth-control-label { overflow: hidden; }
 .growth-control-label .growth-use { flex: 0 1 auto; min-width: 0; }
+
+/* Sign-in page: line-drawn investor with a quote, beside the dollar bills. */
+.investor-quote {
+  position: relative; z-index: 1; margin-top: 2rem;
+  display: grid; grid-template-columns: 72px minmax(0, 1fr); grid-template-areas: "art quote" "art author";
+  align-items: center; gap: 0.15rem 0.9rem; width: min(380px, 52%);
+  padding: 0.85rem 1.1rem; border: 1px solid rgba(232, 201, 122, 0.55); border-radius: 14px;
+  background: rgba(10, 30, 20, 0.35); backdrop-filter: blur(4px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.25);
+  animation: quote-in 0.9s ease-out 0.4s both;
+}
+.investor-portrait {
+  grid-area: art; width: 72px; height: 72px; border-radius: 50%; object-fit: cover; object-position: 50% 20%;
+  border: 2px solid var(--gold); box-shadow: 0 0 0 4px rgba(232, 201, 122, 0.18);
+}
+.investor-quote blockquote { grid-area: quote; margin: 0; color: #f4f1e6; font-size: 0.95rem; font-style: italic; line-height: 1.45; }
+.investor-quote figcaption { grid-area: author; color: var(--gold); font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.investor-quote figcaption::before { content: "— "; }
+@keyframes quote-in { from { opacity: 0; transform: translateY(10px); } }
+@media (max-width: 1160px) {
+  .investor-quote { width: min(420px, 100%); }
+}
+@media (prefers-reduced-motion: reduce) { .investor-quote { animation: none; } }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { LanguageSwitcher } from "@/components/language-switcher";
 
 import { AuthForm } from "@/components/auth-form";
+import { InvestorQuote } from "@/components/investor-quote";
 import { RotatingMessages } from "@/components/rotating-messages";
 import { getT } from "@/lib/i18n/server";
 import Image from "next/image";
@@ -46,7 +47,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
             t(
               "Take care of your finances now and build your “F-you money”, so one day you never have to work again. Many of our parents never had the chance to plan for that. You do.",
             ),
-            t("“Rule No. 1: Never lose money. Rule No. 2: Never forget rule No. 1.” — Warren Buffett"),
             t(
               "The stock market is the most powerful wealth-building tool of all time. Be patient and disciplined.",
             ),
@@ -57,6 +57,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
           <span>{t("User-friendly interface")}</span>
           <span>{t("Transparent analytics")}</span>
         </div>
+        <InvestorQuote
+          quote={t("“Rule No. 1: Never lose money. Rule No. 2: Never forget rule No. 1.”")}
+          author={t("Warren Buffett")}
+          photo="/login/investor.jpg"
+        />
         <div className="login-bills" aria-hidden="true">
           {/* A real note, shown front only, small and low-resolution as US rules ask. */}
           <Image className="login-bill back" src={BILL} alt="" width={520} height={226} priority unoptimized />
