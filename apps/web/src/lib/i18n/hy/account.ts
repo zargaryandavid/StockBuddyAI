@@ -17,8 +17,8 @@ const account: Record<string, string> = {
   "Show password": "Ցույց տալ գաղտնաբառը",
   "Hide password": "Թաքցնել գաղտնաբառը",
   "Forgot password?": "Մոռացե՞լ եք գաղտնաբառը",
-  "I agree to the {terms} and {privacy}, and I understand StockBuddy gives estimates and education, not financial advice.":
-    "Ես համաձայն եմ «{terms}» և «{privacy}» փաստաթղթերին և հասկանում եմ, որ StockBuddy-ն տրամադրում է գնահատականներ և կրթական նյութեր, այլ ոչ թե ֆինանսական խորհրդատվություն։",
+  "I agree to the {terms} and {privacy}, and I understand MyPortfolioBuddy gives estimates and education, not financial advice.":
+    "Ես համաձայն եմ «{terms}» և «{privacy}» փաստաթղթերին և հասկանում եմ, որ MyPortfolioBuddy-ն տրամադրում է գնահատականներ և կրթական նյութեր, այլ ոչ թե ֆինանսական խորհրդատվություն։",
   "Please agree to the Terms and Privacy Policy to create an account.":
     "Հաշիվ ստեղծելու համար համաձայնեք Պայմաններին և Գաղտնիության քաղաքականությանը։",
   "Too many requests. Wait a minute and try again.": "Չափազանց շատ հարցումներ։ Սպասեք մեկ րոպե և նորից փորձեք։",
@@ -42,8 +42,8 @@ const account: Record<string, string> = {
 
   // Notices after opening an email link (login/page.tsx CONFIRM_NOTICES)
   "Your email is confirmed. Sign in to continue.": "Ձեր էլ. փոստը հաստատված է։ Շարունակելու համար մուտք գործեք։",
-  "Your account and all its data were deleted. Thanks for trying StockBuddy.":
-    "Ձեր հաշիվը և դրա բոլոր տվյալները ջնջվեցին։ Շնորհակալություն StockBuddy-ն փորձելու համար։",
+  "Your account and all its data were deleted. Thanks for trying MyPortfolioBuddy.":
+    "Ձեր հաշիվը և դրա բոլոր տվյալները ջնջվեցին։ Շնորհակալություն MyPortfolioBuddy-ն փորձելու համար։",
   "That confirmation link has expired or was already used. Sign in, or create the account again to get a new link.":
     "Այդ հաստատման հղման ժամկետն անցել է, կամ այն արդեն օգտագործվել է։ Մուտք գործեք կամ նորից ստեղծեք հաշիվը՝ նոր հղում ստանալու համար։",
   "That password reset link has expired or was already used. Ask for a new one below.":
@@ -122,20 +122,20 @@ const account: Record<string, string> = {
   "Delete my account": "Ջնջել իմ հաշիվը",
 
   // Legal pages (legal-page.tsx, privacy/page.tsx, terms/page.tsx)
-  "Last updated {date}. StockBuddy is in early access (beta).":
-    "Վերջին թարմացումը՝ {date}։ StockBuddy-ն վաղ հասանելիության (բետա) փուլում է։",
+  "Last updated {date}. MyPortfolioBuddy is in early access (beta).":
+    "Վերջին թարմացումը՝ {date}։ MyPortfolioBuddy-ն վաղ հասանելիության (բետա) փուլում է։",
   "October 26, 2026": "2026 թ. հոկտեմբերի 26",
   "Questions? Write to {email}.": "Հարցեր ունե՞ք։ Գրեք {email} հասցեին։",
-  "Privacy Policy · StockBuddy": "Գաղտնիության քաղաքականություն · StockBuddy",
-  "Terms · StockBuddy": "Պայմաններ · StockBuddy",
+  "Privacy Policy · MyPortfolioBuddy": "Գաղտնիության քաղաքականություն · MyPortfolioBuddy",
+  "Terms · MyPortfolioBuddy": "Պայմաններ · MyPortfolioBuddy",
   "Terms of Use": "Օգտագործման պայմաններ",
   "What we collect": "Ինչ ենք մենք հավաքում",
   "Account:": "Հաշիվ․",
     "What you enter:": "Այն, ինչ դուք մուտքագրում եք․",
     "Technical data:": "Տեխնիկական տվյալներ․",
     "How we use it": "Ինչպես ենք դրանք օգտագործում",
-  "Only to run StockBuddy for you: show your FIRE plan, portfolio, and analytics, send the reminder emails you ask for, and keep the service secure. We do not sell your data, show ads, or share it for marketing.":
-    "Միայն StockBuddy-ն ձեզ համար գործարկելու նպատակով՝ ցույց տալու ձեր FIRE պլանը, պորտֆելը և վերլուծությունը, ուղարկելու ձեր խնդրած հիշեցման նամակները և ապահովելու ծառայության անվտանգությունը։ Մենք չենք վաճառում ձեր տվյալները, չենք ցուցադրում գովազդ և չենք տրամադրում դրանք մարքեթինգային նպատակներով։",
+  "Only to run MyPortfolioBuddy for you: show your FIRE plan, portfolio, and analytics, send the reminder emails you ask for, and keep the service secure. We do not sell your data, show ads, or share it for marketing.":
+    "Միայն MyPortfolioBuddy-ն ձեզ համար գործարկելու նպատակով՝ ցույց տալու ձեր FIRE պլանը, պորտֆելը և վերլուծությունը, ուղարկելու ձեր խնդրած հիշեցման նամակները և ապահովելու ծառայության անվտանգությունը։ Մենք չենք վաճառում ձեր տվյալները, չենք ցուցադրում գովազդ և չենք տրամադրում դրանք մարքեթինգային նպատակներով։",
   "Who else processes it": "Ով է ևս մշակում դրանք",
   "hosts our database, sign-in, and file storage.":
     "հյուրընկալում է մեր տվյալների բազան, մուտքի համակարգը և ֆայլերի պահոցը։",
@@ -156,16 +156,16 @@ const account: Record<string, string> = {
   "Data travels encrypted, every account's records are isolated at the database level, and service keys are stored encrypted. No system is perfectly secure; if we learn of a breach that affects you, we will tell you.":
     "Տվյալները փոխանցվում են գաղտնագրված, յուրաքանչյուր հաշվի գրառումները մեկուսացված են տվյալների բազայի մակարդակում, իսկ ծառայության բանալիները պահվում են գաղտնագրված։ Ոչ մի համակարգ կատարելապես անվտանգ չէ։ Եթե մենք իմանանք ձեզ առնչվող տվյալների արտահոսքի մասին, կտեղեկացնենք ձեզ։",
   Children: "Երեխաներ",
-  "StockBuddy is not meant for anyone under 18.": "StockBuddy-ն նախատեսված չէ 18 տարեկանից ցածր անձանց համար։",
+  "MyPortfolioBuddy is not meant for anyone under 18.": "MyPortfolioBuddy-ն նախատեսված չէ 18 տարեկանից ցածր անձանց համար։",
   Changes: "Փոփոխություններ",
   "If we change this policy in a meaningful way, we will tell you by email or in the app before the change applies.":
     "Եթե մենք էականորեն փոխենք այս քաղաքականությունը, փոփոխության ուժի մեջ մտնելուց առաջ կտեղեկացնենք ձեզ էլ. փոստով կամ հավելվածում։",
   "Early access": "Վաղ հասանելիություն",
-  "StockBuddy is in early access. Features may change, break, or be removed, and the service may be unavailable at times. Your feedback helps us fix that.":
-    "StockBuddy-ն վաղ հասանելիության փուլում է։ Գործառույթները կարող են փոխվել, խափանվել կամ հեռացվել, և ծառայությունը երբեմն կարող է անհասանելի լինել։ Ձեր կարծիքն օգնում է մեզ շտկել դա։",
+  "MyPortfolioBuddy is in early access. Features may change, break, or be removed, and the service may be unavailable at times. Your feedback helps us fix that.":
+    "MyPortfolioBuddy-ն վաղ հասանելիության փուլում է։ Գործառույթները կարող են փոխվել, խափանվել կամ հեռացվել, և ծառայությունը երբեմն կարող է անհասանելի լինել։ Ձեր կարծիքն օգնում է մեզ շտկել դա։",
   "Not financial advice": "Ֆինանսական խորհրդատվություն չէ",
-  "StockBuddy gives estimates, education, and organizing tools. It is not a financial, investment, tax, or legal adviser, and nothing in it is a recommendation to buy, sell, or hold anything. Projections, FIRE dates, AI reviews, and market data can be wrong or out of date. Make your own decisions, and talk to a licensed professional before acting on anything important.":
-    "StockBuddy-ն տրամադրում է գնահատականներ, կրթական նյութեր և կազմակերպման գործիքներ։ Այն ֆինանսական, ներդրումային, հարկային կամ իրավական խորհրդատու չէ, և դրանում ոչինչ որևէ բան գնելու, վաճառելու կամ պահելու առաջարկություն չէ։ Կանխատեսումները, FIRE ամսաթվերը, AI վերանայումները և շուկայական տվյալները կարող են սխալ կամ հնացած լինել։ Ինքներդ կայացրեք ձեր որոշումները և որևէ կարևոր քայլ անելուց առաջ խորհրդակցեք լիցենզավորված մասնագետի հետ։",
+  "MyPortfolioBuddy gives estimates, education, and organizing tools. It is not a financial, investment, tax, or legal adviser, and nothing in it is a recommendation to buy, sell, or hold anything. Projections, FIRE dates, AI reviews, and market data can be wrong or out of date. Make your own decisions, and talk to a licensed professional before acting on anything important.":
+    "MyPortfolioBuddy-ն տրամադրում է գնահատականներ, կրթական նյութեր և կազմակերպման գործիքներ։ Այն ֆինանսական, ներդրումային, հարկային կամ իրավական խորհրդատու չէ, և դրանում ոչինչ որևէ բան գնելու, վաճառելու կամ պահելու առաջարկություն չէ։ Կանխատեսումները, FIRE ամսաթվերը, AI վերանայումները և շուկայական տվյալները կարող են սխալ կամ հնացած լինել։ Ինքներդ կայացրեք ձեր որոշումները և որևէ կարևոր քայլ անելուց առաջ խորհրդակցեք լիցենզավորված մասնագետի հետ։",
   "Your account": "Ձեր հաշիվը",
   "You must be at least 18 and give a real email address you control.":
     "Դուք պետք է լինեք առնվազն 18 տարեկան և նշեք իրական էլ. փոստի հասցե, որը կառավարում եք դուք։",
@@ -187,13 +187,13 @@ const account: Record<string, string> = {
   "The service is provided “as is” during early access. To the extent the law allows, we are not liable for investment losses or for indirect damages from using it.":
     "Վաղ հասանելիության ընթացքում ծառայությունը տրամադրվում է «ինչպես կա» սկզբունքով։ Օրենքով թույլատրելի չափով մենք պատասխանատվություն չենք կրում ներդրումային վնասների կամ դրա օգտագործումից առաջացած անուղղակի վնասների համար։",
   "Ending your use": "Օգտագործման դադարեցում",
-  "You can stop using StockBuddy at any time and ask us to delete your account (see the {privacy}). We may end the early-access program, and we will give you notice and a chance to get a copy of your data first.":
-    "Դուք կարող եք ցանկացած պահի դադարեցնել StockBuddy-ի օգտագործումը և խնդրել մեզ ջնջել ձեր հաշիվը (տե՛ս {privacy})։ Մենք կարող ենք ավարտել վաղ հասանելիության ծրագիրը, սակայն նախապես կտեղեկացնենք ձեզ և հնարավորություն կտանք ստանալու ձեր տվյալների պատճենը։",
+  "You can stop using MyPortfolioBuddy at any time and ask us to delete your account (see the {privacy}). We may end the early-access program, and we will give you notice and a chance to get a copy of your data first.":
+    "Դուք կարող եք ցանկացած պահի դադարեցնել MyPortfolioBuddy-ի օգտագործումը և խնդրել մեզ ջնջել ձեր հաշիվը (տե՛ս {privacy})։ Մենք կարող ենք ավարտել վաղ հասանելիության ծրագիրը, սակայն նախապես կտեղեկացնենք ձեզ և հնարավորություն կտանք ստանալու ձեր տվյալների պատճենը։",
   "We will tell you about meaningful changes to these terms before they apply. Questions: {email}.":
     "Այս պայմանների էական փոփոխությունների մասին մենք կտեղեկացնենք ձեզ մինչև դրանց ուժի մեջ մտնելը։ Հարցերի համար՝ {email}։",
 
   // Public read-only share pages (share/[token]/page.tsx, shared-fire.tsx, shared-portfolio.tsx)
-  "Shared from StockBuddy": "Կիսված է StockBuddy-ից",
+  "Shared from MyPortfolioBuddy": "Կիսված է MyPortfolioBuddy-ից",
   "Loading…": "Բեռնվում է…",
   "This link isn't active": "Այս հղումն ակտիվ չէ",
   "The owner may have turned it off. Ask them for a new link.":
@@ -204,8 +204,8 @@ const account: Record<string, string> = {
   "{owner}'s portfolio": "{owner} · պորտֆել",
   "A portfolio: {name}": "Պորտֆել՝ {name}",
   "A portfolio": "Պորտֆել",
-  "Read-only view shared from StockBuddy · prices as of {date} UTC. Estimates, not advice.":
-    "Միայն դիտման համար՝ կիսված StockBuddy-ից · գները՝ {date} UTC դրությամբ։ Գնահատականներ են, ոչ թե խորհրդատվություն։",
+  "Read-only view shared from MyPortfolioBuddy · prices as of {date} UTC. Estimates, not advice.":
+    "Միայն դիտման համար՝ կիսված MyPortfolioBuddy-ից · գները՝ {date} UTC դրությամբ։ Գնահատականներ են, ոչ թե խորհրդատվություն։",
   "This portfolio is no longer available.": "Այս պորտֆելն այլևս հասանելի չէ։",
   "FIRE summary": "FIRE ամփոփում",
   "Monthly income": "Ամսական եկամուտ",

@@ -67,7 +67,7 @@ class Mailer:
 
 def configured(**overrides):
     return Settings(
-        smtp_host="smtp.example.com", smtp_from="StockBuddy <r@example.com>", **overrides
+        smtp_host="smtp.example.com", smtp_from="MyPortfolioBuddy <r@example.com>", **overrides
     )
 
 
@@ -76,10 +76,10 @@ def test_estimated_next_report_is_one_quarter_later():
 
 
 def test_message_goes_to_the_saved_email_and_explains_the_estimate():
-    message = reminder_message(due(), "StockBuddy <r@example.com>")
+    message = reminder_message(due(), "MyPortfolioBuddy <r@example.com>")
 
     assert message["To"] == "owner@example.com"
-    assert message["Subject"] == "StockBuddy reminder: AAPL report coming up"
+    assert message["Subject"] == "MyPortfolioBuddy reminder: AAPL report coming up"
     body = message.get_content()
     assert "Apple Inc. (AAPL)" in body
     assert "2026-10-30" in body

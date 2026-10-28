@@ -6,6 +6,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Added
 
+- Renamed to **MyPortfolioBuddy** everywhere people see it (logo, page titles, emails, legal pages, Admin, API title, Armenian text); internal code names stay. New logo and browser icon: a green coin with a gold $ (favicon, SVG icon, iPhone icon). Search and sharing: investor-focused title and description, keywords, Open Graph and X preview image, robots.txt (public pages only; Admin, share links, API kept out) and sitemap.xml. Set NEXT_PUBLIC_SITE_URL on Vercel once the domain is connected.
+
 - Sign-in page: a gold-edged card under the feature chips with Warren Buffett's photo and his "Rule No. 1" quote (the quote left the rotating messages so it is not shown twice). The photo is the one supplied by the site owner, who is responsible for having the rights to use it.
 
 - Growth calculator (Portfolio tools in the menu): future value, total contributions and total growth for a starting amount, a monthly contribution, years and an expected yearly return (compounded monthly), with a chart of the value against what you put in, a hover readout per year, sliders plus exact amounts, and "Use my portfolio" to start from your portfolio's value.
@@ -667,6 +669,8 @@ All notable project changes and user-visible functionality are recorded here.
 - Added a compact ticker-symbol list beneath every industry allocation.
 
 ### Added
+
+- Renamed to **MyPortfolioBuddy** everywhere people see it (logo, page titles, emails, legal pages, Admin, API title, Armenian text); internal code names stay. New logo and browser icon: a green coin with a gold $ (favicon, SVG icon, iPhone icon). Search and sharing: investor-focused title and description, keywords, Open Graph and X preview image, robots.txt (public pages only; Admin, share links, API kept out) and sitemap.xml. Set NEXT_PUBLIC_SITE_URL on Vercel once the domain is connected.
 
 - Sign-in page: a gold-edged card under the feature chips with Warren Buffett's photo and his "Rule No. 1" quote (the quote left the rotating messages so it is not shown twice). The photo is the one supplied by the site owner, who is responsible for having the rights to use it.
 

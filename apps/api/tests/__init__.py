@@ -1,1 +1,1 @@
-"""StockBuddyAI API test package."""
+"""MyPortfolioBuddy API test package."""

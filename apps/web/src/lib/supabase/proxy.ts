@@ -27,7 +27,13 @@ export async function updateSession(request: NextRequest) {
   // the Terms, Privacy Policy, and shared read-only pages are readable by anyone.
   const path = request.nextUrl.pathname;
   const isPublic =
-    path.startsWith("/auth/") || path.startsWith("/share/") || path === "/privacy" || path === "/terms";
+    path.startsWith("/auth/") ||
+    path.startsWith("/share/") ||
+    path === "/privacy" ||
+    path === "/terms" ||
+    // Search engines read these without signing in.
+    path === "/robots.txt" ||
+    path === "/sitemap.xml";
 
   if (!signedIn && !isLogin && !isPublic) {
     return NextResponse.redirect(new URL("/login", request.url));

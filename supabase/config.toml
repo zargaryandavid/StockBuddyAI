@@ -254,14 +254,14 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Branded StockBuddy emails. The hosted project uses the same files: paste them into
+# Branded MyPortfolioBuddy emails. The hosted project uses the same files: paste them into
 # Supabase Dashboard -> Authentication -> Emails (see docs/OPERATIONS.md).
 [auth.email.template.confirmation]
-subject = "Confirm your email for StockBuddy"
+subject = "Confirm your email for MyPortfolioBuddy"
 content_path = "./supabase/templates/confirmation.html"
 
 [auth.email.template.recovery]
-subject = "Reset your StockBuddy password"
+subject = "Reset your MyPortfolioBuddy password"
 content_path = "./supabase/templates/recovery.html"
 
 # Uncomment to customize email template

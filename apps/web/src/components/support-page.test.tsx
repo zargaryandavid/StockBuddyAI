@@ -11,7 +11,7 @@ describe("SupportPage", () => {
   it("explains why to support and shows the $9 subscription as coming soon", () => {
     render(<SupportPage />);
 
-    expect(screen.getByRole("heading", { name: "Support StockBuddy" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Support MyPortfolioBuddy" })).toBeTruthy();
     for (const promise of ["No sponsors", "No ads", "Your data stays yours"]) {
       expect(screen.getByText(promise)).toBeTruthy();
     }

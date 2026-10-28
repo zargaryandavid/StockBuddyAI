@@ -136,7 +136,7 @@ export function AdminConnections() {
       <div className="page-heading">
         <div>
           <h1 id="admin-connections-title">{t("Connections")}</h1>
-          <p className="page-subtitle">{t("Outside services StockBuddy uses. Values saved here override the server config (.env).")}</p>
+          <p className="page-subtitle">{t("Outside services MyPortfolioBuddy uses. Values saved here override the server config (.env).")}</p>
         </div>
         <button type="button" className="button primary admin-education-add" onClick={() => void testAll()} disabled={!connections || testingAll}>
           <PlugZap size={16} aria-hidden="true" />

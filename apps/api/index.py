@@ -1,4 +1,4 @@
-"""Vercel entry point for the StockBuddyAI API.
+"""Vercel entry point for the MyPortfolioBuddy API.
 
 Vercel loads `app` from here (see the api service in the root vercel.json). The
 package lives in src/; putting it first on the import path keeps file paths such as

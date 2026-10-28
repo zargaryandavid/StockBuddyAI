@@ -61,7 +61,7 @@ export function NetWorthChart({
       <div className="net-worth-empty">
         <p className="muted">
           {points.length
-            ? t("Your chart starts today. Each day you open StockBuddy adds a point, so come back tomorrow to see the line grow.")
+            ? t("Your chart starts today. Each day you open MyPortfolioBuddy adds a point, so come back tomorrow to see the line grow.")
             : t("Your chart starts the first day your net worth is saved. Add a portfolio or your savings to begin.")}
         </p>
         {points.length > 0 && (

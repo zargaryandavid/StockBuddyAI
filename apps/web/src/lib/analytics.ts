@@ -569,7 +569,7 @@ export function formatPercent(value: number) {
   return `${(value * 100).toFixed(1)}%`;
 }
 
-/** Cash StockBuddy suggests keeping when a portfolio has no minimum of its own. */
+/** Cash MyPortfolioBuddy suggests keeping when a portfolio has no minimum of its own. */
 export const DEFAULT_CASH_TARGET = 0.05;
 
 /** The portfolio's own minimum cash share, or the book default (5% unless the admin changed it). */

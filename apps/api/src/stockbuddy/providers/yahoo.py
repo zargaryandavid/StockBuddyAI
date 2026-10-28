@@ -20,7 +20,7 @@ class YahooPriceClient:
 
     def __init__(self, session: requests.Session | None = None, timeout: float = 30) -> None:
         self._session = session or requests.Session()
-        self._session.headers.update({"User-Agent": "Mozilla/5.0 StockBuddyAI/0.1"})
+        self._session.headers.update({"User-Agent": "Mozilla/5.0 MyPortfolioBuddy/0.1"})
         self._timeout = timeout
         self._names: dict[str, str] = {}
         self._instrument_types: dict[str, str] = {}

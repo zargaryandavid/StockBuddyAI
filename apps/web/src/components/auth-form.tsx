@@ -176,7 +176,7 @@ export function AuthForm({ notice }: { notice?: string } = {}) {
           <span>
             {/* One sentence with the two links placed where each language puts them. */}
             {t(
-              "I agree to the {terms} and {privacy}, and I understand StockBuddy gives estimates and education, not financial advice.",
+              "I agree to the {terms} and {privacy}, and I understand MyPortfolioBuddy gives estimates and education, not financial advice.",
             )
               .split(/(\{terms\}|\{privacy\})/)
               .map((part, index) =>

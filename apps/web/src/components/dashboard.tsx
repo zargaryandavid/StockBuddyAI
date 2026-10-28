@@ -242,7 +242,7 @@ export function Dashboard({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showReturns, setShowReturns] = useState(true);
   const [showLifecycle, setShowLifecycle] = useState(false);
-  const [showStockBuddyStatus, setShowStockBuddyStatus] = useState(false);
+  const [showMyPortfolioBuddyStatus, setShowMyPortfolioBuddyStatus] = useState(false);
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
   const [csvText, setCsvText] = useState("");
   const [columnMap, setColumnMap] = useState<ImportColumnMap>({
@@ -1570,22 +1570,22 @@ export function Dashboard({
                     </button>
                     <button
                       type="button"
-                      aria-pressed={showStockBuddyStatus}
-                      onClick={() => setShowStockBuddyStatus((visible) => !visible)}
+                      aria-pressed={showMyPortfolioBuddyStatus}
+                      onClick={() => setShowMyPortfolioBuddyStatus((visible) => !visible)}
                     >
-                      {showStockBuddyStatus ? <Eye size={15} /> : <EyeOff size={15} />}
-                      {t("StockBuddy status")}
+                      {showMyPortfolioBuddyStatus ? <Eye size={15} /> : <EyeOff size={15} />}
+                      {t("MyPortfolioBuddy status")}
                     </button>
                   </div>
                   <div
-                    className={`holdings-table${showReturns ? "" : " hide-returns"}${showLifecycle ? "" : " hide-lifecycle"}${showStockBuddyStatus ? "" : " hide-stockbuddy-status"}`}
+                    className={`holdings-table${showReturns ? "" : " hide-returns"}${showLifecycle ? "" : " hide-lifecycle"}${showMyPortfolioBuddyStatus ? "" : " hide-stockbuddy-status"}`}
                     role="table"
                     aria-label={t("Current portfolio holdings")}
                     style={{
                       ["--holding-columns" as string]: holdingColumns({
                         returns: showReturns,
                         lifecycle: showLifecycle,
-                        status: showStockBuddyStatus,
+                        status: showMyPortfolioBuddyStatus,
                       }),
                     }}
                   >
@@ -1604,7 +1604,7 @@ export function Dashboard({
                       <SortButton className="return-col" label={t("1Y")} active={sortKey === "growth_1y"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("growth_1y")} />
                       <SortButton className="return-col" label={t("Day")} active={sortKey === "day"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("day")} />
                       <SortButton className="lifecycle-col" label={t("Lifecycle phase")} active={sortKey === "phase"} direction={sortDirection} defaultDirection="asc" onClick={() => sortPositions("phase")} />
-                      <SortButton className="status-col" label={t("StockBuddy status")} active={sortKey === "status"} direction={sortDirection} defaultDirection="asc" onClick={() => sortPositions("status")} />
+                      <SortButton className="status-col" label={t("MyPortfolioBuddy status")} active={sortKey === "status"} direction={sortDirection} defaultDirection="asc" onClick={() => sortPositions("status")} />
                       <span role="columnheader">{t("Actions")}</span>
                     </div>
                     {displayRows.map(({ position, originalIndex: index, metric, status }) => {
@@ -2237,7 +2237,7 @@ export function Dashboard({
                             (broker.rows.length > 0 && preview.errors.length > 0)
                           ) {
                             setCsvText("");
-                            // StockBuddy keeps whole shares; say so when a file has fractions.
+                            // MyPortfolioBuddy keeps whole shares; say so when a file has fractions.
                             const rounded = broker.rows.filter((row) => !Number.isInteger(row.shares));
                             setImportPreview({
                               positions: broker.rows
@@ -2252,7 +2252,7 @@ export function Dashboard({
                                 }),
                               errors: [
                                 ...rounded.map((row) =>
-                                  t("{ticker}: {shares} shares rounded down to {whole}; StockBuddy keeps whole shares.", {
+                                  t("{ticker}: {shares} shares rounded down to {whole}; MyPortfolioBuddy keeps whole shares.", {
                                     ticker: row.ticker,
                                     shares: row.shares,
                                     whole: Math.floor(row.shares),
@@ -2319,7 +2319,7 @@ export function Dashboard({
                       />
                     </label>
                     <p className="privacy-note">
-                      {t("Sent to OpenAI for extraction and not stored by StockBuddyAI.")}
+                      {t("Sent to OpenAI for extraction and not stored by MyPortfolioBuddy.")}
                     </p>
                   </>
                 )}

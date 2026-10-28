@@ -303,9 +303,9 @@ const analysis: Record<string, string> = {
   "{fund} · other holdings": "{fund} · այլ դիրքեր",
 
   // Support us
-  "Support StockBuddy": "Աջակցեք StockBuddy-ին",
-  "We build StockBuddy for you, and only for you. There are no sponsors, no ads, and we never sell your data. To keep it that way, we need your help.":
-    "Մենք ստեղծում ենք StockBuddy-ն ձեզ համար և միայն ձեզ համար։ Չկան հովանավորներ, չկա գովազդ, և մենք երբեք չենք վաճառում ձեր տվյալները։ Որպեսզի այդպես էլ մնա, մեզ անհրաժեշտ է ձեր օգնությունը։",
+  "Support MyPortfolioBuddy": "Աջակցեք MyPortfolioBuddy-ին",
+  "We build MyPortfolioBuddy for you, and only for you. There are no sponsors, no ads, and we never sell your data. To keep it that way, we need your help.":
+    "Մենք ստեղծում ենք MyPortfolioBuddy-ն ձեզ համար և միայն ձեզ համար։ Չկան հովանավորներ, չկա գովազդ, և մենք երբեք չենք վաճառում ձեր տվյալները։ Որպեսզի այդպես էլ մնա, մեզ անհրաժեշտ է ձեր օգնությունը։",
   "No sponsors": "Առանց հովանավորների",
   "Nobody pays us to show you anything.": "Ոչ ոք մեզ չի վճարում՝ ձեզ որևէ բան ցույց տալու համար։",
   "No ads": "Առանց գովազդի",

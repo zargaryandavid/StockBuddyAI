@@ -3,7 +3,7 @@ const today: Record<string, string> = {
   Today: "Այսօր",
   Loading: "Բեռնվում է",
   "Your money at a glance, and what needs a look.": "Ձեր գումարները մեկ հայացքով, և այն, ինչին պետք է ուշադրություն դարձնել։",
-  "Set up StockBuddy in three steps": "Կարգավորեք StockBuddy-ն երեք քայլով",
+  "Set up MyPortfolioBuddy in three steps": "Կարգավորեք MyPortfolioBuddy-ն երեք քայլով",
   "{done} of 3 done": "Արված է {done}-ը 3-ից",
   "Skip for now": "Բաց թողնել առայժմ",
   Done: "Արված է",
@@ -53,8 +53,8 @@ const today: Record<string, string> = {
   "Expected around {day} (last report {last})": "Սպասվում է մոտ {day}-ին (վերջին հաշվետվությունը՝ {last})",
   "Estimated as about three months after each company's last report.":
     "Գնահատված է յուրաքանչյուր ընկերության վերջին հաշվետվությունից մոտ երեք ամիս հետո։",
-  "Your chart starts today. Each day you open StockBuddy adds a point, so come back tomorrow to see the line grow.":
-    "Ձեր գրաֆիկը սկսվում է այսօր։ Ամեն օր, երբ բացում եք StockBuddy-ն, ավելանում է մեկ կետ. վաղը կտեսնեք, թե ինչպես է գիծն աճում։",
+  "Your chart starts today. Each day you open MyPortfolioBuddy adds a point, so come back tomorrow to see the line grow.":
+    "Ձեր գրաֆիկը սկսվում է այսօր։ Ամեն օր, երբ բացում եք MyPortfolioBuddy-ն, ավելանում է մեկ կետ. վաղը կտեսնեք, թե ինչպես է գիծն աճում։",
   "Your chart starts the first day your net worth is saved. Add a portfolio or your savings to begin.":
     "Գրաֆիկը կսկսվի այն օրը, երբ առաջին անգամ պահպանվի ձեր զուտ կարողությունը։ Սկսելու համար ավելացրեք պորտֆել կամ խնայողություններ։",
   "{amount} in this period": "{amount} այս ժամանակահատվածում",
@@ -64,8 +64,8 @@ const today: Record<string, string> = {
   "Choose a CSV file": "Ընտրեք CSV ֆայլ",
   "A positions export from Fidelity, Schwab, Vanguard, E*TRADE, Interactive Brokers and others, or any file with ticker and shares columns.":
     "Դիրքերի արտահանում Fidelity-ից, Schwab-ից, Vanguard-ից, E*TRADE-ից, Interactive Brokers-ից և այլն, կամ ցանկացած ֆայլ՝ տիկերի և բաժնետոմսերի սյունակներով։",
-  "{ticker}: {shares} shares rounded down to {whole}; StockBuddy keeps whole shares.":
-    "{ticker}՝ {shares} բաժնետոմսը կլորացվել է մինչև {whole}. StockBuddy-ն պահում է միայն ամբողջ բաժնետոմսեր։",
+  "{ticker}: {shares} shares rounded down to {whole}; MyPortfolioBuddy keeps whole shares.":
+    "{ticker}՝ {shares} բաժնետոմսը կլորացվել է մինչև {whole}. MyPortfolioBuddy-ն պահում է միայն ամբողջ բաժնետոմսեր։",
   "Line {line}: {reason}": "Տող {line}՝ {reason}",
   "Read as a {broker} export. Confirm the preview before importing.":
     "Կարդացվել է որպես {broker}-ի արտահանում։ Ներմուծելուց առաջ հաստատեք նախադիտումը։",
@@ -124,7 +124,7 @@ const today: Record<string, string> = {
   "No assets yet": "Ակտիվներ դեռ չկան",
   "No bonds yet": "Պարտատոմսեր դեռ չկան",
   "The admin adds books to the Library in Admin.": "Ադմինը գրքերն ավելացնում է Գրադարանում՝ Ադմին բաժնից։",
-  "Why StockBuddy": "Ինչու StockBuddy",
+  "Why MyPortfolioBuddy": "Ինչու MyPortfolioBuddy",
   "Take care of your finances now and build your “F-you money”, so one day you never have to work again. Many of our parents never had the chance to plan for that. You do.":
     "Հոգացեք ձեր ֆինանսների մասին հիմա և կուտակեք ձեր «ազատության գումարը», որպեսզի մի օր այլևս ստիպված չլինեք աշխատել։ Մեր ծնողներից շատերը դրա համար պլանավորելու հնարավորություն չեն ունեցել։ Դուք ունեք։",
   "“Rule No. 1: Never lose money. Rule No. 2: Never forget rule No. 1.”":

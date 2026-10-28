@@ -1,6 +1,6 @@
 import { hy } from "./hy";
 
-/** The languages StockBuddy speaks. English is the source; text not yet translated falls back to it. */
+/** The languages MyPortfolioBuddy speaks. English is the source; text not yet translated falls back to it. */
 export const LOCALES = ["en", "hy"] as const;
 export type Locale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = "en";

@@ -132,7 +132,7 @@ export function TransactionsView({
           art="transactions"
           title={t("No transactions yet")}
           text={t(
-            "Record what you bought and sold, with dates and prices. StockBuddy updates your holdings and average cost for you.",
+            "Record what you bought and sold, with dates and prices. MyPortfolioBuddy updates your holdings and average cost for you.",
           )}
           action={
             <button

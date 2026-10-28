@@ -60,8 +60,8 @@ const admin: Record<string, string> = {
   "Could not reset your tokens": "Չհաջողվեց վերակայել ձեր թոքենները",
 
   // Connections page
-  "Outside services StockBuddy uses. Values saved here override the server config (.env).":
-    "Արտաքին ծառայություններ, որոնք օգտագործում է StockBuddy-ն։ Այստեղ պահպանված արժեքները գերակայում են սերվերի կարգավորումներին (.env)։",
+  "Outside services MyPortfolioBuddy uses. Values saved here override the server config (.env).":
+    "Արտաքին ծառայություններ, որոնք օգտագործում է MyPortfolioBuddy-ն։ Այստեղ պահպանված արժեքները գերակայում են սերվերի կարգավորումներին (.env)։",
   "Testing…": "Ստուգվում է…",
   "Test all": "Ստուգել բոլորը",
   Test: "Ստուգել",

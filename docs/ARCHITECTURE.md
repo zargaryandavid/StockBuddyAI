@@ -1,4 +1,4 @@
-# StockBuddyAI Architecture
+# MyPortfolioBuddy Architecture
 
 ## Status
 
@@ -7,7 +7,7 @@ portfolio import, one-held-ticker analysis, persisted jobs, and an auditable rec
 
 ## Product Scope
 
-StockBuddyAI is a study tool for long holders. It reads public SEC filings, adds
+MyPortfolioBuddy is a study tool for long holders. It reads public SEC filings, adds
 public Yahoo Finance daily closes, calls the five existing LLM personas, applies long-only
 portfolio construction and risk limits, and compares the target with actual shares.
 It never sends an order to a broker.
@@ -52,7 +52,7 @@ states for history-dependent metrics rather than estimating portfolio history.
 
 ### ADR-002: Keep the investment engine separate
 
-StockBuddyAI pins `aihf` commit `4e1657ddc689e3939c481a8f0955444b10f02dc9`
+MyPortfolioBuddy pins `aihf` commit `4e1657ddc689e3939c481a8f0955444b10f02dc9`
 as a Python dependency. The app calls its snapshots, personas, blending, limits,
 validation, and order-sizing functions instead of reimplementing those rules.
 
@@ -129,7 +129,7 @@ bar is green for a positive unrealized gain and red for a negative one. Expandin
 holding shows one short row with editable Asset type and Sector and the read-only
 Industry; investment category, notes, lifecycle evidence, and quote provenance stay
 on the saved position. Users can independently hide or show the return,
-lifecycle, and StockBuddy status columns; lifecycle and StockBuddy status start hidden,
+lifecycle, and MyPortfolioBuddy status columns; lifecycle and MyPortfolioBuddy status start hidden,
 and the remaining columns expand to fill the row. Desktop uses the full table with a
 dedicated Actions track wide enough to keep its control inside the right edge. Tablet
 hides secondary columns, and mobile uses card-like rows. Sorting never mutates
@@ -157,9 +157,9 @@ controls remain keyboard accessible.
 
 ### ADR-008: FIRE planning reuses Path2Wealth's model, not its data
 
-The FIRE section rebuilds Path2Wealth's structure and logic inside StockBuddy rather
+The FIRE section rebuilds Path2Wealth's structure and logic inside MyPortfolioBuddy rather
 than linking to Path2Wealth's separate Supabase project. Entries are stored in
-StockBuddy's own `fire_entries`; assumptions in `fire_settings`. The pure
+MyPortfolioBuddy's own `fire_entries`; assumptions in `fire_settings`. The pure
 `apps/web/src/lib/fire.ts` module expands repeating entries into dated occurrences
 (same day each period, clamped to short months, stopping at an end date) and converts
 them to monthly equivalents for the summary. `projectFromEntries` then projects month by
@@ -213,7 +213,7 @@ and other fund-like holdings remain visible with current values in those boxes a
 remain part of total portfolio value, but are excluded from position, concentration,
 sector, asset-type, and speculative risk-limit calculations.
 
-The StockBuddy Portfolio Review is a deterministic, versioned rules calculation and
+The MyPortfolioBuddy Portfolio Review is a deterministic, versioned rules calculation and
 does not call an LLM on render. Every warning includes its measured value, configured
 limit, affected holdings, and explanation. The schema can cache future generated
 reviews with engine/model, prompt, data-version, and input-fingerprint metadata.

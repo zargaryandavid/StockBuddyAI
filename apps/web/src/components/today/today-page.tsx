@@ -359,7 +359,7 @@ export function TodayPage({
         <article className="panel setup-guide" aria-labelledby="setup-title">
           <div className="setup-guide-heading">
             <div>
-              <h2 id="setup-title">{t("Set up StockBuddy in three steps")}</h2>
+              <h2 id="setup-title">{t("Set up MyPortfolioBuddy in three steps")}</h2>
               <p className="muted">
                 {t("{done} of 3 done", { done: steps.filter((step) => step.done).length })}
               </p>

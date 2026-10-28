@@ -115,7 +115,7 @@ describe("Library", () => {
     expect(within(card("A Book Without Links")).getByRole("img", { name: "Cover of A Book Without Links" }).tagName).toBe("SPAN");
     const cover = within(card("The Simple Path to Wealth")).getByRole("img", { name: "Cover of The Simple Path to Wealth" });
     expect(cover.getAttribute("loading")).toBe("lazy");
-    expect(screen.getByText("As an Amazon Associate, StockBuddy earns from qualifying purchases.")).toBeTruthy();
+    expect(screen.getByText("As an Amazon Associate, MyPortfolioBuddy earns from qualifying purchases.")).toBeTruthy();
   });
 
   it("rates a book straight from its card, re-sorts it, and removes the rating", async () => {

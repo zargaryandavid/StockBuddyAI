@@ -51,7 +51,7 @@ describe("Dashboard navigation", () => {
     // A greeting for the time of day on the visitor's own clock.
     expect(await screen.findByText(/^Good (morning|afternoon|evening)\.$/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Today" }).getAttribute("aria-current")).toBe("page");
-    expect(await screen.findByRole("heading", { name: "Set up StockBuddy in three steps" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Set up MyPortfolioBuddy in three steps" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Open FIRE/ }));
     expect(await screen.findByRole("heading", { name: "FIRE plan" })).toBeTruthy();
   });
@@ -581,7 +581,7 @@ describe("Dashboard navigation", () => {
       name: "Lifecycle phase",
     });
     const statusVisibility = screen.getByRole("button", {
-      name: "StockBuddy status",
+      name: "MyPortfolioBuddy status",
     });
     expect(lifecycleVisibility.getAttribute("aria-pressed")).toBe("false");
     expect(statusVisibility.getAttribute("aria-pressed")).toBe("false");

@@ -16,8 +16,8 @@ const library: Record<string, string> = {
   "Rating saved": "Գնահատականը պահպանված է",
   "Rating removed": "Գնահատականը հեռացվեց",
   "Not rated yet": "Դեռ գնահատված չէ",
-  "As an Amazon Associate, StockBuddy earns from qualifying purchases.":
-    "Որպես Amazon Associate՝ StockBuddy-ն եկամուտ է ստանում որակավորվող գնումներից։",
+  "As an Amazon Associate, MyPortfolioBuddy earns from qualifying purchases.":
+    "Որպես Amazon Associate՝ MyPortfolioBuddy-ն եկամուտ է ստանում որակավորվող գնումներից։",
   "Buy on Amazon": "Գնել Amazon-ում",
   "Buy {title} on Amazon (opens in a new tab)": "Գնել «{title}» գիրքը Amazon-ում (բացվում է նոր ներդիրում)",
   "Cover of {title}": "«{title}» գրքի շապիկը",

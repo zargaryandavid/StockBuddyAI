@@ -6,7 +6,7 @@ import { getT } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("Terms · StockBuddy") };
+  return { title: t("Terms · MyPortfolioBuddy") };
 }
 
 // Plain-language terms for the early-access period. Have them reviewed before a wider
@@ -14,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function TermsPage() {
   const t = await getT();
   const [beforePrivacy, afterPrivacy = ""] = t(
-    "You can stop using StockBuddy at any time and ask us to delete your account (see the {privacy}). We may end the early-access program, and we will give you notice and a chance to get a copy of your data first.",
+    "You can stop using MyPortfolioBuddy at any time and ask us to delete your account (see the {privacy}). We may end the early-access program, and we will give you notice and a chance to get a copy of your data first.",
   ).split("{privacy}");
   const [beforeEmail, afterEmail = ""] = t(
     "We will tell you about meaningful changes to these terms before they apply. Questions: {email}.",
@@ -24,14 +24,14 @@ export default async function TermsPage() {
       <h2>{t("Early access")}</h2>
       <p>
         {t(
-          "StockBuddy is in early access. Features may change, break, or be removed, and the service may be unavailable at times. Your feedback helps us fix that.",
+          "MyPortfolioBuddy is in early access. Features may change, break, or be removed, and the service may be unavailable at times. Your feedback helps us fix that.",
         )}
       </p>
 
       <h2>{t("Not financial advice")}</h2>
       <p>
         {t(
-          "StockBuddy gives estimates, education, and organizing tools. It is not a financial, investment, tax, or legal adviser, and nothing in it is a recommendation to buy, sell, or hold anything. Projections, FIRE dates, AI reviews, and market data can be wrong or out of date. Make your own decisions, and talk to a licensed professional before acting on anything important.",
+          "MyPortfolioBuddy gives estimates, education, and organizing tools. It is not a financial, investment, tax, or legal adviser, and nothing in it is a recommendation to buy, sell, or hold anything. Projections, FIRE dates, AI reviews, and market data can be wrong or out of date. Make your own decisions, and talk to a licensed professional before acting on anything important.",
         )}
       </p>
 

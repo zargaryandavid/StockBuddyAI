@@ -1,6 +1,6 @@
-# StockBuddyAI
+# MyPortfolioBuddy
 
-StockBuddyAI is a filing-driven, long-only portfolio review application. It gives five
+MyPortfolioBuddy is a filing-driven, long-only portfolio review application. It gives five
 investment personas the same point-in-time SEC snapshot, applies the existing AI Hedge
 Fund blend and risk engine, and records a sell, hold, add, or trim report. It never sends
 orders to a broker.

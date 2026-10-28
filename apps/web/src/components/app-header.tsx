@@ -6,6 +6,7 @@ import { Loader2, LogOut } from "lucide-react";
 
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useT } from "@/lib/i18n/client";
+import { BrandMark } from "@/components/brand-mark";
 
 export function AppHeader({
   email,
@@ -47,8 +48,7 @@ export function AppHeader({
   return (
     <header className="app-header">
       <Link className="brand" href="/">
-        STOCKBUDDY
-        <span>AI</span>
+        <BrandMark />
       </Link>
       <div className="sidebar-language">
         <LanguageSwitcher />

@@ -11,17 +11,17 @@ const PROMISES = [
   { icon: EyeOff, title: "Your data stays yours", text: "We never sell or share your data." },
 ];
 
-/** Support us: why StockBuddy asks for help, and the $9 monthly subscription (not open yet). */
+/** Support us: why MyPortfolioBuddy asks for help, and the $9 monthly subscription (not open yet). */
 export function SupportPage() {
   const t = useT();
   return (
     <section className="support-page" aria-labelledby="support-title">
       <div className="support-hero">
         <Heart size={28} aria-hidden="true" className="support-heart" />
-        <h1 id="support-title">{t("Support StockBuddy")}</h1>
+        <h1 id="support-title">{t("Support MyPortfolioBuddy")}</h1>
         <p>
           {t(
-            "We build StockBuddy for you, and only for you. There are no sponsors, no ads, and we never sell your data. To keep it that way, we need your help.",
+            "We build MyPortfolioBuddy for you, and only for you. There are no sponsors, no ads, and we never sell your data. To keep it that way, we need your help.",
           )}
         </p>
       </div>

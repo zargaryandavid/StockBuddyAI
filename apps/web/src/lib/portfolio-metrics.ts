@@ -129,7 +129,7 @@ export function signedPercent(value: number | null) {
   return value == null ? "—" : `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
 }
 
-export type StockBuddyStatus =
+export type MyPortfolioBuddyStatus =
   | "Healthy"
   | "Review"
   | "High Risk"
@@ -144,7 +144,7 @@ export function positionStatus(
     sectorWarning?: string;
     today: string;
   },
-): { status: StockBuddyStatus; warnings: string[] } {
+): { status: MyPortfolioBuddyStatus; warnings: string[] } {
   const warnings: string[] = [];
   if (!Number.isInteger(Number(position.shares)) || Number(position.shares) < 0) {
     warnings.push("Invalid quantity: enter a non-negative whole number.");

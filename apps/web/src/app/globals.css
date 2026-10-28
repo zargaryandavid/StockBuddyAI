@@ -3753,3 +3753,13 @@ button.today-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px r
   /* Shorter screens: the bills sit in the bottom corner, clear of the chips and the text. */
   .login-bills { bottom: 1.5rem; width: clamp(180px, 18vw, 280px); }
 }
+
+/* Logo: green coin with a gold $, then the name with "Buddy" in gold. */
+.brand { display: inline-flex; align-items: center; gap: 0.5rem; }
+.brand-coin { width: 1.6rem; height: 1.6rem; flex: 0 0 auto; }
+.brand-name { font-weight: 700; letter-spacing: 0; text-transform: none; font-size: 0.95rem; }
+.brand-name .brand-accent { color: var(--gold-dark); }
+.app-header .brand .brand-name, .login-copy .brand .brand-name { color: #fff; }
+.app-header .brand .brand-accent, .login-copy .brand .brand-accent { color: var(--gold); }
+.app-header .brand span.brand-name { margin-left: 0; font-size: 0.95rem; font-weight: 700; opacity: 1; }
+.app-header .brand span.brand-accent { margin-left: 0; font-size: inherit; font-weight: inherit; opacity: 1; }

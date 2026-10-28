@@ -8,12 +8,13 @@ import { SharedFireView } from "@/components/share/shared-fire";
 import { SharedPortfolioView } from "@/components/share/shared-portfolio";
 import type { SharedPage } from "@/components/share/types";
 import { getT } from "@/lib/i18n/server";
+import { BrandMark } from "@/components/brand-mark";
 
 // Shared pages are private to whoever has the link: keep them out of search engines.
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
   return {
-    title: t("Shared from StockBuddy"),
+    title: t("Shared from MyPortfolioBuddy"),
     robots: { index: false, follow: false },
   };
 }
@@ -63,7 +64,7 @@ async function SharedContent({ params }: { params: Params }) {
       <header className="share-head">
         <h1>{title}</h1>
         <p className="muted">
-          {t("Read-only view shared from StockBuddy · prices as of {date} UTC. Estimates, not advice.", {
+          {t("Read-only view shared from MyPortfolioBuddy · prices as of {date} UTC. Estimates, not advice.", {
             date: new Date(page.generated_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }),
           })}
         </p>
@@ -85,7 +86,7 @@ export default async function SharePage({ params }: { params: Params }) {
     <main className="share-page">
       <LanguageSwitcher className="on-light page-language" />
       <Link className="brand" href="/">
-        STOCKBUDDY <span>AI</span>
+        <BrandMark />
       </Link>
       <Suspense fallback={<p className="muted">{t("Loading…")}</p>}>
         <SharedContent params={params} />

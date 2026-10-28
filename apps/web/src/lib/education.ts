@@ -64,7 +64,7 @@ export const LESSONS: Lesson[] = [
     points: [
       "At 3% inflation, prices double in about 24 years.",
       "Cash and fixed-rate bonds lose buying power; stocks have historically outpaced inflation over long periods.",
-      "StockBuddy shows FIRE projections in today's dollars, so inflation is already taken out.",
+      "MyPortfolioBuddy shows FIRE projections in today's dollars, so inflation is already taken out.",
     ],
     links: [
       { label: "Khan Academy: Inflation (video)", href: "https://www.khanacademy.org/economics-finance-domain/core-finance/inflation-tutorial", kind: "video" },

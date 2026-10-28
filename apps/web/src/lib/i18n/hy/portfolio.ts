@@ -54,7 +54,7 @@ const portfolio: Record<string, string> = {
   Columns: "Սյունակներ",
   Returns: "Եկամտաբերություն",
   "Lifecycle phase": "Կյանքի ցիկլի փուլ",
-  "StockBuddy status": "StockBuddy կարգավիճակ",
+  "MyPortfolioBuddy status": "MyPortfolioBuddy կարգավիճակ",
   "Current portfolio holdings": "Պորտֆելի ընթացիկ դիրքերը",
 
   // Holdings table
@@ -245,8 +245,8 @@ const portfolio: Record<string, string> = {
   "Reading picture…": "Նկարը կարդացվում է…",
   "Choose a portfolio printscreen": "Ընտրեք պորտֆելի սքրինշոթը",
   "PNG, JPEG, or WebP · maximum 8 MB": "PNG, JPEG կամ WebP · առավելագույնը 8 ՄԲ",
-  "Sent to OpenAI for extraction and not stored by StockBuddyAI.":
-    "Ուղարկվում է OpenAI՝ տվյալները դուրս բերելու համար, և չի պահվում StockBuddyAI-ում։",
+  "Sent to OpenAI for extraction and not stored by MyPortfolioBuddy.":
+    "Ուղարկվում է OpenAI՝ տվյալները դուրս բերելու համար, և չի պահվում MyPortfolioBuddy-ում։",
   "Import preview": "Ներմուծման նախադիտում",
   "Ticker / Symbol": "Տիկեր / Սիմվոլ",
   "Map {label}": "Համապատասխանեցնել «{label}» սյունակը",
@@ -299,8 +299,8 @@ const portfolio: Record<string, string> = {
   "Net invested": "Զուտ ներդրված",
   "Loading transactions…": "Գործարքները բեռնվում են…",
   "No transactions yet": "Դեռ գործարքներ չկան",
-  "Record what you bought and sold, with dates and prices. StockBuddy updates your holdings and average cost for you.":
-    "Գրանցեք, թե ինչ եք գնել և վաճառել՝ ամսաթվերով և գներով։ StockBuddy-ն ինքը կթարմացնի ձեր դիրքերը և միջին գինը։",
+  "Record what you bought and sold, with dates and prices. MyPortfolioBuddy updates your holdings and average cost for you.":
+    "Գրանցեք, թե ինչ եք գնել և վաճառել՝ ամսաթվերով և գներով։ MyPortfolioBuddy-ն ինքը կթարմացնի ձեր դիրքերը և միջին գինը։",
   "Record your first transaction": "Գրանցեք ձեր առաջին գործարքը",
   Show: "Ցույց տալ",
   All: "Բոլորը",

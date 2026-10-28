@@ -52,8 +52,8 @@ const education: Record<string, string> = {
   "At 3% inflation, prices double in about 24 years.": "3% գնաճի դեպքում գները կրկնապատկվում են մոտ 24 տարում։",
   "Cash and fixed-rate bonds lose buying power; stocks have historically outpaced inflation over long periods.":
     "Կանխիկ գումարը և ֆիքսված տոկոսադրույքով պարտատոմսերը կորցնում են գնողունակությունը, իսկ բաժնետոմսերը երկար ժամանակահատվածներում պատմականորեն գերազանցել են գնաճը։",
-  "StockBuddy shows FIRE projections in today's dollars, so inflation is already taken out.":
-    "StockBuddy-ն FIRE կանխատեսումները ցույց է տալիս այսօրվա դոլարներով, ուստի գնաճն արդեն հաշվի է առնված։",
+  "MyPortfolioBuddy shows FIRE projections in today's dollars, so inflation is already taken out.":
+    "MyPortfolioBuddy-ն FIRE կանխատեսումները ցույց է տալիս այսօրվա դոլարներով, ուստի գնաճն արդեն հաշվի է առնված։",
   "Khan Academy: Inflation (video)": "Khan Academy — Գնաճ (տեսանյութ)",
   "Investopedia: Inflation": "Investopedia — Գնաճ",
 

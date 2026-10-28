@@ -1,7 +1,7 @@
 # Armenian glossary (keep terms consistent across the app)
 
 Modern Eastern Armenian, polite "դուք/ձեր" form. Keep brand names in Latin letters:
-StockBuddy, Buddy, FIRE, AI, ETF, SEC, EDGAR, Yahoo Finance, OpenAI, Anthropic, Stripe,
+MyPortfolioBuddy, Buddy, FIRE, AI, ETF, SEC, EDGAR, Yahoo Finance, OpenAI, Anthropic, Stripe,
 ticker symbols, currency codes.
 
 | English | Armenian |

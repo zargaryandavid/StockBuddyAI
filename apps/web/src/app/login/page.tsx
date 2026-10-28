@@ -8,10 +8,11 @@ import { InvestorQuote } from "@/components/investor-quote";
 import { RotatingMessages } from "@/components/rotating-messages";
 import { getT } from "@/lib/i18n/server";
 import Image from "next/image";
+import { BrandMark } from "@/components/brand-mark";
 
 const CONFIRM_NOTICES: Record<string, string> = {
   done: "Your email is confirmed. Sign in to continue.",
-  deleted: "Your account and all its data were deleted. Thanks for trying StockBuddy.",
+  deleted: "Your account and all its data were deleted. Thanks for trying MyPortfolioBuddy.",
   "session-ended": "Your session ended, so we signed you out. Please sign in again.",
   expired: "That confirmation link has expired or was already used. Sign in, or create the account again to get a new link.",
   "reset-expired": "That password reset link has expired or was already used. Ask for a new one below.",
@@ -35,12 +36,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
       <LanguageSwitcher className="on-light page-language" />
       <section className="login-copy">
         <Link className="brand" href="/">
-          STOCKBUDDY
+          <BrandMark />
         </Link>
         <p className="eyebrow">{t("Fundamentals, not hype")}</p>
         <h1>{t("Your AI buddy for portfolio and financial management.")}</h1>
         <RotatingMessages
-          label={t("Why StockBuddy")}
+          label={t("Why MyPortfolioBuddy")}
           messages={[
             t(
               "Reach financial freedom and learn more about your current portfolio. Let your money work for you: a simple website for a simple path to wealth.",

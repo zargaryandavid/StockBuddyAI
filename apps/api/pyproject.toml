@@ -1,7 +1,7 @@
 [project]
 name = "stockbuddy-api"
 version = "0.1.0"
-description = "StockBuddyAI analysis API"
+description = "MyPortfolioBuddy analysis API"
 requires-python = ">=3.11"
 dependencies = [
   "aihf @ git+https://github.com/virattt/ai-hedge-fund.git@4e1657ddc689e3939c481a8f0955444b10f02dc9",

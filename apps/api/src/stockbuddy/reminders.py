@@ -31,8 +31,8 @@ def reminder_message(reminder: dict[str, Any], sender: str) -> EmailMessage:
     message = EmailMessage()
     message["From"] = sender
     message["To"] = reminder["email"]
-    message["Subject"] = f"StockBuddy reminder: {ticker} report coming up"
-    lines = [f"You asked StockBuddy to remind you about {company} ({ticker})."]
+    message["Subject"] = f"MyPortfolioBuddy reminder: {ticker} report coming up"
+    lines = [f"You asked MyPortfolioBuddy to remind you about {company} ({ticker})."]
     last = reminder.get("last_report_date")
     if last:
         expected = estimated_next_report(date.fromisoformat(last))
@@ -42,7 +42,7 @@ def reminder_message(reminder: dict[str, Any], sender: str) -> EmailMessage:
         )
         lines.append("This date is an estimate; the company announces the exact date.")
     lines.append("")
-    lines.append("StockBuddy is a study tool and never places trades.")
+    lines.append("MyPortfolioBuddy is a study tool and never places trades.")
     message.set_content("\n".join(lines))
     return message
 

@@ -47,7 +47,7 @@ def base_settings(**overrides):
     values = {
         "supabase_service_role_key": "service-role-secret",
         "anthropic_api_key": "sk-ant-from-env-1234",
-        "sec_user_agent": "StockBuddy env@example.com",
+        "sec_user_agent": "MyPortfolioBuddy env@example.com",
         "smtp_host": "",
         "smtp_from": "",
     }
@@ -98,7 +98,7 @@ def test_values_are_checked_before_saving():
     for connection, values, message in [
         ("email", {"port": "99999"}, "Port must be"),
         ("email", {"from_address": "no-email"}, "email address"),
-        ("sec", {"user_agent": "StockBuddy"}, "email address"),
+        ("sec", {"user_agent": "MyPortfolioBuddy"}, "email address"),
         ("email", {"starttls": "yes"}, "on or off"),
         ("anthropic", {"api_key": "   "}, "can't be empty"),
         ("anthropic", {"model": "x"}, "Unknown field"),

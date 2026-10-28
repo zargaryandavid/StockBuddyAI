@@ -145,7 +145,7 @@ async def _deliver_reminders(app: FastAPI) -> None:
         await asyncio.sleep(app.state.settings.reminder_poll_seconds)
 
 
-app = FastAPI(title="StockBuddyAI API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="MyPortfolioBuddy API", version="0.1.0", lifespan=lifespan)
 app.include_router(net_worth_router)
 app.include_router(books_router)
 app.add_middleware(

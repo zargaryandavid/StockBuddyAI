@@ -12,7 +12,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "StockBuddyAI"
+    app_name: str = "MyPortfolioBuddy"
     web_origin: str = "http://localhost:3000"
     supabase_url: str = "http://127.0.0.1:54321"
     supabase_publishable_key: str = ""

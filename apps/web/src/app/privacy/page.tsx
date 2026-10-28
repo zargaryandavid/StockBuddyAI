@@ -5,7 +5,7 @@ import { getT } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("Privacy Policy · StockBuddy") };
+  return { title: t("Privacy Policy · MyPortfolioBuddy") };
 }
 
 // Plain-language policy written for what the app actually does. Have it reviewed for the
@@ -42,7 +42,7 @@ export default async function PrivacyPage() {
       <h2>{t("How we use it")}</h2>
       <p>
         {t(
-          "Only to run StockBuddy for you: show your FIRE plan, portfolio, and analytics, send the reminder emails you ask for, and keep the service secure. We do not sell your data, show ads, or share it for marketing.",
+          "Only to run MyPortfolioBuddy for you: show your FIRE plan, portfolio, and analytics, send the reminder emails you ask for, and keep the service secure. We do not sell your data, show ads, or share it for marketing.",
         )}
       </p>
 
@@ -106,7 +106,7 @@ export default async function PrivacyPage() {
       </p>
 
       <h2>{t("Children")}</h2>
-      <p>{t("StockBuddy is not meant for anyone under 18.")}</p>
+      <p>{t("MyPortfolioBuddy is not meant for anyone under 18.")}</p>
 
       <h2>{t("Changes")}</h2>
       <p>

@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { getT } from "@/lib/i18n/server";
+import { BrandMark } from "@/components/brand-mark";
 
 /** Where people can reach the team about their data or these terms. */
 export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "support@stockbuddy.example";
@@ -21,12 +22,12 @@ export async function LegalPage({ title, children }: { title: string; children: 
     <main className="legal-page">
       <LanguageSwitcher className="on-light page-language" />
       <Link className="brand" href="/">
-        STOCKBUDDY
+        <BrandMark />
       </Link>
       <article>
         <h1>{t(title)}</h1>
         <p className="muted">
-          {t("Last updated {date}. StockBuddy is in early access (beta).", { date: t(LEGAL_UPDATED) })}
+          {t("Last updated {date}. MyPortfolioBuddy is in early access (beta).", { date: t(LEGAL_UPDATED) })}
         </p>
         {children}
         <p className="legal-contact">

@@ -85,7 +85,7 @@ def companyfacts():
 
 @pytest.fixture
 def edgar(tmp_path, companyfacts, monkeypatch):
-    client = EdgarClient("StockBuddyAI test@example.com", cache_dir=tmp_path)
+    client = EdgarClient("MyPortfolioBuddy test@example.com", cache_dir=tmp_path)
     tickers = json.loads((FIXTURES / "company_tickers.json").read_text())
     submissions = json.loads((FIXTURES / "submissions.json").read_text())
 
@@ -166,7 +166,7 @@ class ErrorSession:
 
 def test_transport_errors_raise_instead_of_becoming_empty(tmp_path):
     client = EdgarClient(
-        "StockBuddyAI test@example.com", cache_dir=tmp_path, session=ErrorSession()
+        "MyPortfolioBuddy test@example.com", cache_dir=tmp_path, session=ErrorSession()
     )
     with pytest.raises(EdgarError, match="HTTP 500"):
         client.get_company_facts("TEST")

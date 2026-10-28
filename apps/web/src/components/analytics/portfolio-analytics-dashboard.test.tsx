@@ -163,7 +163,7 @@ describe("PortfolioAnalyticsDashboard", () => {
       .closest(".performance-module");
     expect(chartBox?.contains(screen.getByRole("button", { name: "Refresh" }))).toBe(true);
     expect(chartBox?.contains(screen.getByRole("button", { name: "6M" }))).toBe(true);
-    expect(screen.queryByText("StockBuddy Portfolio Review")).toBeNull();
+    expect(screen.queryByText("MyPortfolioBuddy Portfolio Review")).toBeNull();
     expect(screen.getByRole("heading", { name: "Risk limits" })).toBeTruthy();
     const guide = screen.getByRole("complementary", { name: "What is a normal allocation" });
     expect(guide.textContent).toContain("One position:");

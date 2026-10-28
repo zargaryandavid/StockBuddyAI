@@ -182,7 +182,7 @@ export function Library() {
         </ul>
       )}
 
-      <p className="library-disclosure muted">{t("As an Amazon Associate, StockBuddy earns from qualifying purchases.")}</p>
+      <p className="library-disclosure muted">{t("As an Amazon Associate, MyPortfolioBuddy earns from qualifying purchases.")}</p>
 
       {open && (
         <BookDialog

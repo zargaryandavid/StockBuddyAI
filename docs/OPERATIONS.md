@@ -35,14 +35,14 @@ with `apps/web/src/lib/i18n/GLOSSARY.md`, and put words shared by several areas 
 ## Branded emails
 
 `supabase/templates/confirmation.html` (sign-up) and `supabase/templates/recovery.html`
-(password reset) are StockBuddy-styled emails. Their links use `token_hash`, so they work
+(password reset) are MyPortfolioBuddy-styled emails. Their links use `token_hash`, so they work
 even when opened in another browser, and go to the `/auth/confirm` or `/auth/reset`
 address the app asked for. Local Supabase loads them from `supabase/config.toml`. For the
 hosted project, in Supabase Dashboard -> Authentication -> Emails -> Templates:
 
-- **Confirm signup:** subject "Confirm your email for StockBuddy"; body = the whole of
+- **Confirm signup:** subject "Confirm your email for MyPortfolioBuddy"; body = the whole of
   `confirmation.html`.
-- **Reset password:** subject "Reset your StockBuddy password"; body = the whole of
+- **Reset password:** subject "Reset your MyPortfolioBuddy password"; body = the whole of
   `recovery.html`.
 
 Supabase's built-in sender is rate-limited and meant for testing; set up custom SMTP
