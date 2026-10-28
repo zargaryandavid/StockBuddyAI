@@ -46,7 +46,7 @@ the subject, paste the file's whole content into the message body, save):
 
 | Supabase template | File | Subject |
 |---|---|---|
-| Confirm signup | `confirmation.html` | Welcome to MyPortfolioBuddy! Confirm your email |
+| Confirm signup | `confirmation.html` | Confirm your email for MyPortfolioBuddy |
 | Reset password | `recovery.html` | Reset your MyPortfolioBuddy password |
 | Change email address | `email_change.html` | Confirm your new email for MyPortfolioBuddy |
 | Magic link | `magic_link.html` | Your MyPortfolioBuddy sign-in link |
@@ -59,9 +59,10 @@ Links use `token_hash`, so they work in any browser, and point at `/auth/confirm
 custom SMTP (**Authentication → Emails → SMTP Settings**); without it Supabase sends from
 "Supabase Auth" and only a few emails an hour.
 
-The API sends one email itself: a goodbye after someone deletes their account, through the
-email settings in **Admin → Connections → Email**. It is skipped when those are not set, and
-never stops the deletion.
+The API sends three emails itself, through the email settings in **Admin → Connections →
+Email** (skipped when those are not set; a failure never undoes the action): a **welcome**
+guide right after the address is confirmed, a **link shared** note with the link when someone
+turns on a share link, and a **goodbye** after an account is deleted.
 
 ## Password reset and legal pages
 

@@ -26,18 +26,19 @@ SIGN_IN = "{{ .SiteURL }}/login"
 
 TEMPLATES = {
     "confirmation.html": Email(
-        title="Welcome to MyPortfolioBuddy!",
-        preheader="One click to finish creating your MyPortfolioBuddy account.",
-        heading="Welcome to MyPortfolioBuddy!",
+        title="Confirm your email for MyPortfolioBuddy",
+        preheader="One click to confirm your email and finish signing up.",
+        heading="Confirm your email",
         paragraphs=[
-            "Thanks for signing up. Confirm your email and you&rsquo;re in: see your whole portfolio "
-            "in one place, plan your path to financial freedom, and ask Buddy for a second opinion "
-            "on what you hold.",
-            "Confirm <strong>{{ .Email }}</strong> to finish creating your account:",
+            "You&rsquo;re one step away. Confirm <strong>{{ .Email }}</strong> to finish creating your "
+            "MyPortfolioBuddy account.",
         ],
         button_label="Confirm my email",
         button_url=CONFIRM,
-        after=["This link works once and expires in 1 hour."],
+        after=[
+            "This link works once and expires in 1 hour. After confirming you&rsquo;ll be signed in, "
+            "and we&rsquo;ll send a short welcome guide."
+        ],
         note="Didn&rsquo;t sign up for MyPortfolioBuddy? You can ignore this email. "
         "No account is created until the address is confirmed.",
     ),

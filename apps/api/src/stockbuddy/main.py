@@ -5,7 +5,7 @@ import hmac
 import logging
 import os
 from contextlib import asynccontextmanager, suppress
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from email.message import EmailMessage
 from typing import Annotated
 from uuid import UUID, uuid4
@@ -33,6 +33,8 @@ from stockbuddy.config import get_settings
 from stockbuddy.connections import ConnectionSetupError, ConnectionsService
 from stockbuddy.controls import normalize_settings
 from stockbuddy.emails import account_deleted as account_deleted_email
+from stockbuddy.emails import link_shared as link_shared_email
+from stockbuddy.emails import welcome as welcome_email
 from stockbuddy.market import SecurityNotFoundError, SecurityOverviewService
 from stockbuddy.net_worth import router as net_worth_router
 from stockbuddy.personas import builtin_prompts
@@ -266,22 +268,53 @@ async def delete_my_account(
     return Response(status_code=204)
 
 
-async def send_goodbye(settings, email_address: str) -> None:
-    """The "your account was deleted" email; skipped without email settings, and never
-    allowed to undo or fail the deletion."""
-    if not email_address or not settings.email_enabled:
-        return
-    subject, html, text = account_deleted_email(email_address)
+async def send_email(settings, to: str, content: tuple[str, str, str], what: str) -> bool:
+    """Sends one of our own emails (subject, HTML, text). Skipped without email settings;
+    a failure is only logged, never raised, so it can't undo what the person just did."""
+    if not to or not settings.email_enabled:
+        return False
+    subject, html, text = content
     message = EmailMessage()
     message["From"] = settings.smtp_from
-    message["To"] = email_address
+    message["To"] = to
     message["Subject"] = subject
     message.set_content(text)
     message.add_alternative(html, subtype="html")
     try:
         await asyncio.to_thread(SmtpMailer(settings).send, message)
-    except Exception:  # the account is already gone; only note that the email failed
-        logger.warning("Goodbye email could not be sent")
+        return True
+    except Exception:
+        logger.warning("%s email could not be sent", what)
+        return False
+
+
+async def send_goodbye(settings, email_address: str) -> None:
+    """The "your account was deleted" email."""
+    await send_email(settings, email_address, account_deleted_email(email_address), "Goodbye")
+
+
+# The welcome email goes out only this soon after the address was confirmed, so it is sent
+# once, from the confirmation link, and can't be triggered again later.
+WELCOME_WINDOW = timedelta(minutes=30)
+
+
+@app.post("/api/emails/welcome")
+async def send_welcome(request: Request, account: Annotated[Account, Depends(current_account)]):
+    """Called when the confirmation link is opened: welcomes a freshly confirmed account."""
+    confirmed_at = account.email_confirmed_at
+    if not account.email_confirmed or not confirmed_at:
+        return {"sent": False}
+    try:
+        confirmed = datetime.fromisoformat(confirmed_at.replace("Z", "+00:00"))
+    except ValueError:
+        return {"sent": False}
+    if datetime.now(UTC) - confirmed > WELCOME_WINDOW:
+        return {"sent": False}
+    settings = request.app.state.settings
+    sent = await send_email(
+        settings, account.email, welcome_email(account.email, settings.web_origin), "Welcome"
+    )
+    return {"sent": sent}
 
 
 @app.get("/api/me")
@@ -678,20 +711,30 @@ async def create_share_link(
     payload: ShareLinkCreate,
     request: Request,
     token: Annotated[str, Depends(bearer_token)],
-    user_id: Annotated[UUID, Depends(current_user)],
+    account: Annotated[Account, Depends(current_account)],
 ):
-    """Turns on a share link, or returns the one that is already on."""
+    """Turns on a share link, or returns the one that is already on. A new link is also
+    emailed to its owner, so they have it to forward and know how to turn it off."""
     repository = request.app.state.repository
     for link in await repository.list_share_links(token):
         same_portfolio = str(link.get("portfolio_id")) == str(payload.portfolio_id)
         if link["kind"] == payload.kind and (payload.kind == "fire" or same_portfolio):
             return link
     try:
-        return await repository.create_share_link(
-            token, user_id, new_token(), payload.kind, payload.portfolio_id
+        link = await repository.create_share_link(
+            token, account.id, new_token(), payload.kind, payload.portfolio_id
         )
     except SupabaseError as exc:
         raise HTTPException(status_code=404, detail="Portfolio not found") from exc
+    what = "your FIRE plan"
+    if payload.kind != "fire" and payload.portfolio_id:
+        portfolio = await repository.get_portfolio(payload.portfolio_id, account.id)
+        name = (portfolio or {}).get("name")
+        what = f"your portfolio “{name}”" if name else "your portfolio"
+    settings = request.app.state.settings
+    url = f"{settings.web_origin.rstrip('/')}/share/{link['token']}"
+    await send_email(settings, account.email, link_shared_email(account.email, url, what), "Share")
+    return link
 
 
 @app.delete("/api/share-links/{share_token}", status_code=204)

@@ -28,6 +28,8 @@ class Account:
     email: str
     # Whether the person opened the confirmation email; Admin requires it.
     email_confirmed: bool = True
+    # When they confirmed it (ISO time), used to send the welcome email once, right after.
+    email_confirmed_at: str | None = None
 
 
 class SupabaseGateway:
@@ -88,6 +90,7 @@ class SupabaseGateway:
                 id=UUID(body["id"]),
                 email=str(body.get("email") or ""),
                 email_confirmed=bool(body.get("email_confirmed_at")),
+                email_confirmed_at=body.get("email_confirmed_at"),
             )
         except (KeyError, TypeError, ValueError) as exc:
             raise SupabaseError("Supabase returned an invalid user identity") from exc

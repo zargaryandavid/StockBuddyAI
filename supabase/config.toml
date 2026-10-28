@@ -258,7 +258,7 @@ otp_expiry = 3600
 # apps/api/scripts/build_auth_templates.py. The hosted project needs the same files pasted
 # into Supabase Dashboard -> Authentication -> Emails (see docs/OPERATIONS.md).
 [auth.email.template.confirmation]
-subject = "Welcome to MyPortfolioBuddy! Confirm your email"
+subject = "Confirm your email for MyPortfolioBuddy"
 content_path = "./supabase/templates/confirmation.html"
 
 [auth.email.template.recovery]

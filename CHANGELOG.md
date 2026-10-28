@@ -6,6 +6,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Added
 
+- Emails: the sign-up email is now a short "Confirm your email"; a separate **welcome** email with three getting-started steps is sent right after confirming (only within 30 minutes of it, so once); a **link shared** email goes to the owner with the link and how to turn it off; the **account deleted** goodbye stays. All share one design. Fixed: on the new domain the app called the API at the old vercel.app address, which the browser blocked; the live site now calls the API on whatever address it was opened on.
+
 - Emails: one shared MyPortfolioBuddy design (green header with the $ coin, gold button) for every sign-in email, generated into supabase/templates/: welcome and confirm, password reset, email change, magic link, security code, and password-changed and email-changed notices. A goodbye email is sent after an account is deleted (when email is set up in Admin). Paste-in steps are in docs/OPERATIONS.md.
 
 - Renamed to **MyPortfolioBuddy** everywhere people see it (logo, page titles, emails, legal pages, Admin, API title, Armenian text); internal code names stay. New logo and browser icon: a green coin with a gold $ (favicon, SVG icon, iPhone icon). Search and sharing: investor-focused title and description, keywords, Open Graph and X preview image, robots.txt (public pages only; Admin, share links, API kept out) and sitemap.xml. Set NEXT_PUBLIC_SITE_URL on Vercel once the domain is connected.
@@ -671,6 +673,8 @@ All notable project changes and user-visible functionality are recorded here.
 - Added a compact ticker-symbol list beneath every industry allocation.
 
 ### Added
+
+- Emails: the sign-up email is now a short "Confirm your email"; a separate **welcome** email with three getting-started steps is sent right after confirming (only within 30 minutes of it, so once); a **link shared** email goes to the owner with the link and how to turn it off; the **account deleted** goodbye stays. All share one design. Fixed: on the new domain the app called the API at the old vercel.app address, which the browser blocked; the live site now calls the API on whatever address it was opened on.
 
 - Emails: one shared MyPortfolioBuddy design (green header with the $ coin, gold button) for every sign-in email, generated into supabase/templates/: welcome and confirm, password reset, email change, magic link, security code, and password-changed and email-changed notices. A goodbye email is sent after an account is deleted (when email is set up in Admin). Paste-in steps are in docs/OPERATIONS.md.
 

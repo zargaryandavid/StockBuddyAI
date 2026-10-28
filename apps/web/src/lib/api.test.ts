@@ -95,3 +95,11 @@ describe("api answer cache", () => {
     expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 });
+
+describe("where API calls go", () => {
+  it("stays on the site's own address outside development, so no domain is blocked", async () => {
+    const { apiBase } = await import("./api");
+    // jsdom runs on localhost, which is development.
+    expect(apiBase()).toBe(process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000");
+  });
+});

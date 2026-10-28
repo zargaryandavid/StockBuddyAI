@@ -38,6 +38,12 @@ class Email:
     button_label: str | None = None
     button_url: str | None = None
     code: str | None = None
+    # Numbered steps, each (title, text): used to show what to do first.
+    steps: list[tuple[str, str]] = field(default_factory=list)
+    # A highlighted box, e.g. a link to keep: (label, content).
+    highlight: tuple[str, str] | None = None
+    # Hide the "Button not working?" line (when the box already shows the link).
+    plain_link: bool = True
     after: list[str] = field(default_factory=list)
     note: str | None = None
 
@@ -64,12 +70,36 @@ def render(email: Email) -> str:
             f"border:1px dashed {GREEN};font:700 28px/1 'SFMono-Regular',Menlo,Consolas,monospace;"
             f'letter-spacing:6px;color:{GREEN};">{email.code}</div></td></tr>'
         )
+    steps = ""
+    if email.steps:
+        items = "".join(
+            '<tr><td valign="top" style="padding:0 12px 14px 0;width:34px;">'
+            f'<span style="display:inline-block;width:28px;height:28px;line-height:28px;border-radius:50%;'
+            f'background:{GREEN};color:{GOLD};font-weight:700;font-size:14px;text-align:center;">{number}</span></td>'
+            f'<td valign="top" style="padding:3px 0 14px;"><div style="font-size:15px;font-weight:700;color:{INK};">{title}</div>'
+            f'<div style="font-size:14px;line-height:1.5;color:{TEXT};margin-top:2px;">{text}</div></td></tr>'
+            for number, (title, text) in enumerate(email.steps, start=1)
+        )
+        steps = (
+            '<tr><td style="padding:4px 32px 4px;">'
+            f'<table role="presentation" cellpadding="0" cellspacing="0" width="100%">{items}</table></td></tr>'
+        )
+    highlight = ""
+    if email.highlight:
+        label, content = email.highlight
+        highlight = (
+            '<tr><td style="padding:4px 32px 8px;">'
+            f'<div style="padding:14px 16px;border-radius:10px;background:{PAGE};border:1px solid #cfe0c8;">'
+            f'<div style="font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:{GREEN};">{label}</div>'
+            f'<div style="margin-top:6px;font-size:14px;line-height:1.5;word-break:break-all;color:{INK};">{content}</div>'
+            "</div></td></tr>"
+        )
     after = "".join(
         f'<p style="margin:0 0 10px;font-size:14px;line-height:1.5;color:{MUTED};">{text}</p>'
         for text in email.after
     )
     fallback = ""
-    if email.button_url:
+    if email.button_url and email.plain_link:
         fallback = (
             f'<p style="margin:16px 0 0;font-size:13px;line-height:1.5;color:{MUTED};">'
             "Button not working? Copy this link into your browser:<br>"
@@ -103,7 +133,7 @@ def render(email: Email) -> str:
         <h1 style="margin:0 0 14px;font-size:24px;line-height:1.3;color:{INK};">{email.heading}</h1>
         {body}
       </td></tr>
-      {code}{button}
+      {steps}{highlight}{code}{button}
       <tr><td style="padding:12px 32px 4px;">{after}{fallback}</td></tr>
       {note}
     </table>
@@ -147,3 +177,85 @@ def account_deleted(email_address: str) -> tuple[str, str, str]:
         "https://www.myportfoliobuddy.com"
     )
     return "Your MyPortfolioBuddy account was deleted", render(message), text
+
+
+def welcome(email_address: str, site_url: str) -> tuple[str, str, str]:
+    """Subject, HTML and plain text of the welcome email, sent once the address is confirmed."""
+    address = escape(email_address)
+    message = Email(
+        title="Welcome to MyPortfolioBuddy!",
+        preheader="You're in. Three quick steps to see your whole financial picture.",
+        heading="Welcome, you&rsquo;re in!",
+        paragraphs=[
+            f"Your account <strong>{address}</strong> is confirmed. MyPortfolioBuddy puts your "
+            "portfolio, savings and plan for financial freedom in one calm place. Fundamentals, not hype.",
+            "Three steps get you the full picture:",
+        ],
+        steps=[
+            (
+                "Add your income and expenses",
+                "In FIRE: salary, rent and bills, plus savings, CDs and bonds. "
+                "It works out when your money could pay for your life.",
+            ),
+            (
+                "Add your portfolio",
+                "Type your holdings, upload your broker&rsquo;s positions file, or a screenshot. "
+                "See your real exposure, including what your ETFs hold.",
+            ),
+            (
+                "Check Today",
+                "Your net worth, cash target and anything that needs a look, every time you open the app.",
+            ),
+        ],
+        button_label="Open MyPortfolioBuddy",
+        button_url=f"{site_url}/",
+        plain_link=False,
+        after=[
+            "Curious about the long run? Try the Growth calculator under Portfolio to see the compound effect."
+        ],
+        note="MyPortfolioBuddy is a study tool, not financial advice. Questions or ideas? Just reply to this email.",
+    )
+    text = (
+        f"Welcome to MyPortfolioBuddy! Your account {email_address} is confirmed.\n\n"
+        "Three steps to the full picture:\n"
+        "1. Add your income and expenses in FIRE.\n"
+        "2. Add your portfolio: type it, upload a broker file, or a screenshot.\n"
+        "3. Check Today for your net worth and cash target.\n\n"
+        f"Open MyPortfolioBuddy: {site_url}/\n"
+    )
+    return "Welcome to MyPortfolioBuddy!", render(message), text
+
+
+def link_shared(email_address: str, link: str, what: str) -> tuple[str, str, str]:
+    """Subject, HTML and plain text of the note sent when someone turns a share link on.
+
+    `what` is plain text such as "your FIRE plan" or "your portfolio “Long-term”".
+    """
+    shown = escape(what)
+    url = escape(link)
+    message = Email(
+        title="Your MyPortfolioBuddy share link is ready",
+        preheader=f"You shared {what}. Here's the link to send.",
+        heading="Your share link is ready",
+        paragraphs=[
+            f"You shared <strong>{shown}</strong>. Anyone with this link can see it, "
+            "with your display name, but never your email, and nothing else in your account.",
+        ],
+        highlight=("Your link", f'<a href="{url}" style="color:{GREEN};">{url}</a>'),
+        button_label="Open the shared page",
+        button_url=url,
+        plain_link=False,
+        after=[
+            "Send it by message or email to the people you choose. What they see updates as your numbers change.",
+            "To stop sharing, open your profile (click your email in the menu) and turn the link off. "
+            "Anyone holding it loses access at once.",
+        ],
+        note=f"Didn&rsquo;t share anything? Turn the link off from your profile and change your password. "
+        f"This was sent to {escape(email_address)}.",
+    )
+    text = (
+        f"You shared {what} on MyPortfolioBuddy.\n\nYour link: {link}\n\n"
+        "Anyone with this link can see it, with your display name. To stop sharing, turn it off "
+        "from your profile; anyone holding the link loses access at once.\n"
+    )
+    return "Your MyPortfolioBuddy share link is ready", render(message), text

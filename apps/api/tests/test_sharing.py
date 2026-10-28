@@ -3,9 +3,10 @@ from uuid import UUID
 
 from fastapi.testclient import TestClient
 
-from stockbuddy.main import app, current_user
+from stockbuddy.main import app, current_account, current_user
 from stockbuddy.schemas import ProfileInput
 from stockbuddy.sharing import ShareService, new_token
+from stockbuddy.supabase import Account
 
 USER_ID = UUID("00000000-0000-0000-0000-000000000001")
 PORTFOLIO_ID = "91000000-0000-0000-0000-000000000001"
@@ -130,6 +131,9 @@ def test_shared_fire_plan_includes_entries_and_exchange_rates():
 def test_link_endpoints_and_public_view():
     repository = Repository()
     app.dependency_overrides[current_user] = lambda: USER_ID
+    app.dependency_overrides[current_account] = lambda: Account(
+        id=USER_ID, email="owner@example.com"
+    )
     try:
         with TestClient(app) as client:
             app.state.repository = repository

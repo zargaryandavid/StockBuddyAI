@@ -103,6 +103,21 @@ export function clearApiCache({ keepMarketData = false } = {}) {
   }
 }
 
+/**
+ * Where the browser sends API calls. On the live site the API is served from the same
+ * address as the pages (Vercel routes /api to it), so calls stay on whichever domain the
+ * person opened (www.myportfoliobuddy.com, the vercel.app address, a preview) and the
+ * browser never blocks them as cross-site. On a developer's machine the API runs on its
+ * own port, set by NEXT_PUBLIC_API_URL.
+ */
+export function apiBase() {
+  const local = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
+  if (typeof window === "undefined") return local;
+  const host = window.location.hostname;
+  const developing = host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0" || host.endsWith(".local");
+  return developing ? local : "";
+}
+
 const SESSION_ENDED = "Your session has expired. Please sign in again.";
 
 /** Thrown for a 401: the server no longer accepts this sign-in. */
@@ -190,7 +205,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
 async function request<T>(path: string, init: RequestInit | undefined, token: string): Promise<T> {
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000"}${path}`,
+    `${apiBase()}${path}`,
     {
       ...init,
       headers: {
@@ -217,7 +232,7 @@ export async function apiUpload<T>(path: string, body: FormData): Promise<T> {
   const { data } = await supabase.auth.getSession();
   if (!data.session) return endSession();
   return withSession(async (token) => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000"}${path}`, {
+    const response = await fetch(`${apiBase()}${path}`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body,
