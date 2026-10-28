@@ -3738,3 +3738,18 @@ button.today-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px r
 }
 @media (prefers-reduced-motion: reduce) { .investor-quote { animation: none; } }
 .password-rules { margin-top: -0.5rem; font-size: var(--text-xs); }
+
+/* Sign-in page fits one screen in both languages: the headline follows the screen's height
+   as well as its width, Armenian (longer words, taller lines) a step smaller, and the
+   space above and below follows the height. */
+@media (min-width: 1161px) {
+  .login-copy { padding-block: clamp(1.25rem, 5vh, 5rem); }
+  .login-copy h1 { font-size: clamp(2.2rem, min(5.4vw, 9.5vh), 5.2rem); }
+  html:lang(hy) .login-copy h1 { font-size: clamp(2rem, min(4.1vw, 7vh), 4rem); }
+  .login-copy .rotating-message { min-height: 4.2em; font-size: clamp(0.92rem, 1.9vh, 1.05rem); }
+  .login-copy .investor-quote { margin-top: clamp(0.9rem, 2.6vh, 2rem); }
+}
+@media (min-width: 1161px) and (max-height: 880px) {
+  /* Shorter screens: the bills sit in the bottom corner, clear of the chips and the text. */
+  .login-bills { bottom: 1.5rem; width: clamp(180px, 18vw, 280px); }
+}
