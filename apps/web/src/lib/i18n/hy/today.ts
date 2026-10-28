@@ -156,6 +156,29 @@ const today: Record<string, string> = {
   "Saving and investment expenses, plus what is left over": "Խնայողության և ներդրման ծախսեր, գումարած մնացորդը",
   "Ideal {amount}": "Իդեալական՝ {amount}",
   "Yours {amount} ({share}%)": "Ձերը՝ {amount} ({share}%)",
+  "Growth calculator": "Աճի հաշվիչ",
+  "About the growth calculator": "Աճի հաշվիչի մասին",
+  "Shows how a starting amount and a monthly contribution could grow at a steady yearly return, compounded monthly. Real markets go up and down, so treat it as a picture of the long run, not a promise.":
+    "Ցույց է տալիս, թե ինչպես կարող են աճել սկզբնական գումարը և ամսական ներդրումը կայուն տարեկան եկամտաբերությամբ՝ ամսական բարդ տոկոսով։ Իրական շուկաները բարձրանում և իջնում են, ուստի սա երկարաժամկետ պատկեր է, ոչ թե խոստում։",
+  "See what patience and regular investing can do.": "Տեսեք, թե ինչի կարող են հասնել համբերությունը և կանոնավոր ներդրումները։",
+  "Future value": "Ապագա արժեք",
+  "Total contributions": "Ընդհանուր ներդրումներ",
+  "Total growth": "Ընդհանուր աճ",
+  "{value} after {years} years, of which {contributed} you put in.": "{value}՝ {years} տարի անց, որից {contributed}-ը ներդրել եք դուք։",
+  "Year {year}": "Տարի {year}",
+  Value: "Արժեք",
+  "Put in": "Ներդրված",
+  "Yr {year}": "Տ {year}",
+  "Starting amount": "Սկզբնական գումար",
+  "Starting amount, exact": "Սկզբնական գումար, ճշգրիտ",
+  "Use my portfolio ({amount})": "Օգտագործել իմ պորտֆելը ({amount})",
+  "Monthly contribution": "Ամսական ներդրում",
+  "Monthly contribution, exact": "Ամսական ներդրում, ճշգրիտ",
+  Years: "Տարիներ",
+  "{count} years": "{count} տարի",
+  "Expected yearly return": "Սպասվող տարեկան եկամտաբերություն",
+  "The US stock market has returned about 10% a year over the long run before inflation, about 7% after. Past returns don't promise future ones.":
+    "ԱՄՆ ֆոնդային շուկան երկար ժամանակահատվածում տարեկան մոտ 10% եկամտաբերություն է ունեցել մինչև գնաճը, մոտ 7%՝ գնաճից հետո։ Անցյալի արդյունքները չեն երաշխավորում ապագան։",
 };
 
 export default today;

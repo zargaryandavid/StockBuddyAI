@@ -70,6 +70,7 @@ describe("Dashboard navigation", () => {
       "Analytics",
       "Transactions",
       "Ask Buddy",
+      "Growth calculator",
       "Assets",
       "Wishlist",
       "Education",
@@ -82,6 +83,7 @@ describe("Dashboard navigation", () => {
       "Analytics",
       "Transactions",
       "Ask Buddy",
+      "Growth calculator",
     ]);
     expect(screen.getByRole("button", { name: "Portfolio" }).getAttribute("aria-current")).toBe("page");
 

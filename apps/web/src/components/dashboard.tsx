@@ -27,6 +27,7 @@ import { SupportPage } from "@/components/support-page";
 import { TodayPage, type TodayDestination } from "@/components/today/today-page";
 import { parseBrokerCsv } from "@/lib/broker-csv";
 import { AmountInput } from "@/components/amount-input";
+import { GrowthCalculator } from "@/components/growth-calculator";
 import { AnimatedNumber } from "@/components/animated-number";
 import { EmptyState } from "@/components/empty-state";
 import { FlashValue } from "@/components/flash-value";
@@ -48,6 +49,7 @@ import {
   EyeOff,
   Flame,
   Home,
+  TrendingUp,
   Plus,
   X,
   Heart,
@@ -89,7 +91,7 @@ import { useT } from "@/lib/i18n/client";
 import { createClient } from "@/lib/supabase/client";
 import { defaultBook, type BookSettings, type Role } from "@/lib/workspace";
 
-type MainTab = "today" | "test" | "portfolio" | "fire" | "assets" | "wishlist" | "education" | "support";
+type MainTab = "today" | "test" | "growth" | "portfolio" | "fire" | "assets" | "wishlist" | "education" | "support";
 type PortfolioView = "current" | "transactions" | "analytics";
 type ImportMode = "manual" | "csv" | "picture";
 type SortKey =
@@ -171,7 +173,7 @@ export function Dashboard({
   const [extracting, setExtracting] = useState(false);
   const [excludeEtfIndex, setExcludeEtfIndex] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("custom");
-  const portfolioSection = activeTab === "portfolio" || activeTab === "test";
+  const portfolioSection = activeTab === "portfolio" || activeTab === "test" || activeTab === "growth";
   const [dateOfBirth, setDateOfBirth] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [showProfile, setShowProfile] = useState(false);
@@ -1102,6 +1104,15 @@ export function Dashboard({
             <Bot size={15} aria-hidden="true" />
             {t("Ask Buddy")}
           </button>
+          <button
+            type="button"
+            className={activeTab === "growth" ? "active" : ""}
+            aria-current={activeTab === "growth" ? "page" : undefined}
+            onClick={() => setActiveTab("growth")}
+          >
+            <TrendingUp size={15} aria-hidden="true" />
+            {t("Growth calculator")}
+          </button>
         </div>
         <button
           type="button"
@@ -1199,6 +1210,10 @@ export function Dashboard({
             today={today}
             onOpen={openFromToday}
           />
+        </section>
+      ) : activeTab === "growth" ? (
+        <section className="simple-page growth-shell">
+          <GrowthCalculator portfolioValue={metrics.totalValue} currency={baseCurrency} />
         </section>
       ) : activeTab === "wishlist" ? (
         <section className="simple-page wishlist-shell">

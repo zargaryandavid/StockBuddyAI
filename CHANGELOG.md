@@ -6,6 +6,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Added
 
+- Growth calculator (Portfolio tools in the menu): future value, total contributions and total growth for a starting amount, a monthly contribution, years and an expected yearly return (compounded monthly), with a chart of the value against what you put in, a hover readout per year, sliders plus exact amounts, and "Use my portfolio" to start from your portfolio's value.
+
 - Sign-in page: four short messages take turns under the headline (fade in every 7 seconds, pause on hover, dots to pick one). FIRE: a 50/30/20 budget comparing your income's ideal split (needs, wants, saving and investing) with what your plan spends. Portfolio: an (i) on Bonds explains the "your age in bonds" rule with your own numbers; the price date sits beside the Portfolio title and its card became Bonds vs stocks; the cash numbers moved behind an (i) beside Cash.
 
 - More life in the app: holding prices and values flash green or red when a refresh changes them; empty pages (Portfolio, Transactions, Wishlist, Assets, Bonds, Library) show a small drawing with a line about what goes there; Today greets you by the time of your own clock and name ("Good morning, Davit. Your net worth is up $1,240 since …"); and Ask Buddy shows the five reviewers taking turns while a holding is reviewed. Motion switches off for reduced motion.
@@ -647,6 +649,8 @@ All notable project changes and user-visible functionality are recorded here.
 - Added a compact ticker-symbol list beneath every industry allocation.
 
 ### Added
+
+- Growth calculator (Portfolio tools in the menu): future value, total contributions and total growth for a starting amount, a monthly contribution, years and an expected yearly return (compounded monthly), with a chart of the value against what you put in, a hover readout per year, sliders plus exact amounts, and "Use my portfolio" to start from your portfolio's value.
 
 - Sign-in page: four short messages take turns under the headline (fade in every 7 seconds, pause on hover, dots to pick one). FIRE: a 50/30/20 budget comparing your income's ideal split (needs, wants, saving and investing) with what your plan spends. Portfolio: an (i) on Bonds explains the "your age in bonds" rule with your own numbers; the price date sits beside the Portfolio title and its card became Bonds vs stocks; the cash numbers moved behind an (i) beside Cash.
 
