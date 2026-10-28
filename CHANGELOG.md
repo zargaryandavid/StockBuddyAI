@@ -178,6 +178,8 @@ All notable project changes and user-visible functionality are recorded here.
 
 ### Fixed
 
+- Speed: the home and Admin pages no longer wait for the API before showing. The server only reads the sign-in cookie (no network trip) and the page appears at once; the role, book settings and Admin studio settings load in the browser a moment later (Admin shows a shimmer meanwhile, and anyone who is not the admin is still sent home). The unused server-side workspace loader is removed.
+
 - Speed: the API read its settings with three database queries one after another on nearly every request (about 0.4s from Los Angeles to the database). They now go out together and are kept for 30 seconds (cleared when Admin saves), so pages wait on one fewer round trip chain.
 
 - Pop-ups opened from inside a page (FIRE income and expense charts, and others) appeared far below the screen and blocked clicks: the page fade-in left an invisible transform behind, which made the page the frame for pop-ups. Entry animations now leave nothing behind, and a test guards it.

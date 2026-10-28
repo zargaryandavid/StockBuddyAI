@@ -626,6 +626,18 @@ describe("Dashboard navigation", () => {
     expect(screen.queryByRole("group", { name: "Transaction for NVDA" })).toBeNull();
   });
 
+  it("shows at once and fills in the account's role and settings from the browser", async () => {
+    vi.mocked(api).mockImplementation(async (path: string) => {
+      if (path === "/api/me") return { email: "admin@example.com", role: "admin" };
+      if (path === "/api/settings") return { max_position_pct: 0.2 };
+      return [];
+    });
+    render(<Dashboard email="admin@example.com" today="2026-10-27" loadAccount />);
+    expect(screen.getByRole("heading", { name: "Today" })).toBeTruthy();
+    // The Admin link appears once the role has loaded.
+    expect(await screen.findByRole("link", { name: /Admin/ })).toBeTruthy();
+  });
+
   it("starts a brand-new account with no made-up money", async () => {
     render(<Dashboard initialTab="fire" email="new@example.com" today="2026-10-27" />);
 

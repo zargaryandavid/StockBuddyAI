@@ -66,6 +66,8 @@ export type Recommendation = {
  * an edit; market data is kept a little longer because edits don't change it.
  */
 const PAGE_DATA = [
+  "/api/me",
+  "/api/settings",
   "/api/portfolios",
   "/api/profile",
   "/api/fire/",

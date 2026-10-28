@@ -192,6 +192,7 @@ const admin: Record<string, string> = {
     "Միացման կարգավորումները պահելու համար նշեք SUPABASE_SERVICE_ROLE_KEY-ը",
   "Minimum cash %": "Կանխիկի նվազագույն %",
   "Default for portfolios without their own Min cash.": "Լռելյայն արժեք այն պորտֆելների համար, որոնք չունեն իրենց նվազագույն կանխիկը։",
+  "Loading the studio…": "Բեռնում ենք ստուդիան…",
 };
 
 export default admin;

@@ -111,9 +111,10 @@ type SortDirection = "asc" | "desc";
 export function Dashboard({
   email,
   today,
-  role = "user",
-  book = defaultBook,
+  role: initialRole = "user",
+  book: initialBook = defaultBook,
   initialTab = "today",
+  loadAccount = false,
 }: {
   email: string;
   today: string;
@@ -121,8 +122,27 @@ export function Dashboard({
   book?: BookSettings;
   /** The page shown after sign-in; FIRE by default. */
   initialTab?: MainTab;
+  /** Fetch the role and book settings in the browser, so the page shows before they arrive. */
+  loadAccount?: boolean;
 }) {
   const router = useRouter();
+  const [role, setRole] = useState<Role>(initialRole);
+  const [book, setBook] = useState<BookSettings>(initialBook);
+  useEffect(() => {
+    if (!loadAccount) return;
+    let active = true;
+    Promise.all([api<{ role: Role }>("/api/me"), api<BookSettings>("/api/settings")])
+      .then(([me, settings]) => {
+        if (!active) return;
+        if (me?.role) setRole(me.role);
+        if (settings) setBook({ ...defaultBook, ...settings });
+      })
+      // Without them the page keeps working on the standard settings.
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [loadAccount]);
   const t = useT();
   // Callbacks that feed the first portfolio load read the translator from here, so a
   // language switch does not reload the portfolio and drop unsaved edits.
