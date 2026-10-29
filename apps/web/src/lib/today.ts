@@ -1,5 +1,6 @@
 import type { Portfolio } from "@/lib/api";
 import { cashShortfall, cashTarget, isFund } from "@/lib/analytics";
+import { occurrences, toBase, type FireEntry, type FxRates } from "@/lib/fire";
 import type { Position } from "@/lib/portfolio";
 
 /** Market data for one ticker, as the batch lookup returns it. */
@@ -181,4 +182,96 @@ export function setupSteps({
     { key: "portfolio", done: hasPortfolio },
     { key: "assets", done: hasAssets },
   ];
+}
+
+export type Mover = {
+  ticker: string;
+  name: string | null;
+  /** Price move of one share today, in the portfolio's currency. */
+  change: number;
+  /** Price move today, in percent (2.5 means +2.5%). */
+  pct: number;
+  /** What the move means for all the shares held, across portfolios. */
+  impact: number;
+  /** The trading day the prices are from. */
+  priceDate: string | null;
+};
+
+/**
+ * The holdings that moved most today, biggest first: up to `limit` that rose and up to
+ * `limit` that fell, ranked by percent. A ticker held in several portfolios counts once.
+ */
+export function todayMovers(
+  portfolios: Portfolio[],
+  quotes: Map<string, Quote>,
+  limit = 3,
+): { up: Mover[]; down: Mover[] } {
+  const shares = new Map<string, number>();
+  for (const portfolio of portfolios) {
+    for (const position of portfolio.portfolio_positions) {
+      const ticker = position.ticker.trim().toUpperCase();
+      if (ticker) shares.set(ticker, (shares.get(ticker) ?? 0) + (Number(position.shares) || 0));
+    }
+  }
+  const movers: Mover[] = [];
+  for (const [ticker, held] of shares) {
+    const quote = quotes.get(ticker);
+    const change = quote?.day_change;
+    const pct = quote?.day_change_percent;
+    if (change == null || pct == null || !Number.isFinite(change) || !Number.isFinite(pct) || held <= 0) continue;
+    movers.push({
+      ticker,
+      name: quote?.company_name ?? quote?.name ?? null,
+      change,
+      pct,
+      impact: change * held,
+      priceDate: quote?.price_date ?? null,
+    });
+  }
+  return {
+    up: movers.filter((item) => item.pct > 0).sort((a, b) => b.pct - a.pct).slice(0, limit),
+    down: movers.filter((item) => item.pct < 0).sort((a, b) => a.pct - b.pct).slice(0, limit),
+  };
+}
+
+export type CashFlowDay = {
+  date: string;
+  kind: "income" | "expense";
+  name: string;
+  amount: number;
+  currency: string;
+  /** In the base currency; null when no exchange rate is known yet. */
+  baseAmount: number | null;
+};
+
+/** FIRE income and expenses that fall between `from` and `to` (inclusive), by date. */
+export function cashFlowsBetween(
+  entries: FireEntry[],
+  from: string,
+  to: string,
+  rates: FxRates = {},
+  baseCurrency = "USD",
+): CashFlowDay[] {
+  const flows: CashFlowDay[] = [];
+  for (const entry of entries) {
+    for (const date of occurrences(entry, from, to)) {
+      const amount = Number(entry.amount) || 0;
+      flows.push({
+        date,
+        kind: entry.kind,
+        name: entry.name,
+        amount,
+        currency: entry.currency,
+        baseAmount: toBase(amount, entry.currency, rates, baseCurrency),
+      });
+    }
+  }
+  return flows.sort(
+    (a, b) => a.date.localeCompare(b.date) || a.kind.localeCompare(b.kind) || b.amount - a.amount,
+  );
+}
+
+/** `day` moved by a number of days, as YYYY-MM-DD. */
+export function shiftDay(day: string, days: number) {
+  return addDays(day, days);
 }

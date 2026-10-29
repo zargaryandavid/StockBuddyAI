@@ -3366,6 +3366,48 @@ button.today-row { cursor: pointer; }
 button.today-row:hover { background: var(--row-hover); }
 .today-row span { color: var(--label); }
 .today-note { margin: 0.6rem 0 0; font-size: var(--text-xs); }
+/* Today: stocks that moved most, and income and expenses due */
+.today-list h3 { margin: 0.4rem 0 0.35rem; color: var(--muted); font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+.mover-group + .mover-group, .flow-group + .flow-group { margin-top: 0.6rem; }
+.mover-row { display: flex; align-items: center; gap: 0.35rem; border-radius: 8px; }
+.mover-row:hover { background: var(--row-hover); }
+.mover-main {
+  display: grid; grid-template-columns: 1.1rem minmax(0, 1fr) auto auto; align-items: center; gap: 0.6rem;
+  flex: 1; min-width: 0; padding: 0.45rem 0.5rem; border: 0; background: transparent; color: var(--ink);
+  font: inherit; font-size: var(--text-sm); text-align: left; cursor: pointer;
+}
+.mover-row.positive .mover-arrow, .mover-row.positive .mover-numbers strong { color: #1f7048; }
+.mover-row.negative .mover-arrow, .mover-row.negative .mover-numbers strong { color: #a23d35; }
+.mover-name, .mover-numbers, .mover-impact { display: grid; min-width: 0; }
+.mover-name small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-xs); }
+.mover-numbers, .mover-impact { text-align: right; font-variant-numeric: tabular-nums; }
+.mover-numbers small, .mover-impact small { font-size: var(--text-xs); }
+.mover-numbers small { color: var(--label); }
+.mover-impact { min-width: 5.5rem; }
+.mover-news {
+  display: inline-flex; align-items: center; gap: 0.25rem; flex-shrink: 0; padding: 0.3rem 0.55rem;
+  border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--navy);
+  font-size: var(--text-xs); font-weight: 600; text-decoration: none;
+}
+.mover-news:hover, .mover-news:focus-visible { border-color: var(--navy); }
+.flow-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.6rem; padding: 0.4rem 0.5rem; font-size: var(--text-sm); }
+.flow-row:not(:has(.flow-date)) { grid-template-columns: minmax(0, 1fr) auto; }
+.flow-date { min-width: 6.5rem; color: var(--label); font-size: var(--text-xs); }
+.flow-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.flow-row strong { font-variant-numeric: tabular-nums; }
+.flow-row strong.positive { color: #1f7048; }
+.flow-row strong.negative { color: #a23d35; }
+.flow-totals { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin: 0.4rem 0.5rem 0; font-size: var(--text-xs); font-weight: 600; }
+.flow-totals .positive { color: #1f7048; }
+.flow-totals .negative { color: #a23d35; }
+.today-more { display: inline-flex; align-items: center; gap: 0.3rem; margin-top: 0.6rem; }
+@media (max-width: 520px) {
+  .mover-main { gap: 0.4rem; padding-inline: 0.3rem; }
+  .mover-impact { min-width: 0; }
+  .mover-news { padding: 0.35rem; }
+  .mover-news span { display: none; }
+  .flow-date { min-width: 0; }
+}
 .net-worth-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; margin-bottom: 0.5rem; }
 .net-worth-summary > div:first-child { display: grid; }
 .net-worth-summary strong { font-size: var(--text-lg); font-variant-numeric: tabular-nums; }

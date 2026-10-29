@@ -12,9 +12,12 @@ import { ShimmerLines } from "@/components/shimmer";
 import { money, signedMoney } from "@/lib/portfolio-metrics";
 import {
   attentionItems,
+  cashFlowsBetween,
   changeSinceLast,
   portfolioSnapshot,
   setupSteps,
+  shiftDay,
+  todayMovers,
   upcomingReports,
   type NetWorthPoint,
   type Quote,
@@ -22,6 +25,7 @@ import {
 import type { BookSettings } from "@/lib/workspace";
 
 import { NetWorthChart } from "./net-worth-chart";
+import { TodayCashFlows, TodayMovers } from "./today-sections";
 
 export type TodayDestination = "fire" | "portfolio" | "assets" | "analytics";
 
@@ -265,6 +269,11 @@ export function TodayPage({
       ),
     [portfolios, quotes, today],
   );
+  const movers = useMemo(() => (quotes ? todayMovers(portfolios, quotes) : null), [portfolios, quotes]);
+  const flows = useMemo(
+    () => (entries ? cashFlowsBetween(entries, today, shiftDay(today, 7), rates, currency) : null),
+    [entries, today, rates, currency],
+  );
   const unpriced = [...new Set(snapshots.flatMap((snapshot) => snapshot.unpriced))];
   const progress = plan.fireNumber ? Math.min(1, plan.currentAssets / plan.fireNumber) : null;
   // The cash each portfolio should keep (its Min cash, or the book default of 5%), added up.
@@ -499,6 +508,11 @@ export function TodayPage({
                   : t("Target met · {amount} above it", { amount: m(Math.max(0, totalCash - cashTargetAmount)) })}
           </small>
         </article>
+      </div>
+
+      <div className="today-columns">
+        <TodayMovers movers={loadingPortfolios ? null : movers} currency={currency} today={today} onOpen={() => onOpen("portfolio")} />
+        <TodayCashFlows flows={flows} currency={currency} today={today} onOpen={() => onOpen("fire")} />
       </div>
 
       <article className="panel today-chart">
