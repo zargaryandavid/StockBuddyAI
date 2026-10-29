@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 
 import { useT } from "@/lib/i18n/client";
-import { money } from "@/lib/portfolio-metrics";
+import { money as formatMoney } from "@/lib/portfolio-metrics";
+import { HIDDEN_AMOUNT } from "@/lib/privacy";
 import type { NetWorthPoint } from "@/lib/today";
 
 const RANGES = [
@@ -29,14 +30,18 @@ export function NetWorthChart({
   current,
   currency,
   today,
+  hidden = false,
 }: {
   points: NetWorthPoint[];
   /** Today's value as shown on the page, so the chart has today even before it is saved. */
   current?: { day: string; total: number } | null;
   currency: string;
   today: string;
+  /** Show amounts as •••••; the line itself still shows the trend. */
+  hidden?: boolean;
 }) {
   const t = useT();
+  const money = (value: number, code: string) => (hidden ? HIDDEN_AMOUNT : formatMoney(value, code));
   const [range, setRange] = useState<(typeof RANGES)[number]["key"]>("6M");
   const [hover, setHover] = useState<number | null>(null);
 

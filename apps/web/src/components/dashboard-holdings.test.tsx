@@ -7,7 +7,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import { api } from "@/lib/api";
 import { Dashboard } from "./dashboard";
@@ -223,6 +223,10 @@ describe("Holdings table", () => {
     fireEvent.click(screen.getByRole("button", { name: "Today" }));
     expect(await screen.findByText(/changes to .* that are not saved yet/)).toBeTruthy();
     const card = (await screen.findAllByText("Cash")).map((node) => node.closest(".today-card")).find(Boolean);
+    // Amounts start hidden on this device until the eye button shows them.
+    await waitFor(() => expect(card?.textContent).toContain("•••••"));
+    expect(card?.textContent).not.toContain("$1,000.00");
+    fireEvent.click(screen.getByRole("button", { name: "Show amounts" }));
     await waitFor(() => expect(card?.textContent).toContain("$1,000.00"));
     // The Cash card is not a link; its explanation opens from the (i) button.
     expect(card?.tagName).toBe("ARTICLE");
@@ -236,6 +240,10 @@ describe("Holdings table", () => {
     const breakdown = document.querySelector(".today-breakdown")?.textContent ?? "";
     expect(breakdown).toContain("Reserved cash $1,000.00");
     expect(breakdown).toMatch(/^Portfolio \$[\d,.]+ · Reserved cash \$1,000\.00 · Savings \$0\.00 · Bonds \$0\.00$/);
+    // Hiding again is remembered.
+    fireEvent.click(screen.getByRole("button", { name: "Hide amounts" }));
+    expect(card?.textContent).not.toContain("$1,000.00");
+    expect(window.localStorage.getItem("mpb.showAmounts")).toBe("0");
   });
 
   it("moves a row with the arrow keys on its handle", async () => {
@@ -248,6 +256,12 @@ describe("Holdings table", () => {
   });
 
   it("opens a report reminder from the report date and saves it", async () => {
+    // The page uses the browser's own date; pin it to the day the test is written for.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 23, 12));
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     render(<Dashboard initialTab="portfolio" email="owner@example.com" today="2026-10-23" />);
     await screen.findByText("18.2");
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { AnimatedNumber } from "@/components/animated-number";
-import { AlertTriangle, ArrowRight, CalendarClock, Check, Flame, Info, PiggyBank, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowRight, CalendarClock, Check, Eye, EyeOff, Flame, Info, PiggyBank, Wallet } from "lucide-react";
 
 import { cashTarget } from "@/lib/analytics";
 import { api, type Portfolio } from "@/lib/api";
@@ -10,13 +10,13 @@ import { buildPlan, yearsLabel, type FireAsset, type FireEntry, type FireSetting
 import { useT } from "@/lib/i18n/client";
 import { ShimmerLines } from "@/components/shimmer";
 import { money, signedMoney } from "@/lib/portfolio-metrics";
+import { HIDDEN_AMOUNT, useHiddenAmounts } from "@/lib/privacy";
 import {
   attentionItems,
   cashFlowsBetween,
   changeSinceLast,
   portfolioSnapshot,
   setupSteps,
-  shiftDay,
   todayMovers,
   upcomingReports,
   type NetWorthPoint,
@@ -271,7 +271,7 @@ export function TodayPage({
   );
   const movers = useMemo(() => (quotes ? todayMovers(portfolios, quotes) : null), [portfolios, quotes]);
   const flows = useMemo(
-    () => (entries ? cashFlowsBetween(entries, today, shiftDay(today, 7), rates, currency) : null),
+    () => (entries ? cashFlowsBetween(entries, today, today, rates, currency) : null),
     [entries, today, rates, currency],
   );
   const unpriced = [...new Set(snapshots.flatMap((snapshot) => snapshot.unpriced))];
@@ -297,7 +297,10 @@ export function TodayPage({
     hasAssets: Boolean(assets?.length),
   });
   const showSetup = ready && !skipped && steps.some((step) => !step.done);
-  const m = (value: number) => money(value, currency);
+  // Amounts stay hidden (•••••) until the eye button shows them; percentages always show.
+  const [hidden, toggleHidden] = useHiddenAmounts();
+  const m = (value: number) => (hidden ? HIDDEN_AMOUNT : money(value, currency));
+  const sm = (value: number) => (hidden ? HIDDEN_AMOUNT : signedMoney(value, currency));
 
   function skipSetup() {
     setSkipped(true);
@@ -332,7 +335,19 @@ export function TodayPage({
   return (
     <section className="today-page" aria-labelledby="today-title">
       <header className="today-heading">
-        <h1 id="today-title">{t("Today")}</h1>
+        <div className="today-title-row">
+          <h1 id="today-title">{t("Today")}</h1>
+          <button
+            type="button"
+            className="amounts-toggle"
+            aria-pressed={!hidden}
+            onClick={toggleHidden}
+            title={hidden ? t("Show amounts") : t("Hide amounts")}
+          >
+            {hidden ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+            <span>{hidden ? t("Show amounts") : t("Hide amounts")}</span>
+          </button>
+        </div>
         {hour == null ? (
           <p className="muted">{t("Your money at a glance, and what needs a look.")}</p>
         ) : (
@@ -410,15 +425,15 @@ export function TodayPage({
             <Wallet size={16} aria-hidden="true" />
             {t("Net worth")}
           </span>
-          <strong>{ready ? <AnimatedNumber value={netWorth} format={m} /> : <span className="shimmer shimmer-value" aria-label={t("Loading")} />}</strong>
+          <strong>{ready ? (hidden ? HIDDEN_AMOUNT : <AnimatedNumber value={netWorth} format={m} />) : <span className="shimmer shimmer-value" aria-label={t("Loading")} />}</strong>
           {ready && (
             <small className={dayChange >= 0 ? "positive" : "negative"}>
-              {t("Markets today: {amount}", { amount: signedMoney(dayChange, currency) })}
+              {t("Markets today: {amount}", { amount: sm(dayChange) })}
             </small>
           )}
-          {ready && change && (
+          {ready && change && Math.abs(change.amount) >= 0.5 && (
             <small className={change.amount >= 0 ? "positive" : "negative"}>
-              {t("{amount} since {day}", { amount: signedMoney(change.amount, currency), day: change.since })}
+              {t("{amount} since {day}", { amount: sm(change.amount), day: change.since })}
             </small>
           )}
           {ready && (
@@ -483,7 +498,7 @@ export function TodayPage({
               )}
             </span>
           </span>
-          <strong>{ready ? <AnimatedNumber value={totalCash} format={m} /> : <span className="shimmer shimmer-value" aria-label={t("Loading")} />}</strong>
+          <strong>{ready ? (hidden ? HIDDEN_AMOUNT : <AnimatedNumber value={totalCash} format={m} />) : <span className="shimmer shimmer-value" aria-label={t("Loading")} />}</strong>
           {ready && portfolios.length > 0 && (
             <>
               <small className="muted">
@@ -511,8 +526,16 @@ export function TodayPage({
       </div>
 
       <div className="today-columns">
-        <TodayMovers movers={loadingPortfolios ? null : movers} currency={currency} today={today} onOpen={() => onOpen("portfolio")} />
-        <TodayCashFlows flows={flows} currency={currency} today={today} onOpen={() => onOpen("fire")} />
+        <TodayMovers
+          hidden={hidden}
+          movers={loadingPortfolios ? null : movers}
+          dayChange={dayChange}
+          holdingsValue={investments - totalCash}
+          currency={currency}
+          today={today}
+          onOpen={() => onOpen("portfolio")}
+        />
+        <TodayCashFlows hidden={hidden} flows={flows} currency={currency} today={today} onOpen={() => onOpen("fire")} />
       </div>
 
       <article className="panel today-chart">
@@ -524,6 +547,7 @@ export function TodayPage({
           current={ready && hasAnything ? { day: today, total: netWorth } : null}
           currency={currency}
           today={today}
+          hidden={hidden}
         />
       </article>
 

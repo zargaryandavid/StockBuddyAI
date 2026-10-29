@@ -193,6 +193,12 @@ export type Mover = {
   pct: number;
   /** What the move means for all the shares held, across portfolios. */
   impact: number;
+  /** Price of one share now. */
+  price: number | null;
+  /** Shares held, across portfolios. */
+  shares: number;
+  /** What those shares are worth now. */
+  value: number | null;
   /** The trading day the prices are from. */
   priceDate: string | null;
 };
@@ -225,6 +231,9 @@ export function todayMovers(
       change,
       pct,
       impact: change * held,
+      price: quote?.price ?? null,
+      shares: held,
+      value: quote?.price == null ? null : quote.price * held,
       priceDate: quote?.price_date ?? null,
     });
   }
@@ -269,9 +278,4 @@ export function cashFlowsBetween(
   return flows.sort(
     (a, b) => a.date.localeCompare(b.date) || a.kind.localeCompare(b.kind) || b.amount - a.amount,
   );
-}
-
-/** `day` moved by a number of days, as YYYY-MM-DD. */
-export function shiftDay(day: string, days: number) {
-  return addDays(day, days);
 }

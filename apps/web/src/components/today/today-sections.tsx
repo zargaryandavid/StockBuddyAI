@@ -4,6 +4,7 @@ import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarDays, Newspaper, Tren
 
 import { useI18n } from "@/lib/i18n/client";
 import { money, signedMoney } from "@/lib/portfolio-metrics";
+import { HIDDEN_AMOUNT } from "@/lib/privacy";
 import type { CashFlowDay, Mover } from "@/lib/today";
 import { ShimmerLines } from "@/components/shimmer";
 
@@ -19,18 +20,31 @@ function dayLabel(day: string, locale: string) {
 
 /** The holdings that moved most today, up and down, with what the move means for you. */
 export function TodayMovers({
+  hidden = false,
   movers,
+  dayChange,
+  holdingsValue,
   currency,
   today,
   onOpen,
 }: {
+  /** Money amounts show as •••••; percentages still show. */
+  hidden?: boolean;
   /** Null while prices load. */
   movers: { up: Mover[]; down: Mover[] } | null;
+  /** All holdings together: today's change and what they are worth now. */
+  dayChange: number;
+  holdingsValue: number;
   currency: string;
   today: string;
   onOpen: () => void;
 }) {
   const { t, locale } = useI18n();
+  const before = holdingsValue - dayChange;
+  const dayPct = before > 0 ? (dayChange / before) * 100 : null;
+  const pct = (value: number) => `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
+  const m = (value: number) => (hidden ? HIDDEN_AMOUNT : money(value, currency));
+  const sm = (value: number) => (hidden ? HIDDEN_AMOUNT : signedMoney(value, currency));
   const priceDate = movers ? [...movers.up, ...movers.down].map((item) => item.priceDate).find(Boolean) : null;
   const groups = movers
     ? [
@@ -46,8 +60,16 @@ export function TodayMovers({
         {t("Stocks today")}
       </h2>
       {priceDate && priceDate !== today && (
-        <p className="muted today-note">
-          {t("Markets are closed today; these are the moves of {day}.", { day: dayLabel(priceDate, locale) })}
+        <p className="muted today-note">{t("Price moves of {day}, the latest trading day.", { day: dayLabel(priceDate, locale) })}</p>
+      )}
+      {movers && holdingsValue > 0 && (
+        <p className={`mover-summary ${dayChange >= 0 ? "positive" : "negative"}`}>
+          <span>{t("Your portfolio today")}</span>
+          <strong>
+            {sm(dayChange)}
+            {dayPct != null && ` (${pct(dayPct)})`}
+          </strong>
+          <small className="muted">{t("now worth {amount}", { amount: m(holdingsValue) })}</small>
         </p>
       )}
       {!movers ? (
@@ -57,26 +79,41 @@ export function TodayMovers({
       ) : (
         groups.map((group) => (
           <div key={group.key} className="mover-group">
-            <h3>{group.title}</h3>
+            <div className="mover-head" aria-hidden="true">
+              <h3>{group.title}</h3>
+              <span>{t("Stock")}</span>
+              <span>{t("Your money")}</span>
+            </div>
             <ul>
               {group.rows.map((item) => {
                 const up = item.pct > 0;
                 const Arrow = up ? ArrowUpRight : ArrowDownRight;
                 return (
                   <li key={item.ticker} className={`mover-row ${up ? "positive" : "negative"}`}>
-                    <button type="button" className="mover-main" onClick={onOpen} title={t("Open Portfolio")}>
+                    <button type="button" className="mover-main" onClick={onOpen}>
                       <Arrow size={16} aria-hidden="true" className="mover-arrow" />
                       <span className="mover-name">
                         <strong>{item.ticker}</strong>
                         {item.name && <small className="muted">{item.name}</small>}
                       </span>
                       <span className="mover-numbers">
-                        <strong>{`${up ? "+" : ""}${item.pct.toFixed(2)}%`}</strong>
-                        <small>{t("{amount} a share", { amount: signedMoney(item.change, currency) })}</small>
+                        <strong>
+                          {signedMoney(item.change, currency)} ({pct(item.pct)})
+                        </strong>
+                        {item.price != null && (
+                          <small>{t("now {price} a share", { price: money(item.price, currency) })}</small>
+                        )}
                       </span>
                       <span className="mover-impact">
-                        <strong>{signedMoney(item.impact, currency)}</strong>
-                        <small className="muted">{t("for you")}</small>
+                        <strong>{sm(item.impact)}</strong>
+                        <small className="muted">
+                          {item.value != null
+                            ? t("{shares} shares · {value}", {
+                                shares: Number(item.shares.toFixed(4)),
+                                value: m(item.value),
+                              })
+                            : t("{shares} shares", { shares: Number(item.shares.toFixed(4)) })}
+                        </small>
                       </span>
                     </button>
                     <a
@@ -101,14 +138,17 @@ export function TodayMovers({
   );
 }
 
-/** Income and expenses from the FIRE plan that fall today, and those in the next 7 days. */
+/** Income and expenses from the FIRE plan that fall today. */
 export function TodayCashFlows({
+  hidden = false,
   flows,
   currency,
   today,
   onOpen,
 }: {
-  /** Today and the next 7 days; null while loading. */
+  /** Money amounts show as •••••. */
+  hidden?: boolean;
+  /** Today's; null while loading. */
   flows: CashFlowDay[] | null;
   currency: string;
   today: string;
@@ -116,18 +156,16 @@ export function TodayCashFlows({
 }) {
   const { t, locale } = useI18n();
   const todays = (flows ?? []).filter((item) => item.date === today);
-  const coming = (flows ?? []).filter((item) => item.date > today);
   const total = (kind: "income" | "expense") =>
     todays.filter((item) => item.kind === kind).reduce((sum, item) => sum + (item.baseAmount ?? 0), 0);
   const income = total("income");
   const spend = total("expense");
 
-  const row = (item: CashFlowDay, withDate: boolean) => (
+  const row = (item: CashFlowDay) => (
     <li key={`${item.date}-${item.kind}-${item.name}`} className={`flow-row ${item.kind}`}>
-      {withDate && <span className="flow-date">{dayLabel(item.date, locale)}</span>}
       <span className="flow-name">{item.name}</span>
       <strong className={item.kind === "income" ? "positive" : "negative"}>
-        {`${item.kind === "income" ? "+" : "−"}${money(item.amount, item.currency)}`}
+        {`${item.kind === "income" ? "+" : "−"}${hidden ? HIDDEN_AMOUNT : money(item.amount, item.currency)}`}
       </strong>
     </li>
   );
@@ -148,25 +186,12 @@ export function TodayCashFlows({
               <p className="muted">{t("Nothing due today.")}</p>
             ) : (
               <>
-                <ul>{todays.map((item) => row(item, false))}</ul>
+                <ul>{todays.map(row)}</ul>
                 <p className="flow-totals">
-                  {income > 0 && <span className="positive">{t("In {amount}", { amount: money(income, currency) })}</span>}
-                  {spend > 0 && <span className="negative">{t("Out {amount}", { amount: money(spend, currency) })}</span>}
+                  {income > 0 && <span className="positive">{t("In {amount}", { amount: hidden ? HIDDEN_AMOUNT : money(income, currency) })}</span>}
+                  {spend > 0 && <span className="negative">{t("Out {amount}", { amount: hidden ? HIDDEN_AMOUNT : money(spend, currency) })}</span>}
                 </p>
               </>
-            )}
-          </div>
-          <div className="flow-group">
-            <h3>{t("Next 7 days")}</h3>
-            {coming.length === 0 ? (
-              <p className="muted">{t("Nothing due in the next 7 days.")}</p>
-            ) : (
-              <ul>
-                {coming.slice(0, 6).map((item) => row(item, true))}
-              </ul>
-            )}
-            {coming.length > 6 && (
-              <p className="muted today-note">{t("And {count} more.", { count: coming.length - 6 })}</p>
             )}
           </div>
         </>

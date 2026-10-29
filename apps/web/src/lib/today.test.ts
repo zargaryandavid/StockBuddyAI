@@ -9,7 +9,6 @@ import {
   cashFlowsBetween,
   changeSinceLast,
   portfolioSnapshot,
-  shiftDay,
   todayMovers,
   upcomingReports,
   type Quote,
@@ -101,7 +100,7 @@ describe("todayMovers", () => {
       quotes,
     );
     expect(up.map((item) => item.ticker)).toEqual(["NVDA", "AAPL"]);
-    expect(up[0]).toMatchObject({ name: "NVIDIA", change: 4, pct: 2.5, impact: 60, priceDate: "2026-10-28" });
+    expect(up[0]).toMatchObject({ name: "NVIDIA", change: 4, pct: 2.5, impact: 60, shares: 15, priceDate: "2026-10-28" });
     expect(down.map((item) => [item.ticker, item.impact])).toEqual([["SMCI", -6], ["XE", -1]]);
   });
 
@@ -151,6 +150,5 @@ describe("cashFlowsBetween", () => {
       ["2026-11-03", "Bond coupon"],
     ]);
     expect(flows[2].baseAmount).toBeCloseTo(93.6);
-    expect(shiftDay("2026-10-28", 7)).toBe("2026-11-04");
   });
 });

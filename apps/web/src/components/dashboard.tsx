@@ -9,6 +9,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import type React from "react";
 import Link from "next/link";
@@ -108,9 +109,16 @@ type SortKey =
   | "status";
 type SortDirection = "asc" | "desc";
 
+const noSubscribe = () => () => {};
+/** The date on the person's own clock, YYYY-MM-DD. */
+const localDay = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+};
+
 export function Dashboard({
   email,
-  today,
+  today: serverToday,
   role: initialRole = "user",
   book: initialBook = defaultBook,
   initialTab = "today",
@@ -126,6 +134,9 @@ export function Dashboard({
   loadAccount?: boolean;
 }) {
   const router = useRouter();
+  // The server's date is UTC; in the browser use the person's own date, so an evening in
+  // America is not already "tomorrow".
+  const today = useSyncExternalStore(noSubscribe, localDay, () => serverToday);
   const [role, setRole] = useState<Role>(initialRole);
   const [book, setBook] = useState<BookSettings>(initialBook);
   useEffect(() => {
