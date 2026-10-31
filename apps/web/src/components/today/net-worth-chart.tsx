@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { type PointerEvent, useMemo, useState } from "react";
 
-import { useT } from "@/lib/i18n/client";
+import { useI18n } from "@/lib/i18n/client";
 import { money as formatMoney } from "@/lib/portfolio-metrics";
 import { HIDDEN_AMOUNT } from "@/lib/privacy";
 import type { NetWorthPoint } from "@/lib/today";
@@ -17,6 +17,20 @@ const RANGES = [
 const WIDTH = 720;
 const HEIGHT = 200;
 const PAD = { top: 8, right: 0, bottom: 4, left: 0 };
+
+/** "Wed, Oct 28, 2026" (or the Armenian equivalent) for a YYYY-MM-DD day. */
+function longDay(day: string, locale: string) {
+  return new Intl.DateTimeFormat(locale === "hy" ? "hy-AM" : "en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${day}T00:00:00Z`));
+}
+
+/** Dots for each reading only while there are few enough to tell apart. */
+const MAX_DOTS = 62;
 
 function daysBefore(day: string, days: number) {
   const date = new Date(`${day}T00:00:00Z`);
@@ -40,7 +54,7 @@ export function NetWorthChart({
   /** Show amounts as •••••; the line itself still shows the trend. */
   hidden?: boolean;
 }) {
-  const t = useT();
+  const { t, locale } = useI18n();
   const money = (value: number, code: string) => (hidden ? HIDDEN_AMOUNT : formatMoney(value, code));
   const [range, setRange] = useState<(typeof RANGES)[number]["key"]>("6M");
   const [hover, setHover] = useState<number | null>(null);
@@ -96,6 +110,21 @@ export function NetWorthChart({
   const change = last.total - first.total;
   const active = hover == null ? last : shown[hover];
 
+  function pick(event: PointerEvent<SVGSVGElement>) {
+    const box = event.currentTarget.getBoundingClientRect();
+    const at = ((event.clientX - box.left) / box.width) * WIDTH;
+    let nearest = 0;
+    shown.forEach((point, index) => {
+      if (Math.abs(x(point.day) - at) < Math.abs(x(shown[nearest].day) - at)) nearest = index;
+    });
+    setHover(nearest);
+  }
+
+  const hovered = hover == null ? null : shown[hover];
+  const previous = hover ? shown[hover - 1] : null;
+  const left = hovered ? (x(hovered.day) / WIDTH) * 100 : 0;
+  const top = hovered ? (y(hovered.total) / HEIGHT) * 100 : 0;
+
   return (
     <div className="net-worth-chart">
       <div className="net-worth-summary">
@@ -133,31 +162,47 @@ export function NetWorthChart({
           to: last.day,
           end: money(last.total, currency),
         })}
-        onMouseLeave={() => setHover(null)}
-        onMouseMove={(event) => {
-          const box = event.currentTarget.getBoundingClientRect();
-          const at = ((event.clientX - box.left) / box.width) * WIDTH;
-          let nearest = 0;
-          shown.forEach((point, index) => {
-            if (Math.abs(x(point.day) - at) < Math.abs(x(shown[nearest].day) - at)) nearest = index;
-          });
-          setHover(nearest);
-        }}
+        // Mouse hover, or press and slide a finger along the line on a phone.
+        onPointerLeave={() => setHover(null)}
+        onPointerDown={pick}
+        onPointerMove={pick}
       >
         {/* Keyed by range so the line draws itself again when the range changes. */}
         <path key={`area-${range}`} d={area} className="net-worth-area" />
         <path key={`line-${range}`} d={line} className="net-worth-line" />
       </svg>
-      {hover != null && (
-        // Drawn outside the stretched chart so it stays round.
-        <span
-          className="net-worth-dot"
-          aria-hidden="true"
-          style={{
-            left: `${(x(shown[hover].day) / WIDTH) * 100}%`,
-            top: `${(y(shown[hover].total) / HEIGHT) * 100}%`,
-          }}
-        />
+      {/* Points are drawn outside the stretched chart so they stay round. */}
+      {shown.length <= MAX_DOTS &&
+        shown.map((point, index) => (
+          <span
+            key={point.day}
+            className="net-worth-point"
+            aria-hidden="true"
+            style={{ left: `${(x(point.day) / WIDTH) * 100}%`, top: `${(y(point.total) / HEIGHT) * 100}%` }}
+            data-active={index === hover || undefined}
+          />
+        ))}
+      {hovered && (
+        <>
+          <span className="net-worth-dot" aria-hidden="true" style={{ left: `${left}%`, top: `${top}%` }} />
+          <span
+            className="net-worth-tip"
+            role="status"
+            style={{ left: `${left}%`, top: `${top}%` }}
+            data-side={left > 70 ? "left" : left < 30 ? "right" : "center"}
+            data-below={top < 35 || undefined}
+          >
+            <strong>{money(hovered.total, currency)}</strong>
+            <span>{longDay(hovered.day, locale)}</span>
+            {previous && (
+              <span className={hovered.total - previous.total >= 0 ? "positive" : "negative"}>
+                {t("{amount} from the day before", {
+                  amount: `${hovered.total - previous.total >= 0 ? "+" : "−"}${money(Math.abs(hovered.total - previous.total), currency)}`,
+                })}
+              </span>
+            )}
+          </span>
+        </>
       )}
       </div>
       <div className="net-worth-axis">

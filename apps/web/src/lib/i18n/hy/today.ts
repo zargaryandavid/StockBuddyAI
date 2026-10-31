@@ -160,6 +160,7 @@ const today: Record<string, string> = {
   "Growth calculator": "Աճի հաշվիչ",
   // Stocks today; income and expenses due
   "Stocks today": "Բաժնետոմսերն այսօր",
+  "{amount} from the day before": "{amount} նախորդ օրվա համեմատ",
   "Your holdings today": "Ձեր ակտիվներն այսօր",
   Worth: "Արժեքը",
   Funds: "Ֆոնդեր",

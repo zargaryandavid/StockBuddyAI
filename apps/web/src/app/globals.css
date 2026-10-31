@@ -3489,6 +3489,27 @@ button.today-row:hover { background: var(--row-hover); }
 .net-worth-line { fill: none; stroke: var(--sidebar); stroke-width: 2; vector-effect: non-scaling-stroke; }
 .net-worth-area { fill: rgba(31, 77, 50, 0.08); }
 .net-worth-dot { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border: 2px solid var(--sidebar); border-radius: 50%; background: #fff; pointer-events: none; }
+.net-worth-point {
+  position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%;
+  background: var(--sidebar); opacity: 0.55; pointer-events: none;
+}
+.net-worth-point[data-active] { opacity: 0; }
+/* The value label beside the point under the mouse or finger. */
+.net-worth-tip {
+  position: absolute; z-index: 2; display: grid; gap: 0.1rem; min-width: 9.5rem; padding: 0.45rem 0.6rem;
+  border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 6px 18px rgba(17, 24, 39, 0.14);
+  color: var(--ink); font-size: var(--text-xs); line-height: 1.35; white-space: nowrap; pointer-events: none;
+  transform: translate(-50%, calc(-100% - 12px));
+}
+.net-worth-tip[data-side="left"] { transform: translate(calc(-100% + 14px), calc(-100% - 12px)); }
+.net-worth-tip[data-side="right"] { transform: translate(-14px, calc(-100% - 12px)); }
+.net-worth-tip[data-below][data-side="center"] { transform: translate(-50%, 12px); }
+.net-worth-tip[data-below][data-side="left"] { transform: translate(calc(-100% + 14px), 12px); }
+.net-worth-tip[data-below][data-side="right"] { transform: translate(-14px, 12px); }
+.net-worth-tip strong { font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.net-worth-tip span { color: var(--label); }
+.net-worth-tip .positive { color: #1f7048; font-weight: 600; }
+.net-worth-tip .negative { color: #a23d35; font-weight: 600; }
 .net-worth-axis { display: flex; justify-content: space-between; margin-top: 0.35rem; color: var(--muted); font-size: var(--text-xs); }
 .net-worth-empty { display: grid; gap: 0.3rem; padding: 1.25rem 0; }
 .net-worth-empty p { margin: 0; }
