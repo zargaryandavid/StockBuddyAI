@@ -279,3 +279,48 @@ export function cashFlowsBetween(
     (a, b) => a.date.localeCompare(b.date) || a.kind.localeCompare(b.kind) || b.amount - a.amount,
   );
 }
+
+export type HoldingTile = {
+  ticker: string;
+  name: string | null;
+  sector: string;
+  /** What the shares are worth now, across portfolios. */
+  value: number;
+  /** Today's price move in percent; null when unknown. */
+  pct: number | null;
+  /** Today's gain or loss on the shares held. */
+  impact: number | null;
+};
+
+function knownSector(sector: string | null | undefined) {
+  const name = sector?.trim();
+  return !name || name === "Unknown" || name === "Not Applicable" ? "Other" : name;
+}
+
+/** Every priced holding with its value, sector and today's move, for the heat map. */
+export function holdingTiles(portfolios: Portfolio[], quotes: Map<string, Quote>): HoldingTile[] {
+  const shares = new Map<string, number>();
+  for (const portfolio of portfolios) {
+    for (const position of portfolio.portfolio_positions) {
+      const ticker = position.ticker.trim().toUpperCase();
+      if (ticker) shares.set(ticker, (shares.get(ticker) ?? 0) + (Number(position.shares) || 0));
+    }
+  }
+  const tiles: HoldingTile[] = [];
+  for (const [ticker, held] of shares) {
+    const quote = quotes.get(ticker);
+    const price = quote?.price;
+    if (price == null || !Number.isFinite(price) || held <= 0) continue;
+    const pct = quote?.day_change_percent;
+    const change = quote?.day_change;
+    tiles.push({
+      ticker,
+      name: quote?.company_name ?? quote?.name ?? null,
+      sector: quote && isFund({ ...quote, shares: held }) ? "Funds" : knownSector(quote?.sector),
+      value: price * held,
+      pct: pct != null && Number.isFinite(pct) ? pct : null,
+      impact: change != null && Number.isFinite(change) ? change * held : null,
+    });
+  }
+  return tiles.sort((a, b) => b.value - a.value);
+}

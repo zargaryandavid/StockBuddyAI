@@ -8,6 +8,7 @@ import {
   attentionItems,
   cashFlowsBetween,
   changeSinceLast,
+  holdingTiles,
   portfolioSnapshot,
   todayMovers,
   upcomingReports,
@@ -150,5 +151,29 @@ describe("cashFlowsBetween", () => {
       ["2026-11-03", "Bond coupon"],
     ]);
     expect(flows[2].baseAmount).toBeCloseTo(93.6);
+  });
+});
+
+describe("holdingTiles", () => {
+  it("lists every priced holding by value, with its sector and today's move", () => {
+    const quotes = new Map<string, Quote>([
+      ["NVDA", { ticker: "NVDA", price: 200, sector: "Information Technology", day_change: 4, day_change_percent: 2 }],
+      ["VOO", { ticker: "VOO", price: 500, is_etf_index: true, day_change: -1, day_change_percent: -0.2 }],
+      ["ODD", { ticker: "ODD", price: 10, sector: "Unknown", day_change: null, day_change_percent: null }],
+    ]);
+    const tiles = holdingTiles(
+      [{ id: "p", name: "Main", cash: 0, portfolio_positions: [
+        { ticker: "NVDA", shares: 5 },
+        { ticker: "VOO", shares: 1 },
+        { ticker: "ODD", shares: 3 },
+        { ticker: "NOPRICE", shares: 1 },
+      ] } as unknown as Portfolio],
+      quotes,
+    );
+    expect(tiles.map((tile) => [tile.ticker, tile.sector, tile.value, tile.pct, tile.impact])).toEqual([
+      ["NVDA", "Information Technology", 1000, 2, 20],
+      ["VOO", "Funds", 500, -0.2, -1],
+      ["ODD", "Other", 30, null, null],
+    ]);
   });
 });

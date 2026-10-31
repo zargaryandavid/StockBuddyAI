@@ -3373,6 +3373,27 @@ button.today-row { cursor: pointer; }
 button.today-row:hover { background: var(--row-hover); }
 .today-row span { color: var(--label); }
 .today-note { margin: 0.6rem 0 0; font-size: var(--text-xs); }
+/* Today: heat map of the holdings (box size = value, colour = today's move) */
+.holdings-heatmap { min-height: 0; }
+.heatmap-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem 1rem; margin-bottom: 0.6rem; }
+.heatmap-heading h2 { display: flex; align-items: center; gap: 0.45rem; margin: 0; font-size: var(--text-md); }
+.heatmap-legend { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--muted); font-size: var(--text-xs); }
+.heatmap-scale { width: 7rem; height: 0.55rem; border-radius: 999px; background: linear-gradient(90deg, rgb(196, 36, 46), rgb(138, 147, 150), rgb(27, 122, 61)); }
+.heatmap-frame { position: relative; width: 100%; min-height: 240px; overflow: hidden; border-radius: 8px; background: #1f2a24; }
+.heatmap-sector-name {
+  position: absolute; overflow: hidden; color: #e7efe9; font-size: 11px; font-weight: 700; line-height: 14px;
+  text-overflow: ellipsis; white-space: nowrap; pointer-events: none;
+}
+.heatmap-tile {
+  position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem;
+  overflow: hidden; margin: 1px; padding: 2px; border: 0; border-radius: 2px; color: #fff; cursor: pointer;
+  font: inherit; line-height: 1.05; text-align: center; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  transition: filter 120ms, left 200ms, top 200ms, width 200ms, height 200ms;
+}
+.heatmap-tile:hover, .heatmap-tile:focus-visible { filter: brightness(1.12); outline: 2px solid #fff; outline-offset: -2px; z-index: 1; }
+.heatmap-tile strong { font-weight: 800; letter-spacing: 0.01em; }
+.heatmap-tile span { font-weight: 600; opacity: 0.95; }
+
 /* Today: stocks that moved most, and income and expenses due */
 .today-list h3 { margin: 0.4rem 0 0.35rem; color: var(--muted); font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
 .mover-group + .mover-group { margin-top: 0.6rem; }

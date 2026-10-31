@@ -15,6 +15,7 @@ import {
   attentionItems,
   cashFlowsBetween,
   changeSinceLast,
+  holdingTiles,
   portfolioSnapshot,
   setupSteps,
   todayMovers,
@@ -24,6 +25,7 @@ import {
 } from "@/lib/today";
 import type { BookSettings } from "@/lib/workspace";
 
+import { HoldingsHeatmap } from "./holdings-heatmap";
 import { NetWorthChart } from "./net-worth-chart";
 import { TodayCashFlows, TodayMovers } from "./today-sections";
 
@@ -269,6 +271,7 @@ export function TodayPage({
       ),
     [portfolios, quotes, today],
   );
+  const tiles = useMemo(() => (quotes ? holdingTiles(portfolios, quotes) : null), [portfolios, quotes]);
   const movers = useMemo(() => (quotes ? todayMovers(portfolios, quotes) : null), [portfolios, quotes]);
   const flows = useMemo(
     () => (entries ? cashFlowsBetween(entries, today, today, rates, currency) : null),
@@ -524,6 +527,15 @@ export function TodayPage({
           </small>
         </article>
       </div>
+
+      {(loadingPortfolios || portfolios.some((portfolio) => portfolio.portfolio_positions.length > 0)) && (
+        <HoldingsHeatmap
+          tiles={loadingPortfolios ? null : tiles}
+          currency={currency}
+          hidden={hidden}
+          onOpen={() => onOpen("portfolio")}
+        />
+      )}
 
       <div className="today-columns">
         <TodayMovers
