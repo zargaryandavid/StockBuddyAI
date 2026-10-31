@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { SharedFireView } from "@/components/share/shared-fire";
 import { SharedPortfolioView } from "@/components/share/shared-portfolio";
+import { SharedTodayView } from "@/components/share/shared-today";
 import type { SharedPage } from "@/components/share/types";
 import { getT } from "@/lib/i18n/server";
 import { BrandMark } from "@/components/brand-mark";
@@ -47,7 +48,11 @@ async function SharedContent({ params }: { params: Params }) {
   const owner = page.owner_name?.trim();
   const portfolioName = page.portfolio?.name;
   const title =
-    page.kind === "fire"
+    page.kind === "today"
+      ? owner
+        ? t("{owner}'s money today", { owner })
+        : t("Money today")
+      : page.kind === "fire"
       ? owner
         ? t("{owner}'s FIRE plan", { owner })
         : t("A FIRE plan")
@@ -69,7 +74,9 @@ async function SharedContent({ params }: { params: Params }) {
           })}
         </p>
       </header>
-      {page.kind === "fire" ? (
+      {page.kind === "today" ? (
+        <SharedTodayView page={page} today={today} />
+      ) : page.kind === "fire" ? (
         <SharedFireView page={page} today={today} />
       ) : page.portfolio ? (
         <SharedPortfolioView portfolio={page.portfolio} />

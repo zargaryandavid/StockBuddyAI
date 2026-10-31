@@ -37,7 +37,8 @@ export function TodayMovers({
   holdingsValue: number;
   currency: string;
   today: string;
-  onOpen: () => void;
+  /** Opens Portfolio; left out on shared pages. */
+  onOpen?: () => void;
 }) {
   const { t, locale } = useI18n();
   const before = holdingsValue - dayChange;
@@ -90,7 +91,7 @@ export function TodayMovers({
                 const Arrow = up ? ArrowUpRight : ArrowDownRight;
                 return (
                   <li key={item.ticker} className={`mover-row ${up ? "positive" : "negative"}`}>
-                    <button type="button" className="mover-main" onClick={onOpen}>
+                    <button type="button" className={`mover-main${onOpen ? "" : " static"}`} onClick={onOpen} tabIndex={onOpen ? undefined : -1}>
                       <Arrow size={16} aria-hidden="true" className="mover-arrow" />
                       <span className="mover-name">
                         <strong>{item.ticker}</strong>

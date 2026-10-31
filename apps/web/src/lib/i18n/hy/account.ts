@@ -281,6 +281,26 @@ const account: Record<string, string> = {
   "You've sent today's invitations. Copy the link to share more.":
     "Այսօրվա հրավերներն արդեն ուղարկել եք։ Պատճենեք հղումը՝ ավելի շատ մարդկանց հետ կիսվելու համար։",
   "The invitation couldn't be sent. Try again later.": "Հրավերը չհաջողվեց ուղարկել։ Փորձեք ավելի ուշ։",
+  // Share links
+  "Share with family or your advisor": "Կիսվեք ընտանիքի կամ ձեր խորհրդատուի հետ",
+  "Turn a link on and send it to anyone you trust. They see a read-only page without signing in; your email and date of birth are never shown. Turn it off any time and the link stops working.":
+    "Միացրեք հղումը և ուղարկեք այն ում վստահում եք։ Նրանք կտեսնեն միայն դիտելու էջ՝ առանց մուտք գործելու․ ձեր էլ. փոստը և ծննդյան ամսաթիվը երբեք չեն ցուցադրվում։ Անջատեք ցանկացած պահի, և հղումն այլևս չի աշխատի։",
+  "Your net worth, FIRE progress, cash, the heat map of your holdings and today's stock moves.":
+    "Ձեր զուտ կարողությունը, FIRE առաջընթացը, կանխիկը, ակտիվների ջերմային քարտեզը և այսօրվա բաժնետոմսերի փոփոխությունները։",
+  "Your income, expenses, savings and when you could reach financial freedom.":
+    "Ձեր եկամուտները, ծախսերը, խնայողությունները և երբ կարող եք հասնել ֆինանսական ազատության։",
+  "The holdings of this portfolio, their value and performance.": "Այս պորտֆելի ակտիվները, դրանց արժեքը և արդյունքները։",
+  "Share {label}": "Կիսվել՝ {label}",
+  On: "Միաց.",
+  Off: "Անջ.",
+  "Link copied. Paste it in a message, or use a button below.": "Հղումը պատճենված է։ Տեղադրեք այն հաղորդագրության մեջ կամ օգտվեք ստորև կոճակներից։",
+  "Live: anyone with this link can view it.": "Ակտիվ է․ այս հղումն ունեցողը կարող է դիտել այն։",
+  "Here's my {label} on MyPortfolioBuddy:": "Ահա իմ {label}-ը MyPortfolioBuddy-ում՝",
+  "My {label} on MyPortfolioBuddy": "Իմ {label}-ը MyPortfolioBuddy-ում",
+  Open: "Բացել",
+  "{owner}'s money today": "{owner}-ի գումարներն այսօր",
+  "Money today": "Գումարներն այսօր",
+  "{share} of the portfolios": "պորտֆելների {share}-ը",
 };
 
 export default account;

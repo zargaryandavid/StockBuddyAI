@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy, Loader2, Mail, Send, Share2 } from "lucide-react";
+import { Check, Copy, Loader2, Mail, Send } from "lucide-react";
 
+import { ShareButtons } from "@/components/share-buttons";
 import { api } from "@/lib/api";
 import { copyText } from "@/lib/copy";
 import { useT } from "@/lib/i18n/client";
@@ -23,7 +24,6 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
   const [copied, setCopied] = useState(false);
   const [link] = useState(inviteUrl);
   const emailField = useRef<HTMLInputElement>(null);
-  const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
   const message = t("I use MyPortfolioBuddy to see my portfolio and my path to financial freedom. It's free. Join me:");
 
   useEffect(() => {
@@ -62,16 +62,6 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
     setCopied(true);
     window.setTimeout(() => setCopied(false), 2000);
   }
-
-  const text = encodeURIComponent(`${message} ${link}`);
-  const url = encodeURIComponent(link);
-  const places = [
-    { name: "WhatsApp", href: `https://wa.me/?text=${text}` },
-    { name: "Telegram", href: `https://t.me/share/url?url=${url}&text=${encodeURIComponent(message)}` },
-    { name: "Facebook", href: `https://www.facebook.com/sharer/sharer.php?u=${url}` },
-    { name: "X", href: `https://x.com/intent/post?text=${text}` },
-    { name: "LinkedIn", href: `https://www.linkedin.com/sharing/share-offsite/?url=${url}` },
-  ];
 
   return (
     <div
@@ -140,21 +130,7 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
             {copied ? t("Copied") : t("Copy")}
           </button>
         </div>
-        <div className="invite-places">
-          {canShare && (
-            <button
-              type="button"
-              className="invite-place"
-              onClick={() => void navigator.share({ title: "MyPortfolioBuddy", text: message, url: link }).catch(() => undefined)}
-            >
-              <Share2 size={14} aria-hidden="true" /> {t("Share…")}
-            </button>
-          )}
-          {places.map((place) => (
-            <a key={place.name} className="invite-place" href={place.href} target="_blank" rel="noopener noreferrer">
-              {place.name}
-            </a>
-          ))}
+        <ShareButtons link={link} message={message} subject="MyPortfolioBuddy" email={false}>
           {/* A mail-app draft can only be plain text, so Email sends our designed invitation. */}
           <button
             type="button"
@@ -166,7 +142,7 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
           >
             <Mail size={14} aria-hidden="true" /> {t("Email")}
           </button>
-        </div>
+        </ShareButtons>
         {error && (
           <p className="alert" role="alert">
             {t(error)}

@@ -52,7 +52,7 @@ describe("ProfileDialog", () => {
     expect(onSave).not.toHaveBeenCalled();
   });
 
-  it("turns on share links for FIRE and a portfolio, copies them, and turns them off", async () => {
+  it("turns on share links for Today, FIRE and a portfolio, copies them, and turns them off", async () => {
     render(
       <ProfileDialog
         dateOfBirth={null}
@@ -63,22 +63,30 @@ describe("ProfileDialog", () => {
         onClose={vi.fn()}
       />,
     );
-    const links = screen.getByRole("region", { name: "Shareable links" });
-    const fire = await within(links).findByRole("checkbox", { name: "FIRE plan" });
-    expect(within(links).getByRole("checkbox", { name: "Portfolio: Long term" })).toBeTruthy();
+    const links = screen.getByRole("region", { name: "Share with family or your advisor" });
+    const fire = await within(links).findByRole("switch", { name: "Share FIRE plan" });
+    expect(within(links).getByRole("switch", { name: "Share Today" })).toBeTruthy();
+    expect(within(links).getByRole("switch", { name: "Share Portfolio: Long term" })).toBeTruthy();
 
     fireEvent.click(fire);
     const url = await within(links).findByLabelText("FIRE plan link");
     expect((url as HTMLInputElement).value).toBe(`${window.location.origin}/share/token-for-fire-xxxxxxxxxxxxxxxxxxxxxxxxxx`);
     expect(calls).toContainEqual(["/api/share-links", "POST", { kind: "fire", portfolio_id: "p1" }]);
-    // Turning a link on copies it right away; the copy icon copies it again.
+    // Turning a link on copies it right away and says so; the Copy button copies it again.
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith((url as HTMLInputElement).value);
+    expect(within(links).getByText(/Link copied/)).toBeTruthy();
     fireEvent.click(within(links).getByRole("button", { name: "Copied" }));
     await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalledTimes(2));
+    // Ready-made ways to send it on, and a preview.
+    expect(within(links).getByRole("link", { name: "WhatsApp" }).getAttribute("href")).toContain(encodeURIComponent((url as HTMLInputElement).value));
+    expect(within(links).getByRole("link", { name: "Open" }).getAttribute("href")).toBe((url as HTMLInputElement).value);
 
-    fireEvent.click(within(links).getByRole("checkbox", { name: "FIRE plan" }));
+    fireEvent.click(within(links).getByRole("switch", { name: "Share FIRE plan" }));
     await waitFor(() => expect(within(links).queryByLabelText("FIRE plan link")).toBeNull());
     expect(calls.at(-1)).toEqual(["/api/share-links/token-for-fire-xxxxxxxxxxxxxxxxxxxxxxxxxx", "DELETE", null]);
+
+    fireEvent.click(within(links).getByRole("switch", { name: "Share Today" }));
+    await waitFor(() => expect(calls).toContainEqual(["/api/share-links", "POST", { kind: "today", portfolio_id: null }]));
   });
 
   it("deletes the account only after typing delete", async () => {

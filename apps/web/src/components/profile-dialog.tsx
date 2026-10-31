@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Copy, Link2, Trash2 } from "lucide-react";
+import { Briefcase, Check, Copy, ExternalLink, Flame, Link2, Sun, Trash2 } from "lucide-react";
 
+import { ShareButtons } from "@/components/share-buttons";
 import { api } from "@/lib/api";
 import { ageOn } from "@/lib/age";
 import { copyText } from "@/lib/copy";
@@ -10,7 +11,7 @@ import { useT } from "@/lib/i18n/client";
 
 export type ProfileValues = { date_of_birth: string | null; display_name: string | null };
 
-type ShareLink = { token: string; kind: "fire" | "portfolio"; portfolio_id: string | null };
+type ShareLink = { token: string; kind: "today" | "fire" | "portfolio"; portfolio_id: string | null };
 
 export function shareUrl(token: string) {
   return `${window.location.origin}/share/${token}`;
@@ -140,7 +141,7 @@ export function ProfileDialog({
   );
 }
 
-/** Turn read-only links on or off and copy them. Anyone with a link can view the page. */
+/** Turn read-only links on or off, copy them and send them on. Anyone with a link can view the page. */
 function ShareLinks({
   portfolios,
   currentPortfolioId,
@@ -172,17 +173,34 @@ function ShareLinks({
   }, []);
 
   const rows = [
-    { key: "fire", label: t("FIRE plan"), kind: "fire" as const, portfolioId: currentPortfolioId },
+    {
+      key: "today",
+      label: t("Today"),
+      what: t("Your net worth, FIRE progress, cash, the heat map of your holdings and today's stock moves."),
+      icon: Sun,
+      kind: "today" as const,
+      portfolioId: null,
+    },
+    {
+      key: "fire",
+      label: t("FIRE plan"),
+      what: t("Your income, expenses, savings and when you could reach financial freedom."),
+      icon: Flame,
+      kind: "fire" as const,
+      portfolioId: currentPortfolioId,
+    },
     ...portfolios.map((portfolio) => ({
       key: `portfolio-${portfolio.id}`,
       label: t("Portfolio: {name}", { name: portfolio.name }),
+      what: t("The holdings of this portfolio, their value and performance."),
+      icon: Briefcase,
       kind: "portfolio" as const,
       portfolioId: portfolio.id,
     })),
   ];
 
   function linkFor(row: (typeof rows)[number]) {
-    return links?.find((link) => link.kind === row.kind && (row.kind === "fire" || link.portfolio_id === row.portfolioId));
+    return links?.find((link) => link.kind === row.kind && (row.kind !== "portfolio" || link.portfolio_id === row.portfolioId));
   }
 
   async function turnOn(row: (typeof rows)[number]) {
@@ -221,17 +239,17 @@ function ShareLinks({
       return;
     }
     setCopied(key);
-    window.setTimeout(() => setCopied((current) => (current === key ? null : current)), 2000);
+    window.setTimeout(() => setCopied((current) => (current === key ? null : current)), 2500);
   }
 
   return (
     <section className="share-links" aria-labelledby="share-links-title">
       <h3 id="share-links-title">
-        <Link2 size={16} aria-hidden="true" /> {t("Shareable links")}
+        <Link2 size={16} aria-hidden="true" /> {t("Share with family or your advisor")}
       </h3>
       <p className="muted">
         {t(
-          "Anyone with a link sees a read-only page with all the data, without signing in. Your email and date of birth are never shown. Turn a link off to stop it working.",
+          "Turn a link on and send it to anyone you trust. They see a read-only page without signing in; your email and date of birth are never shown. Turn it off any time and the link stops working.",
         )}
       </p>
       {links === null ? (
@@ -240,29 +258,55 @@ function ShareLinks({
         <ul>
           {rows.map((row) => {
             const link = linkFor(row);
+            const Icon = row.icon;
+            const disabled = busy === row.key || (row.kind === "portfolio" && !row.portfolioId);
             return (
-              <li key={row.key}>
-                <label className="share-toggle">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(link)}
-                    disabled={busy === row.key || (row.kind === "portfolio" && !row.portfolioId)}
-                    onChange={() => void (link ? turnOff(row, link) : turnOn(row))}
-                  />
-                  <span>{row.label}</span>
-                </label>
+              <li key={row.key} className={link ? "on" : ""}>
+                <div className="share-card-head">
+                  <span className="share-card-icon" aria-hidden="true">
+                    <Icon size={18} />
+                  </span>
+                  <div className="share-card-text">
+                    <strong>{row.label}</strong>
+                    <small className="muted">{row.what}</small>
+                  </div>
+                  <label className="share-switch">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={Boolean(link)}
+                      disabled={disabled}
+                      aria-label={t("Share {label}", { label: row.label })}
+                      onChange={() => void (link ? turnOff(row, link) : turnOn(row))}
+                    />
+                    <span aria-hidden="true" />
+                    <em>{busy === row.key ? "…" : link ? t("On") : t("Off")}</em>
+                  </label>
+                </div>
                 {link && (
-                  <div className="share-url">
-                    <input readOnly value={shareUrl(link.token)} aria-label={t("{label} link", { label: row.label })} onFocus={(event) => event.currentTarget.select()} />
-                    <button
-                      type="button"
-                      className="share-copy"
-                      aria-label={copied === row.key ? t("Copied") : t("Copy {label} link", { label: row.label })}
-                      title={t("Copy link")}
-                      onClick={() => void copy(row.key, link.token)}
+                  <div className="share-card-body">
+                    <p className="share-live">
+                      <span className="share-dot" aria-hidden="true" />
+                      {copied === row.key
+                        ? t("Link copied. Paste it in a message, or use a button below.")
+                        : t("Live: anyone with this link can view it.")}
+                    </p>
+                    <div className="share-url">
+                      <input readOnly value={shareUrl(link.token)} aria-label={t("{label} link", { label: row.label })} onFocus={(event) => event.currentTarget.select()} />
+                      <button type="button" className="share-copy invite-copy" onClick={() => void copy(row.key, link.token)}>
+                        {copied === row.key ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
+                        {copied === row.key ? t("Copied") : t("Copy")}
+                      </button>
+                    </div>
+                    <ShareButtons
+                      link={shareUrl(link.token)}
+                      message={t("Here's my {label} on MyPortfolioBuddy:", { label: row.label })}
+                      subject={t("My {label} on MyPortfolioBuddy", { label: row.label })}
                     >
-                      {copied === row.key ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
-                    </button>
+                      <a className="invite-place" href={shareUrl(link.token)} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink size={14} aria-hidden="true" /> {t("Open")}
+                      </a>
+                    </ShareButtons>
                   </div>
                 )}
               </li>

@@ -1,4 +1,4 @@
-"""Read-only share links for the FIRE plan and a portfolio.
+"""Read-only share links for the Today page, the FIRE plan and a portfolio.
 
 Anyone with a link may view it without signing in, so the link's token is long and
 random, the data is read with the service role for that one owner only, and the result
@@ -11,10 +11,13 @@ from __future__ import annotations
 import asyncio
 import secrets
 import time
+from datetime import date, timedelta
 from typing import Any
 from uuid import UUID
 
 CACHE_SECONDS = 300
+# A Today link shows the net worth chart's last two years.
+TODAY_HISTORY_DAYS = 730
 
 
 def new_token() -> str:
@@ -57,24 +60,47 @@ class ShareService:
         if link["kind"] == "fire":
             data = await self.repository.shared_owner_data(user_id)
             currency = (portfolio or {}).get("base_currency") or "USD"
-            foreign = {
-                item["currency"]
-                for item in [*data["entries"], *data["assets"]]
-                if item.get("currency") and item["currency"] != currency
-            }
-            rates = await asyncio.gather(
-                *(asyncio.to_thread(self.market.fx_rate, code, currency) for code in foreign)
+            payload.update({**data, **await self._rates(data, [], currency)})
+        elif link["kind"] == "today":
+            since = (date.today() - timedelta(days=TODAY_HISTORY_DAYS)).isoformat()
+            rows, data, history = await asyncio.gather(
+                self.repository.shared_owner_portfolios(user_id),
+                self.repository.shared_owner_data(user_id),
+                self.repository.shared_net_worth(user_id, since),
             )
+            portfolios = await asyncio.gather(*(self._priced_portfolio(row) for row in rows))
+            currency = portfolios[0]["base_currency"] if portfolios else "USD"
             payload.update(
                 {
                     **data,
-                    "currency": currency,
-                    "rates": {
-                        code: rate for code, rate in zip(foreign, rates, strict=True) if rate
-                    },
+                    **await self._rates(data, portfolios, currency),
+                    "portfolios": portfolios,
+                    "history": history,
                 }
             )
         return payload
+
+    async def _rates(
+        self, data: dict[str, Any], portfolios: list[dict[str, Any]], currency: str
+    ) -> dict[str, Any]:
+        """Exchange rates into `currency` for everything kept in another currency."""
+        foreign = {
+            item["currency"]
+            for item in [
+                *data["entries"],
+                *data["assets"],
+                *(cash for portfolio in portfolios for cash in portfolio.get("other_cash") or []),
+            ]
+            if item.get("currency") and item["currency"] != currency
+        }
+        codes = sorted(foreign)
+        rates = await asyncio.gather(
+            *(asyncio.to_thread(self.market.fx_rate, code, currency) for code in codes)
+        )
+        return {
+            "currency": currency,
+            "rates": {code: rate for code, rate in zip(codes, rates, strict=True) if rate},
+        }
 
     async def _priced_portfolio(self, row: dict[str, Any]) -> dict[str, Any]:
         currency = row.get("base_currency") or "USD"
@@ -93,15 +119,19 @@ class ShareService:
                 "shares": position.get("shares"),
                 "purchase_price": position.get("purchase_price"),
                 "price": quote.get("price"),
+                "day_change": quote.get("day_change"),
                 "day_change_percent": quote.get("day_change_percent"),
-                "sector": position.get("sector"),
-                "asset_type": position.get("asset_type"),
+                "price_date": quote.get("price_date"),
+                "sector": quote.get("sector") or position.get("sector"),
+                "asset_type": quote.get("asset_type") or position.get("asset_type"),
+                "is_etf_index": bool(quote.get("is_etf_index")),
             }
 
         priced = await asyncio.gather(*(price(position) for position in positions))
         return {
             "name": row.get("name"),
             "cash": row.get("cash"),
+            "other_cash": row.get("other_cash") or [],
             "base_currency": currency,
             "benchmark": row.get("benchmark"),
             "positions": priced,

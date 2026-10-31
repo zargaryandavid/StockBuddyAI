@@ -480,7 +480,7 @@ class ConnectionUpdate(BaseModel):
 
 
 class ShareLinkCreate(BaseModel):
-    kind: Literal["fire", "portfolio"]
+    kind: Literal["fire", "portfolio", "today"]
     # FIRE: the portfolio whose value counts as current assets; Portfolio: the one shared.
     portfolio_id: UUID | None = None
 

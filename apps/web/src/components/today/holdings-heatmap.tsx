@@ -63,7 +63,8 @@ export function HoldingsHeatmap({
   tiles: HoldingTile[] | null;
   currency: string;
   hidden: boolean;
-  onOpen: () => void;
+  /** Opens the holdings; left out on shared pages. */
+  onOpen?: () => void;
 }) {
   const t = useT();
   const frame = useRef<HTMLDivElement>(null);
@@ -132,7 +133,7 @@ export function HoldingsHeatmap({
                   <button
                     key={tile.ticker}
                     type="button"
-                    className="heatmap-tile"
+                    className={`heatmap-tile${onOpen ? "" : " static"}`}
                     style={{
                       left: box.x,
                       top: box.y,

@@ -781,7 +781,7 @@ async def create_share_link(
     repository = request.app.state.repository
     for link in await repository.list_share_links(token):
         same_portfolio = str(link.get("portfolio_id")) == str(payload.portfolio_id)
-        if link["kind"] == payload.kind and (payload.kind == "fire" or same_portfolio):
+        if link["kind"] == payload.kind and (payload.kind != "portfolio" or same_portfolio):
             return link
     try:
         link = await repository.create_share_link(
@@ -789,8 +789,8 @@ async def create_share_link(
         )
     except SupabaseError as exc:
         raise HTTPException(status_code=404, detail="Portfolio not found") from exc
-    what = "your FIRE plan"
-    if payload.kind != "fire" and payload.portfolio_id:
+    what = "your Today page" if payload.kind == "today" else "your FIRE plan"
+    if payload.kind == "portfolio" and payload.portfolio_id:
         portfolio = await repository.get_portfolio(payload.portfolio_id, account.id)
         name = (portfolio or {}).get("name")
         what = f"your portfolio “{name}”" if name else "your portfolio"

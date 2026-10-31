@@ -3053,8 +3053,34 @@ textarea {
 .share-links p { margin: 0; }
 .share-links ul { display: grid; gap: 0.6rem; margin: 0; padding: 0; list-style: none; }
 .share-links li { display: grid; gap: 0.4rem; padding: 0.6rem 0.7rem; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
-.share-toggle { display: flex; flex-direction: row; align-items: center; gap: 0.55rem; font-weight: 600; cursor: pointer; }
-.share-toggle input { width: 1rem; height: 1rem; }
+.share-links li { gap: 0.6rem; padding: 0.75rem 0.85rem; transition: border-color 150ms, box-shadow 150ms; }
+.share-links li.on { border-color: color-mix(in srgb, var(--gold) 70%, white); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 18%, transparent); }
+.share-card-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.7rem; }
+.share-card-icon {
+  display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: 10px;
+  background: color-mix(in srgb, var(--forest, #1f4d32) 10%, white); color: var(--forest, #1f4d32);
+}
+.share-links li.on .share-card-icon { background: var(--gold); color: #1b2b1f; }
+.share-card-text { display: grid; gap: 0.1rem; min-width: 0; }
+.share-card-text small { font-size: var(--text-xs); line-height: 1.35; }
+/* On/Off switch */
+.share-switch { position: relative; display: inline-flex; align-items: center; gap: 0.45rem; cursor: pointer; }
+.share-switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.share-switch span {
+  position: relative; width: 2.6rem; height: 1.5rem; border-radius: 999px; background: #cfd5d2; transition: background 150ms;
+}
+.share-switch span::after {
+  content: ""; position: absolute; top: 0.15rem; left: 0.15rem; width: 1.2rem; height: 1.2rem; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); transition: transform 150ms;
+}
+.share-switch input:checked + span { background: #1f7048; }
+.share-switch input:checked + span::after { transform: translateX(1.1rem); }
+.share-switch input:focus-visible + span { outline: 2px solid var(--navy); outline-offset: 2px; }
+.share-switch input:disabled { cursor: progress; }
+.share-switch em { min-width: 1.6rem; color: var(--label); font-size: var(--text-xs); font-style: normal; font-weight: 700; }
+.share-card-body { display: grid; gap: 0.5rem; padding-top: 0.6rem; border-top: 1px dashed var(--line); }
+.share-live { display: flex; align-items: center; gap: 0.4rem; color: #1f7048; font-size: var(--text-xs); font-weight: 600; }
+.share-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #1f7048; box-shadow: 0 0 0 3px rgba(31, 112, 72, 0.18); }
 .share-url { display: flex; gap: 0.4rem; }
 .share-url input {
   flex: 1; min-width: 0; min-height: 36px; padding: 0 0.6rem; border: 1px solid var(--border); border-radius: 6px;
@@ -3392,6 +3418,9 @@ button.today-row:hover { background: var(--row-hover); }
 }
 .heatmap-tile:hover, .heatmap-tile:focus-visible { filter: brightness(1.12); outline: 2px solid #fff; outline-offset: -2px; z-index: 1; }
 .heatmap-tile strong { font-weight: 800; letter-spacing: 0.01em; }
+.heatmap-tile.static, .mover-main.static { cursor: default; }
+.shared-today { display: grid; gap: 0.75rem; }
+.shared-today .share-tiles { grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
 .heatmap-tile span { font-weight: 600; opacity: 0.95; }
 
 /* Today: stocks that moved most, and income and expenses due */

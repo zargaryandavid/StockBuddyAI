@@ -627,6 +627,32 @@ class Repository:
             "assets": assets,
         }
 
+    async def shared_owner_portfolios(self, user_id: UUID) -> list[dict[str, Any]]:
+        """Service role, for one owner only: every portfolio, for a Today share link."""
+        return await self.db.rest(
+            "GET",
+            "portfolios",
+            params={
+                "user_id": f"eq.{user_id}",
+                "select": (f"*,portfolio_positions({_POSITION_SELECT})"),
+                "portfolio_positions.order": "display_order.asc",
+                "order": "created_at.desc",
+            },
+        )
+
+    async def shared_net_worth(self, user_id: UUID, since: str) -> list[dict[str, Any]]:
+        """Service role, for one owner only: daily net worth readings since a day."""
+        return await self.db.rest(
+            "GET",
+            "net_worth_snapshots",
+            params={
+                "user_id": f"eq.{user_id}",
+                "select": "day,investments,savings,other_assets,total,currency",
+                "day": f"gte.{since}",
+                "order": "day.asc",
+            },
+        )
+
     async def shared_owner_name(self, user_id: UUID) -> str | None:
         rows = await self.db.rest(
             "GET",

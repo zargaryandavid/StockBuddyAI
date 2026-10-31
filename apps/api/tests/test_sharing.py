@@ -42,6 +42,7 @@ class Repository:
                 "kind": "portfolio",
                 "portfolio_id": PORTFOLIO_ID,
             },
+            {"token": "t" * 43, "user_id": str(USER_ID), "kind": "today", "portfolio_id": None},
         ]
         self.created = None
         self.deleted = None
@@ -71,6 +72,13 @@ class Repository:
             "settings": {"withdrawal_rate_pct": 4},
             "assets": [],
         }
+
+    async def shared_owner_portfolios(self, user_id):
+        portfolio = await self.get_portfolio(PORTFOLIO_ID, user_id)
+        return [{**portfolio, "other_cash": [{"currency": "AMD", "amount": 40000}]}]
+
+    async def shared_net_worth(self, user_id, since):
+        return [{"day": "2026-10-30", "total": 1500, "currency": "USD"}]
 
     async def list_share_links(self, token):
         return [
@@ -106,9 +114,12 @@ def test_shared_portfolio_is_priced_and_leaves_out_private_details():
         "shares": 10,
         "purchase_price": 80,
         "price": 100.0,
+        "day_change": None,
         "day_change_percent": 1.5,
+        "price_date": None,
         "sector": "Tech",
         "asset_type": None,
+        "is_etf_index": False,
     }
     # A ticker without a quote is still listed, just unpriced.
     assert holdings[1]["price"] is None
@@ -128,6 +139,20 @@ def test_shared_fire_plan_includes_entries_and_exchange_rates():
     assert asyncio.run(ShareService(Repository(), Market()).page("x" * 43)) is None
 
 
+def test_shared_today_page_has_every_portfolio_plan_history_and_rates():
+    page = asyncio.run(ShareService(Repository(), Market()).page("t" * 43))
+    assert page["kind"] == "today"
+    assert page["portfolio"] is None
+    assert [portfolio["name"] for portfolio in page["portfolios"]] == ["Long term"]
+    assert page["portfolios"][0]["other_cash"] == [{"currency": "AMD", "amount": 40000}]
+    assert page["portfolios"][0]["positions"][0]["price"] == 100.0
+    assert page["history"] == [{"day": "2026-10-30", "total": 1500, "currency": "USD"}]
+    assert page["currency"] == "USD"
+    assert page["rates"] == {"AMD": 1 / 400}
+    assert [entry["name"] for entry in page["entries"]] == ["Pay", "Bond"]
+    assert "never@shown" not in str(page)
+
+
 def test_link_endpoints_and_public_view():
     repository = Repository()
     app.dependency_overrides[current_user] = lambda: USER_ID
@@ -140,6 +165,9 @@ def test_link_endpoints_and_public_view():
             app.state.shares = ShareService(repository, Market())
             # Asking again for a link that is already on returns the same link.
             existing = client.post("/api/share-links", headers=HEADERS, json={"kind": "fire"})
+            existing_today = client.post(
+                "/api/share-links", headers=HEADERS, json={"kind": "today"}
+            )
             other = "92000000-0000-0000-0000-000000000001"
             created = client.post(
                 "/api/share-links",
@@ -157,6 +185,7 @@ def test_link_endpoints_and_public_view():
         app.dependency_overrides.clear()
 
     assert existing.status_code == 201 and existing.json()["token"] == "f" * 43
+    assert existing_today.json()["token"] == "t" * 43
     assert repository.created[0:2] == ("portfolio", UUID(other))
     assert len(created.json()["token"]) >= 40
     assert missing_portfolio.status_code == 422
