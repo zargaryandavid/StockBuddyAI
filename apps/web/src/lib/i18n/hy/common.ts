@@ -12,6 +12,7 @@ const common: Record<string, string> = {
   Terms: "Պայմաններ",
   "Privacy Policy": "Գաղտնիության քաղաքականություն",
   "© 2026 AIAutomationLA.com. All rights reserved.": "© 2026 AIAutomationLA.com։ Բոլոր իրավունքները պաշտպանված են։",
+  "Los Angeles | Glendale": "Լոս Անջելես | Գլենդել",
   // Shared across areas: one wording everywhere.
   "Name": "Անուն",
   "Savings rate": "Խնայողությունների տոկոս",

@@ -87,7 +87,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
           <Link href="/terms">{t("Terms")}</Link>
           <Link href="/privacy">{t("Privacy Policy")}</Link>
         </nav>
-        <p className="login-copyright">{t("© 2026 AIAutomationLA.com. All rights reserved.")}</p>
+        <p className="login-copyright">
+          {t("© 2026 AIAutomationLA.com. All rights reserved.")}
+          <br />
+          {t("Los Angeles | Glendale")}
+        </p>
       </section>
     </main>
   );
