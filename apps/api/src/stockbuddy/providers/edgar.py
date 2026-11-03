@@ -12,6 +12,9 @@ from typing import Any
 import requests
 from hedge_fund.data.models import CompanyFacts, FinancialMetrics
 
+# Seconds a company's SEC filing list is kept before it is fetched again.
+SUBMISSIONS_MAX_AGE = 3_600
+
 
 class EdgarError(RuntimeError):
     """Raised when EDGAR data cannot be fetched or interpreted safely."""
@@ -183,10 +186,11 @@ class EdgarClient:
         return None
 
     def _submissions(self, cik: int) -> dict[str, Any]:
+        # The filing list is re-read hourly, so a report filed today shows the same day.
         return self._json(
             f"{self.BASE}/submissions/CIK{cik:010d}.json",
             f"submissions-{cik}.json",
-            max_age=21_600,
+            max_age=SUBMISSIONS_MAX_AGE,
         )
 
     @staticmethod
