@@ -650,10 +650,23 @@ export function TodayPage({
           ) : (
             <ul>
               {reports.slice(0, 8).map((report) => (
-                <li key={report.ticker} className="today-row static">
+                <li key={report.ticker} className={`today-row static${report.filed ? " report-filed" : ""}`}>
                   <strong>{report.ticker}</strong>
                   <span>
-                    {report.expected < today
+                    {report.filed ? (
+                      <>
+                        {report.lastReport === today
+                          ? t("Reported today")
+                          : t("Reported on {day}", { day: report.lastReport })}{" "}
+                        <a
+                          href={`https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${encodeURIComponent(report.ticker)}&type=10-&dateb=&owner=include&count=10`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {t("Read it on SEC.gov")}
+                        </a>
+                      </>
+                    ) : report.expected < today
                       ? t("Expected any day now (last report {last})", { last: report.lastReport })
                       : t("Expected around {day} (last report {last})", {
                           day: report.expected,

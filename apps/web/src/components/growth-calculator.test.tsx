@@ -13,9 +13,9 @@ describe("GrowthCalculator", () => {
     fireEvent.change(screen.getByRole("slider", { name: "Monthly contribution" }), { target: { value: "875" } });
     fireEvent.change(screen.getByRole("slider", { name: "Expected yearly return" }), { target: { value: "10.75" } });
 
-    expect(screen.getByText("$1,583,164")).toBeTruthy();
+    expect(screen.getByText("$1,457,447")).toBeTruthy();
     expect(screen.getByText("$310,000")).toBeTruthy();
-    expect(screen.getByText("+$1,273,164")).toBeTruthy();
+    expect(screen.getByText("+$1,147,447")).toBeTruthy();
     expect(screen.getByText("Yr 20")).toBeTruthy();
   });
 

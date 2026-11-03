@@ -56,6 +56,24 @@ describe("Today numbers", () => {
     expect(upcomingReports([portfolio], "2026-10-01")).toEqual([]);
   });
 
+  it("shows a report filed today or this week first, as just reported", () => {
+    const withFresh: Portfolio = {
+      ...portfolio,
+      portfolio_positions: [
+        ...portfolio.portfolio_positions,
+        { ticker: "UNH", shares: 40, report_date: "2026-11-03" },
+        { ticker: "OLD", shares: 1, report_date: "2026-10-20" },
+      ],
+    };
+    expect(upcomingReports([withFresh], "2026-11-03")).toEqual([
+      { ticker: "UNH", expected: "2026-11-03", lastReport: "2026-11-03", filed: true },
+      { ticker: "NVDA", expected: "2026-11-26", lastReport: "2026-08-27" },
+    ]);
+    // A week later it is still there; after that it waits for the next quarter.
+    expect(upcomingReports([withFresh], "2026-11-10")[0]).toMatchObject({ ticker: "UNH", filed: true });
+    expect(upcomingReports([withFresh], "2026-11-11").some((item) => item.ticker === "UNH")).toBe(false);
+  });
+
   it("compares with the last reading before today", () => {
     const points = [
       { day: "2026-10-20", investments: 0, savings: 0, other_assets: 0, total: 900 },

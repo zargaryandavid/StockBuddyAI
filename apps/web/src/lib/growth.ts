@@ -9,8 +9,9 @@ export type GrowthResult = {
 };
 
 /**
- * Compound growth with a monthly contribution: the yearly return is applied monthly
- * (rate ÷ 12) and each month's contribution is added at the end of the month.
+ * Compound growth with a monthly contribution. The yearly return is a true yearly rate,
+ * spread over 12 months so a year compounds to exactly that rate (the same math as the
+ * FIRE plan); each month's contribution is added at the end of the month.
  */
 export function projectGrowth({
   principal,
@@ -23,7 +24,7 @@ export function projectGrowth({
   years: number;
   annualReturnPct: number;
 }): GrowthResult {
-  const rate = annualReturnPct / 100 / 12;
+  const rate = Math.pow(1 + annualReturnPct / 100, 1 / 12) - 1;
   const months = Math.max(0, Math.round(years * 12));
   let value = Math.max(0, principal);
   let contributed = value;

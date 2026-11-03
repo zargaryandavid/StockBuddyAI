@@ -158,6 +158,8 @@ const today: Record<string, string> = {
   "Ideal {amount}": "Իդեալական՝ {amount}",
   "Yours {amount} ({share}%)": "Ձերը՝ {amount} ({share}%)",
   "Growth calculator": "Աճի հաշվիչ",
+  'This grows everything at one rate. Path to FIRE starts from all your assets and grows each at its own rate (savings at their APY, bonds at their coupon), so its numbers can differ. Open it from FIRE with "See the compound effect" to start from your plan\'s numbers.':
+    "Այստեղ ամեն ինչ աճում է մեկ տոկոսադրույքով։ «Ճանապարհ դեպի FIRE»-ը սկսում է ձեր բոլոր ակտիվներից և յուրաքանչյուրն աճեցնում իր տոկոսով (խնայողությունները՝ իրենց APY-ով, պարտատոմսերը՝ իրենց կտրոնով), ուստի թվերը կարող են տարբերվել։ Ձեր պլանի թվերից սկսելու համար բացեք այն FIRE-ից՝ «Տեսնել բարդ տոկոսի ուժը» կոճակով։",
   // Money to-do list (baby steps)
   "Your money to-do list": "Ձեր ֆինանսական անելիքների ցուցակը",
   "The baby steps to financial freedom, ticked off from what you've entered.":
@@ -202,6 +204,9 @@ const today: Record<string, string> = {
     "IRS-ի կանոնների ամփոփում է, ոչ թե հարկային խորհուրդ։ Ձեր դեպքի համար դիմեք հարկային մասնագետի։",
   // Stocks today; income and expenses due
   "Stocks today": "Բաժնետոմսերն այսօր",
+  "Reported today": "Հաշվետվությունը հրապարակվել է այսօր",
+  "Reported on {day}": "Հաշվետվությունը հրապարակվել է {day}-ին",
+  "Read it on SEC.gov": "Կարդալ SEC.gov-ում",
   "{amount} from the day before": "{amount} նախորդ օրվա համեմատ",
   "Your holdings today": "Ձեր ակտիվներն այսօր",
   Worth: "Արժեքը",

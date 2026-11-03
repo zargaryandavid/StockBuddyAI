@@ -126,11 +126,22 @@ function addDays(day: string, days: number) {
   return date.toISOString().slice(0, 10);
 }
 
-export type ExpectedReport = { ticker: string; expected: string; lastReport: string };
+export type ExpectedReport = {
+  ticker: string;
+  /** When the next report is expected, or, for one just filed, the day it was filed. */
+  expected: string;
+  lastReport: string;
+  /** Filed in the last week: shown as a fresh report rather than an upcoming one. */
+  filed?: boolean;
+};
+
+/** Reports filed this many days ago or less still show, as just reported. */
+const JUST_FILED_DAYS = 7;
 
 /**
  * Companies report every quarter, so the next report is expected about 91 days after the
- * last one on file. Only companies (not funds) expected within `withinDays` are listed.
+ * last one on file. Only companies (not funds) expected within `withinDays` are listed,
+ * plus any that filed in the last week, first.
  */
 export function upcomingReports(portfolios: Portfolio[], today: string, withinDays = 30): ExpectedReport[] {
   const horizon = addDays(today, withinDays);
@@ -140,13 +151,19 @@ export function upcomingReports(portfolios: Portfolio[], today: string, withinDa
       const ticker = position.ticker.trim().toUpperCase();
       const last = position.report_date;
       if (!last || isFund(position) || seen.has(ticker)) continue;
+      if (last <= today && last >= addDays(today, -JUST_FILED_DAYS)) {
+        seen.set(ticker, { ticker, expected: last, lastReport: last, filed: true });
+        continue;
+      }
       let expected = addDays(last, QUARTER_DAYS);
       // A report that is late still counts for a week; after that, look at the next quarter.
       while (expected < addDays(today, -7)) expected = addDays(expected, QUARTER_DAYS);
       if (expected <= horizon) seen.set(ticker, { ticker, expected, lastReport: last });
     }
   }
-  return [...seen.values()].sort((a, b) => a.expected.localeCompare(b.expected));
+  return [...seen.values()].sort(
+    (a, b) => Number(Boolean(b.filed)) - Number(Boolean(a.filed)) || a.expected.localeCompare(b.expected),
+  );
 }
 
 export type NetWorthPoint = {

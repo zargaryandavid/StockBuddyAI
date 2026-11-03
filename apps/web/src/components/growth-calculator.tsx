@@ -246,6 +246,9 @@ export function GrowthCalculator({
         <p className="muted growth-note">
           {t("The US stock market has returned about 10% a year over the long run before inflation, about 7% after. Past returns don't promise future ones.")}
         </p>
+        <p className="muted growth-note">
+          {t("This grows everything at one rate. Path to FIRE starts from all your assets and grows each at its own rate (savings at their APY, bonds at their coupon), so its numbers can differ. Open it from FIRE with \"See the compound effect\" to start from your plan's numbers.")}
+        </p>
       </article>
     </section>
   );

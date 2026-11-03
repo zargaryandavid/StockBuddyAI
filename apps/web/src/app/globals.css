@@ -3399,6 +3399,9 @@ button.today-row { cursor: pointer; }
 button.today-row:hover { background: var(--row-hover); }
 .today-row span { color: var(--label); }
 .today-note { margin: 0.6rem 0 0; font-size: var(--text-xs); }
+.today-row.report-filed { background: #f5faf6; }
+.today-row.report-filed strong { color: #1f7048; }
+.today-row.report-filed a { color: var(--navy); font-weight: 600; }
 /* FIRE: a Roth IRA contribution as a % of pay */
 .fire-roth { display: grid; gap: 0.3rem; padding: 0.6rem 0.75rem; border-radius: 8px; background: #f5faf6; border: 1px solid #cfe3d4; }
 .fire-roth small { font-size: var(--text-xs); line-height: 1.45; }

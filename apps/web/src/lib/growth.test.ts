@@ -3,11 +3,14 @@ import { describe, expect, it } from "vitest";
 import { niceTicks, projectGrowth } from "./growth";
 
 describe("projectGrowth", () => {
-  it("matches the usual monthly-compounding calculators", () => {
-    // $100,000 + $875 a month for 20 years at 10.75% ≈ $1,583,164.
+  it("compounds to exactly the yearly rate, like the FIRE plan", () => {
+    // With nothing added, a year at 10.75% grows by exactly 10.75%.
+    const lump = projectGrowth({ principal: 100000, monthly: 0, years: 20, annualReturnPct: 10.75 });
+    expect(lump.points[1].value).toBeCloseTo(110750, 6);
+    expect(lump.futureValue).toBeCloseTo(100000 * 1.1075 ** 20, 4);
+    // $100,000 + $875 a month for 20 years at 10.75% ≈ $1,457,447.
     const result = projectGrowth({ principal: 100000, monthly: 875, years: 20, annualReturnPct: 10.75 });
-    expect(result.futureValue).toBeGreaterThan(1583000);
-    expect(result.futureValue).toBeLessThan(1583400);
+    expect(result.futureValue).toBeCloseTo(1457446.52, 1);
     expect(result.contributed).toBe(310000);
     expect(result.growth).toBeCloseTo(result.futureValue - 310000);
     expect(result.points).toHaveLength(21);
