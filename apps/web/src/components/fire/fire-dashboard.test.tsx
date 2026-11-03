@@ -69,6 +69,32 @@ describe("FireDashboard", () => {
     );
   }
 
+  it("opens a new Roth IRA filled in when started from Today's to-do list", async () => {
+    render(
+      <FireDashboard portfolioValue={0} cash={0} reports={[]} today="2026-11-03" startWith="roth_ira" />,
+    );
+    const fields = await screen.findAllByDisplayValue("Roth IRA");
+    // The category picker and the name both say Roth IRA.
+    expect(fields.map((field) => field.tagName).sort()).toEqual(["INPUT", "SELECT"]);
+    const form = (fields[0].closest("[role=dialog]") ?? fields[0].closest("form")) as HTMLElement;
+    expect(within(form).getByLabelText("Expected yearly return (%)")).toHaveProperty("value", "7");
+    expect(within(form).getByLabelText("Balance")).toBeTruthy();
+  });
+
+  it("sets a Roth IRA contribution as a % of salary and checks it against the yearly limit", async () => {
+    render(
+      <FireDashboard portfolioValue={0} cash={0} reports={[]} today="2026-11-03" startWith="roth_contribution" />,
+    );
+    const percent = await screen.findByLabelText("Or as a % of your salary");
+    const form = percent.closest("[role=dialog]") as HTMLElement;
+    // 10% of the $6,000 monthly paycheck.
+    fireEvent.change(percent, { target: { value: "10" } });
+    expect(within(form).getByLabelText("Amount (USD)")).toHaveProperty("value", "600");
+    expect(form.textContent).toContain("That's $7,200.00 a year of the $7,500.00 you can put in for 2026.");
+    fireEvent.change(percent, { target: { value: "15" } });
+    expect(form.textContent).toContain("above the $7,500.00 limit for 2026");
+  });
+
   it("opens the Growth calculator with this plan's numbers", async () => {
     const onSeeGrowth = vi.fn();
     render(

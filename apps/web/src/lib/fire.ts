@@ -122,6 +122,13 @@ export type FireCategory = {
   yields?: "balance" | "face";
   /** Rental income is earned by an asset (property, land, vehicle, equipment). */
   rental?: boolean;
+  /** Invested accounts (Roth IRA, 529): the rate is an expected return, not interest. */
+  growth?: boolean;
+  /**
+   * Expenses that move pay into one of your own accounts (a Roth IRA contribution): money
+   * leaves the paycheck, but it is saved, not spent, and grows in that account.
+   */
+  into?: string;
 };
 
 export const INCOME_CATEGORIES: FireCategory[] = [
@@ -130,6 +137,9 @@ export const INCOME_CATEGORIES: FireCategory[] = [
   { key: "savings", label: "Savings account", icon: "piggy-bank", yields: "balance" },
   { key: "cd", label: "CD", icon: "landmark", yields: "balance" },
   { key: "bond", label: "Bond", icon: "scroll-text", yields: "face" },
+  // Balance accounts whose "yield" is the expected yearly return.
+  { key: "roth_ira", label: "Roth IRA", icon: "shield-check", yields: "balance", growth: true },
+  { key: "college_529", label: "529 education savings", icon: "graduation-cap", yields: "balance", growth: true },
   { key: "dividends", label: "Dividends", icon: "chart-line" },
   { key: "bonus", label: "Bonus", icon: "gift" },
   { key: "freelance", label: "Freelance", icon: "laptop" },
@@ -152,6 +162,7 @@ export const EXPENSE_CATEGORIES: FireCategory[] = [
   { key: "travel", label: "Travel", icon: "plane" },
   { key: "fun", label: "Fun", icon: "party-popper" },
   { key: "investment", label: "Investment", icon: "trending-up" },
+  { key: "roth_contribution", label: "Roth IRA contribution", icon: "shield-check", into: "roth_ira" },
   { key: "saving", label: "Saving", icon: "piggy-bank" },
   { key: "other", label: "Other expense", icon: "ellipsis" },
 ];
@@ -241,6 +252,8 @@ export function monthlyAmount(
 }
 
 export type FirePlan = {
+  /** Expenses paid into your own accounts, such as Roth IRA contributions. */
+  monthlyContributions: number;
   monthlyIncome: number;
   monthlyExpenses: number;
   monthlyNet: number;
@@ -335,7 +348,9 @@ export function projectFromEntries({
   const horizonEnd = keyFor(start.year, start.month + HORIZON_MONTHS, 28);
   // New money per month in today's dollars; interest stays inside its own account.
   const flows = new Array<number>(HORIZON_MONTHS + 1).fill(0);
-  const accounts: { value: number; monthly: number; maturesAt: number | null; open: boolean }[] = [];
+  const accounts: { category: string; value: number; monthly: number; maturesAt: number | null; open: boolean }[] = [];
+  // Contributions paid into one of your own accounts (e.g. a Roth IRA), by month and account type.
+  const deposits: { month: number; into: string; amount: number }[] = [];
 
   for (const entry of entries) {
     const category = categoryFor(entry.kind, entry.category);
@@ -344,6 +359,7 @@ export function projectFromEntries({
       const principal = toBase(Number(entry.principal ?? 0), entry.currency, rates, baseCurrency);
       if (running && principal) {
         accounts.push({
+          category: entry.category,
           value: principal,
           monthly: monthlyRate(Number(entry.yield_pct ?? 0)),
           maturesAt: entry.ends_on ? Math.max(1, monthsFrom(today, entry.ends_on)) : null,
@@ -360,12 +376,26 @@ export function projectFromEntries({
       const amount = toBase(Number(entry.amount), entry.currency, rates, baseCurrency);
       if (amount == null) continue;
       flows[month] += entry.kind === "income" ? amount : -amount;
+      if (entry.kind === "expense" && category.into) deposits.push({ month, into: category.into, amount });
     }
   }
+  // A contribution with no account of its kind entered yet stays invested with the rest.
+  for (const deposit of deposits) {
+    if (!accounts.some((item) => item.category === deposit.into)) flows[deposit.month] += deposit.amount;
+  }
 
+  const deposit = (month: number, scale: number) => {
+    for (const item of deposits) {
+      if (item.month !== month) continue;
+      const account = accounts.find((open) => open.open && open.category === item.into);
+      if (account) account.value += item.amount * scale;
+    }
+  };
   const openValue = () =>
     accounts.filter((item) => item.open).reduce((sum, item) => sum + item.value, 0);
   const startAssets = growthAssets + openValue();
+  // Contributions still due this month are paid in before growth starts, like the rest of month 0.
+  deposit(0, 1);
   let contributed = settings.monthly_invest == null ? flows[0] : 0;
   let stocks = growthAssets + contributed;
   const startTotal = stocks + openValue();
@@ -377,6 +407,7 @@ export function projectFromEntries({
     const contribution = settings.monthly_invest ?? flows[month];
     contributed += contribution;
     stocks = stocks * (1 + stockMonthly) + contribution * prices(month);
+    deposit(month, prices(month));
     for (const item of accounts) {
       if (!item.open) continue;
       item.value *= 1 + item.monthly;
@@ -438,6 +469,10 @@ export function buildPlan({
   const monthlyIncome = sum("income");
   const monthlyExpenses = sum("expense");
   const monthlyNet = monthlyIncome - monthlyExpenses;
+  // Pay moved into your own accounts (Roth IRA contributions): saved, so not retirement spending.
+  const monthlyContributions = entries
+    .filter((entry) => entry.kind === "expense" && categoryFor("expense", entry.category).into)
+    .reduce((total, entry) => total + monthlyAmount(entry, today, rates, baseCurrency), 0);
   const balance = (matches: (category: FireCategory) => boolean) =>
     entries
       .filter(
@@ -469,7 +504,7 @@ export function buildPlan({
   const bondBalances = balance((category) => category.yields === "face");
   const yieldBalances = savingsBalances + bondBalances;
   const currentAssets = portfolioValue + yieldBalances;
-  const annualSpend = settings.retirement_annual_spend ?? monthlyExpenses * 12;
+  const annualSpend = settings.retirement_annual_spend ?? (monthlyExpenses - monthlyContributions) * 12;
   const projectAt = (withdrawalRatePct: number) =>
     projectFromEntries({
       entries,
@@ -488,7 +523,8 @@ export function buildPlan({
     monthlyIncome,
     monthlyExpenses,
     monthlyNet,
-    savingsRate: monthlyIncome > 0 ? monthlyNet / monthlyIncome : null,
+    monthlyContributions,
+    savingsRate: monthlyIncome > 0 ? (monthlyNet + monthlyContributions) / monthlyIncome : null,
     yieldBalances,
     savingsBalances,
     bondBalances,
@@ -839,7 +875,7 @@ export function bondHoldings(
 
 /** Expense categories counted as needs in the 50/30/20 budget; saving categories are savings. */
 const NEEDS = new Set(["rent", "bills", "food", "transport", "insurance", "health", "lease", "finance", "tax", "education", "home"]);
-const SAVINGS = new Set(["investment", "saving"]);
+const SAVINGS = new Set(["investment", "saving", "roth_contribution"]);
 
 export type BudgetSplit = {
   income: number;

@@ -158,6 +158,48 @@ const today: Record<string, string> = {
   "Ideal {amount}": "Իդեալական՝ {amount}",
   "Yours {amount} ({share}%)": "Ձերը՝ {amount} ({share}%)",
   "Growth calculator": "Աճի հաշվիչ",
+  // Money to-do list (baby steps)
+  "Your money to-do list": "Ձեր ֆինանսական անելիքների ցուցակը",
+  "The baby steps to financial freedom, ticked off from what you've entered.":
+    "Ֆինանսական ազատության առաջին քայլերը՝ նշված ըստ ձեր մուտքագրած տվյալների։",
+  "{done} of {total} done": "Արված է {done}-ը {total}-ից",
+  "Emergency fund": "Արտակարգ իրավիճակների ֆոնդ",
+  "{months} months saved · aim for {low}–{high} (3–6 months of expenses + 30%)":
+    "Խնայված է {months} ամսվա չափ · նպատակը՝ {low}–{high} (3–6 ամսվա ծախս + 30%)",
+  "3–6 months of your expenses + 30%, in savings accounts or CDs. Add your expenses in FIRE first.":
+    "Ձեր 3–6 ամսվա ծախսը + 30%՝ խնայողական հաշիվներում կամ ավանդներում։ Նախ ավելացրեք ձեր ծախսերը FIRE բաժնում։",
+  "Put in up to {limit} for {year} ({older} if you're 50 or older), from your pay. It grows and comes out tax-free in retirement.":
+    "{year} թվականի համար կարող եք ձեր աշխատավարձից դնել մինչև {limit} ({older}, եթե 50 տարեկան կամ ավելի եք)։ Գումարն աճում է և թոշակի ժամանակ դուրս է գալիս առանց հարկի։",
+  "Balance {amount}.": "Մնացորդը՝ {amount}։",
+  "You plan more than the limit; the IRS charges 6% a year on the extra.": "Նախատեսում եք սահմանաչափից ավելի․ IRS-ը ավելցուկի վրա տարեկան 6% տուգանք է գանձում։",
+  "Add a contribution": "Ավելացնել ներդրում",
+  "Then add what you put in from pay as a Roth IRA contribution expense, as an amount or a % of your salary. It leaves your paycheck like an expense, but in your FIRE plan it keeps growing in the Roth instead of being spent.":
+    "Ապա աշխատավարձից դրվող գումարը ավելացրեք որպես «Roth IRA ներդրում» ծախս՝ գումարով կամ աշխատավարձի %-ով։ Այն դուրս է գալիս աշխատավարձից ծախսի պես, բայց ձեր FIRE պլանում շարունակում է աճել Roth-ում՝ ծախսվելու փոխարեն։",
+  "No account yet": "Հաշիվ դեռ չկա",
+  "Update in FIRE": "Թարմացնել FIRE-ում",
+  "Add savings in FIRE": "Ավելացնել խնայողություն FIRE-ում",
+  "Add your Roth IRA": "Ավելացնել ձեր Roth IRA-ն",
+  "Stocks and bonds": "Բաժնետոմսեր և պարտատոմսեր",
+  "Stocks {stocks} · Bonds {bonds}": "Բաժնետոմսեր՝ {stocks} · Պարտատոմսեր՝ {bonds}",
+  none: "չկա",
+  "Add bonds in FIRE": "Ավելացնել պարտատոմսեր FIRE-ում",
+  "529 education account": "529 կրթական հաշիվ",
+  "Tax-advantaged savings for a child's education.": "Հարկային արտոնությամբ խնայողություն երեխայի կրթության համար։",
+  "Add a 529 account": "Ավելացնել 529 հաշիվ",
+  "Not done yet": "Դեռ արված չէ",
+  "About the Roth IRA": "Roth IRA-ի մասին",
+  "A Roth IRA is a retirement account you fill with money you've already paid tax on. In return, it grows tax-free, and in retirement everything comes out tax-free.":
+    "Roth IRA-ն կենսաթոշակային հաշիվ է, որը լցնում եք արդեն հարկված գումարով։ Դրա դիմաց այն աճում է առանց հարկի, և թոշակի ժամանակ ամբողջը դուրս է գալիս առանց հարկի։",
+  "You can take out what you put in at any time, tax- and penalty-free. Earnings are tax-free after age 59½ once the account is 5 years old.":
+    "Ձեր դրած գումարը կարող եք հանել ցանկացած պահի՝ առանց հարկի և տուգանքի։ Եկամուտն անհարկ է 59½ տարեկանից հետո, եթե հաշիվը առնվազն 5 տարեկան է։",
+  "For 2026 you can contribute if your income is under $153,000 (single) or $242,000 (married filing jointly); the amount shrinks to zero at $168,000 or $252,000.":
+    "2026-ին կարող եք ներդնել, եթե ձեր եկամուտը $153,000-ից (միայնակ) կամ $242,000-ից (համատեղ հայտարարագրող ամուսիններ) ցածր է․ գումարը նվազում է մինչև զրո $168,000-ի կամ $252,000-ի դեպքում։",
+  "You have until the tax deadline, around April 15 of the next year, to put money in for this year.":
+    "Այս տարվա համար գումար դնելու վերջնաժամկետը հարկային հայտարարագրի օրն է՝ մոտավորապես հաջորդ տարվա ապրիլի 15-ը։",
+  "Open one at any broker (Fidelity, Schwab, Vanguard…), then add it in FIRE → Add income → Roth IRA with its balance.":
+    "Բացեք հաշիվ ցանկացած բրոքերի մոտ (Fidelity, Schwab, Vanguard…), ապա ավելացրեք այն FIRE → Ավելացնել եկամուտ → Roth IRA՝ իր մնացորդով։",
+  "A summary of IRS rules, not tax advice. Check with a tax professional for your situation.":
+    "IRS-ի կանոնների ամփոփում է, ոչ թե հարկային խորհուրդ։ Ձեր դեպքի համար դիմեք հարկային մասնագետի։",
   // Stocks today; income and expenses due
   "Stocks today": "Բաժնետոմսերն այսօր",
   "{amount} from the day before": "{amount} նախորդ օրվա համեմատ",

@@ -354,6 +354,16 @@ const fire: Record<string, string> = {
   Salary: "Աշխատավարձ",
   "Rental income": "Վարձակալության եկամուտ",
   "Savings account": "Խնայողական հաշիվ",
+  "Roth IRA": "Roth IRA",
+  "Roth IRA contribution": "Roth IRA ներդրում",
+  "Or as a % of your salary": "Կամ որպես ձեր աշխատավարձի %",
+  "Your salary is {pay} each time; this takes it out of pay and puts it into your Roth IRA, where it keeps growing.":
+    "Ձեր աշխատավարձը ամեն անգամ {pay} է․ այս գումարը պահվում է աշխատավարձից և դրվում ձեր Roth IRA-ում, որտեղ շարունակում է աճել։",
+  "Add your salary as income to set this as a % of pay.": "Ավելացրեք ձեր աշխատավարձը որպես եկամուտ՝ սա որպես աշխատավարձի % նշելու համար։",
+  "That's {yearly} a year, above the {limit} limit for {year}. The IRS charges 6% a year on the extra.":
+    "Սա տարեկան {yearly} է՝ {year}-ի {limit} սահմանաչափից ավելի։ IRS-ը ավելցուկի վրա տարեկան 6% տուգանք է գանձում։",
+  "That's {yearly} a year of the {limit} you can put in for {year}.": "Սա տարեկան {yearly} է այն {limit}-ից, որ կարող եք դնել {year}-ի համար։",
+  "529 education savings": "529 կրթական խնայողություն",
   CD: "Ժամկետային ավանդ (CD)",
   Bond: "Պարտատոմս",
   Dividends: "Շահաբաժիններ",

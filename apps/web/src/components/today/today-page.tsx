@@ -25,7 +25,12 @@ import {
 } from "@/lib/today";
 import type { BookSettings } from "@/lib/workspace";
 
+import { ageOn } from "@/lib/age";
+import { babySteps } from "@/lib/baby-steps";
+
 import { HoldingsHeatmap } from "./holdings-heatmap";
+import { MoneyChecklist } from "./money-checklist";
+import type { FireStart } from "@/components/fire/fire-dashboard";
 import { NetWorthChart } from "./net-worth-chart";
 import { TodayCashFlows, TodayMovers } from "./today-sections";
 
@@ -62,6 +67,7 @@ export function TodayPage({
   loadingPortfolios,
   book,
   today,
+  dateOfBirth = null,
   onOpen,
 }: {
   /** The person's name from their profile, for the greeting. */
@@ -72,7 +78,9 @@ export function TodayPage({
   loadingPortfolios: boolean;
   book: BookSettings;
   today: string;
-  onOpen: (destination: TodayDestination) => void;
+  /** From the profile: the Roth IRA limit is higher from age 50. */
+  dateOfBirth?: string | null;
+  onOpen: (destination: TodayDestination, account?: FireStart) => void;
 }) {
   const t = useT();
   const hour = useSyncExternalStore(noSubscribe, localHour, () => null);
@@ -276,6 +284,21 @@ export function TodayPage({
   const flows = useMemo(
     () => (entries ? cashFlowsBetween(entries, today, today, rates, currency) : null),
     [entries, today, rates, currency],
+  );
+  const moneySteps = useMemo(
+    () =>
+      ready
+        ? babySteps({
+            entries: entries ?? [],
+            today,
+            rates,
+            baseCurrency: currency,
+            stocks: investments - totalCash,
+            bonds: plan.bondBalances,
+            age: ageOn(dateOfBirth, today),
+          })
+        : null,
+    [ready, entries, today, rates, currency, investments, totalCash, plan.bondBalances, dateOfBirth],
   );
   const unpriced = [...new Set(snapshots.flatMap((snapshot) => snapshot.unpriced))];
   const progress = plan.fireNumber ? Math.min(1, plan.currentAssets / plan.fireNumber) : null;
@@ -644,6 +667,8 @@ export function TodayPage({
           <p className="muted today-note">{t("Estimated as about three months after each company's last report.")}</p>
         </article>
       </div>
+
+      <MoneyChecklist steps={moneySteps} currency={currency} hidden={hidden} onOpen={onOpen} />
     </section>
   );
 }

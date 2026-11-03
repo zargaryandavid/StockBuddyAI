@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation";
 
 import { AppHeader } from "@/components/app-header";
 import { PortfolioAnalyticsDashboard } from "@/components/analytics/portfolio-analytics-dashboard";
-import { FireDashboard } from "@/components/fire/fire-dashboard";
+import { FireDashboard, type FireStart } from "@/components/fire/fire-dashboard";
 import { IndustryIcon } from "@/components/industry-icon";
 import { EducationPage } from "@/components/education/education-page";
 import { AssetsPage } from "@/components/fire/assets-page";
@@ -206,6 +206,8 @@ export function Dashboard({
   const [sortKey, setSortKey] = useState<SortKey>("custom");
   const portfolioSection = activeTab === "portfolio" || activeTab === "test" || activeTab === "growth";
   const [dateOfBirth, setDateOfBirth] = useState<string | null>(null);
+  // A Roth IRA or 529 account to add when FIRE opens from Today's to-do list.
+  const [fireStart, setFireStart] = useState<FireStart | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const needsProfile = activeTab === "fire" || activeTab === "today" || showProfile;
@@ -644,7 +646,8 @@ export function Dashboard({
     if (positions.length) void enrichPositions(positions, { currency: code });
   }
 
-  function openFromToday(destination: TodayDestination) {
+  function openFromToday(destination: TodayDestination, account?: FireStart) {
+    setFireStart(destination === "fire" ? (account ?? null) : null);
     if (destination === "analytics") {
       openAnalytics();
       return;
@@ -1088,7 +1091,10 @@ export function Dashboard({
           type="button"
           className={activeTab === "fire" ? "active" : ""}
           aria-current={activeTab === "fire" ? "page" : undefined}
-          onClick={() => setActiveTab("fire")}
+          onClick={() => {
+            setFireStart(null);
+            setActiveTab("fire");
+          }}
         >
           <Flame size={16} aria-hidden="true" />
           FIRE
@@ -1241,6 +1247,7 @@ export function Dashboard({
             loadingPortfolios={loadingPortfolios}
             book={book}
             today={today}
+            dateOfBirth={dateOfBirth}
             onOpen={openFromToday}
           />
         </section>
@@ -1272,6 +1279,8 @@ export function Dashboard({
       ) : activeTab === "fire" ? (
         <section className="simple-page fire-shell">
           <FireDashboard
+            key={fireStart ?? "fire"}
+            startWith={fireStart}
             portfolioValue={metrics.totalValue}
             cash={totalCash}
             reports={positions
@@ -1809,7 +1818,10 @@ export function Dashboard({
                 loading={bondData.loading}
                 currency={baseCurrency}
                 stocksValue={metrics.holdingsValue}
-                onEdit={() => setActiveTab("fire")}
+                onEdit={() => {
+                  setFireStart(null);
+                  setActiveTab("fire");
+                }}
                 onVisible={wantBonds}
               />
 

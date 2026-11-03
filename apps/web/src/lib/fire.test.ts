@@ -482,3 +482,41 @@ describe("budgetSplit", () => {
     expect(split.actual).toEqual({ needs: 2600, wants: 400, savings: 2000 });
   });
 });
+
+describe("Roth IRA contributions", () => {
+  const pay = entry({ id: "pay", kind: "income", category: "salary", name: "Pay", amount: 6000, starts_on: "2026-01-15" });
+  const rent = entry({ id: "rent", amount: 2000, starts_on: "2026-01-01" });
+  const roth = entry({ id: "roth", kind: "income", category: "roth_ira", name: "Roth IRA", amount: 0, principal: 10000, yield_pct: 0, frequency: "annual", starts_on: "2026-01-01" });
+  const contribution = entry({ id: "c", category: "roth_contribution", name: "Roth IRA contribution", amount: 600, starts_on: "2026-01-15" });
+
+  it("leaves the paycheck but is saved, not spent", () => {
+    const plan = buildPlan({ entries: [pay, rent, roth, contribution], settings, portfolioValue: 0, today: "2026-11-03" });
+    // Out of pocket each month…
+    expect(plan.monthlyExpenses).toBe(2600);
+    expect(plan.monthlyContributions).toBe(600);
+    // …but not retirement spending, and it counts as saving.
+    expect(plan.annualSpend).toBe(24000);
+    expect(plan.savingsRate).toBeCloseTo((6000 - 2000) / 6000, 6);
+  });
+
+  it("grows in the Roth IRA instead of disappearing from the plan", () => {
+    const withIt = projectFromEntries({
+      entries: [pay, rent, roth, contribution],
+      settings: { ...settings, inflation_pct: 0 },
+      growthAssets: 0,
+      today: "2026-11-03",
+      annualSpend: 24000,
+      withdrawalRatePct: 4,
+    });
+    const without = projectFromEntries({
+      entries: [pay, rent, roth],
+      settings: { ...settings, inflation_pct: 0 },
+      growthAssets: 0,
+      today: "2026-11-03",
+      annualSpend: 24000,
+      withdrawalRatePct: 4,
+    });
+    // At 0% growth everywhere, moving $600 a month into the Roth changes nothing in total.
+    expect(withIt.series[24].total).toBeCloseTo(without.series[24].total, 6);
+  });
+});

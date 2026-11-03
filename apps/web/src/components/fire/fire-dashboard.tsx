@@ -50,6 +50,7 @@ import {
   monthEvents,
   monthlyAmount,
   occurrences,
+  periodsPerYear,
   planNotes,
   yearsLabel,
   yieldPayment,
@@ -63,6 +64,8 @@ import {
   type FireSettings,
   type FxRates,
 } from "@/lib/fire";
+import { ageOn } from "@/lib/age";
+import { iraLimit } from "@/lib/baby-steps";
 import { useT } from "@/lib/i18n/client";
 import { translator, type Translate } from "@/lib/i18n/core";
 import { cleanNumberInput } from "@/lib/inputs";
@@ -278,6 +281,9 @@ function frequencyLabel(frequency: FireFrequency, t: Translate) {
   return t(FREQUENCIES.find((item) => item.key === frequency)?.label ?? frequency);
 }
 
+/** What to start adding when FIRE opens from Today's to-do list. */
+export type FireStart = "roth_ira" | "college_529" | "roth_contribution";
+
 export function FireDashboard({
   portfolioValue,
   cash,
@@ -287,6 +293,7 @@ export function FireDashboard({
   dateOfBirth = null,
   onEditProfile,
   onSeeGrowth,
+  startWith = null,
 }: {
   portfolioValue: number;
   cash: number;
@@ -298,6 +305,8 @@ export function FireDashboard({
   onEditProfile?: () => void;
   /** Opens the Growth calculator with this plan's assets, monthly investing and return. */
   onSeeGrowth?: (start: GrowthStart) => void;
+  /** Opens a new income of this category straight away (e.g. a Roth IRA from Today's to-do list). */
+  startWith?: FireStart | null;
 }) {
   const t = useT();
   const [entries, setEntries] = useState<FireEntry[]>([]);
@@ -306,7 +315,24 @@ export function FireDashboard({
   const [settingsDraft, setSettingsDraft] = useState<FireSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [draft, setDraft] = useState<Draft | null>(null);
+  // A new account opened from Today starts filled in: its name, a yearly 7% expected return.
+  const [draft, setDraft] = useState<Draft | null>(() =>
+    startWith === "roth_contribution"
+      ? {
+          ...newDraft("expense", today, currency),
+          category: startWith,
+          name: t(categoryFor("expense", startWith).label),
+        }
+      : startWith
+        ? {
+            ...newDraft("income", today, currency),
+            category: startWith,
+            name: t(categoryFor("income", startWith).label),
+            frequency: "annual",
+            yield_pct: "7",
+          }
+        : null,
+  );
   const [saving, setSaving] = useState(false);
   const [dialogError, setDialogError] = useState<string | null>(null);
   const [showInfo, setShowInfo] = useState(false);
@@ -1051,6 +1077,10 @@ export function FireDashboard({
         <EntryDialog
           draft={draft}
           assets={assets}
+          monthlySalary={entries
+            .filter((entry) => entry.kind === "income" && entry.category === "salary")
+            .reduce((sum, entry) => sum + monthlyAmount(entry, today, rates, draft.currency), 0)}
+          iraYearLimit={iraLimit(Number(today.slice(0, 4)), ageOn(dateOfBirth, today))}
           saving={saving}
           error={dialogError}
           onChange={(next) => {
@@ -1521,9 +1551,74 @@ function AssetDonut({
   );
 }
 
+/** A Roth IRA contribution as a share of pay, and how a year of it compares with the IRA limit. */
+function RothContribution({
+  draft,
+  monthlySalary,
+  limit,
+  onAmount,
+}: {
+  draft: Draft;
+  monthlySalary: number;
+  limit: { limit: number; year: number } | null;
+  onAmount: (amount: string) => void;
+}) {
+  const t = useT();
+  const perYear = periodsPerYear(draft.frequency) || 1;
+  const salaryPerPayment = (monthlySalary * 12) / perYear;
+  const amount = Number(draft.amount) || 0;
+  const share = salaryPerPayment > 0 && amount > 0 ? (amount / salaryPerPayment) * 100 : null;
+  const yearly = draft.frequency === "once" ? amount : amount * perYear;
+  const over = limit != null && yearly > limit.limit + 0.005;
+  return (
+    <div className="fire-roth">
+      <label>
+        {t("Or as a % of your salary")}
+        <input
+          type="number"
+          min="0"
+          max="100"
+          step="0.5"
+          disabled={salaryPerPayment <= 0}
+          value={share == null ? "" : Number(share.toFixed(2))}
+          placeholder={salaryPerPayment > 0 ? "10" : ""}
+          onChange={(event) => {
+            const pct = Number(event.target.value);
+            onAmount(event.target.value === "" ? "" : String(Math.round(salaryPerPayment * pct) / 100));
+          }}
+        />
+      </label>
+      <small className="muted">
+        {salaryPerPayment > 0
+          ? t("Your salary is {pay} each time; this takes it out of pay and puts it into your Roth IRA, where it keeps growing.", {
+              pay: money(salaryPerPayment, draft.currency),
+            })
+          : t("Add your salary as income to set this as a % of pay.")}
+      </small>
+      {limit && amount > 0 && (
+        <small className={over ? "negative" : "positive"}>
+          {over
+            ? t("That's {yearly} a year, above the {limit} limit for {year}. The IRS charges 6% a year on the extra.", {
+                yearly: money(yearly, draft.currency),
+                limit: money(limit.limit, "USD"),
+                year: limit.year,
+              })
+            : t("That's {yearly} a year of the {limit} you can put in for {year}.", {
+                yearly: money(yearly, draft.currency),
+                limit: money(limit.limit, "USD"),
+                year: limit.year,
+              })}
+        </small>
+      )}
+    </div>
+  );
+}
+
 function EntryDialog({
   draft,
   assets,
+  monthlySalary = 0,
+  iraYearLimit = null,
   saving,
   error,
   onChange,
@@ -1532,6 +1627,10 @@ function EntryDialog({
 }: {
   draft: Draft;
   assets: FireAsset[];
+  /** Salary per month in the entry's currency, for a Roth contribution set as a % of pay. */
+  monthlySalary?: number;
+  /** This year's IRA limit for this person, to compare a Roth contribution with. */
+  iraYearLimit?: { limit: number; year: number } | null;
   saving: boolean;
   error: string | null;
   onChange: (draft: Draft) => void;
@@ -1685,7 +1784,11 @@ function EntryDialog({
                 </label>
               )}
               <label>
-                {category.yields === "face" ? t("Coupon (%)") : t("Yield / APY (%)")}
+                {category.yields === "face"
+                  ? t("Coupon (%)")
+                  : category.growth
+                    ? t("Expected yearly return (%)")
+                    : t("Yield / APY (%)")}
                 <input
                   type="number"
                   min="0"
@@ -1709,6 +1812,14 @@ function EntryDialog({
                 onChange={(event) => set({ amount: cleanNumberInput(event.target) })}
               />
             </label>
+          )}
+          {category.into === "roth_ira" && (
+            <RothContribution
+              draft={draft}
+              monthlySalary={monthlySalary}
+              limit={iraYearLimit}
+              onAmount={(amount) => set({ amount })}
+            />
           )}
           {category.rental && (
             <fieldset className="fire-rental-asset">

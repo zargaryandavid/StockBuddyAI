@@ -3399,6 +3399,44 @@ button.today-row { cursor: pointer; }
 button.today-row:hover { background: var(--row-hover); }
 .today-row span { color: var(--label); }
 .today-note { margin: 0.6rem 0 0; font-size: var(--text-xs); }
+/* FIRE: a Roth IRA contribution as a % of pay */
+.fire-roth { display: grid; gap: 0.3rem; padding: 0.6rem 0.75rem; border-radius: 8px; background: #f5faf6; border: 1px solid #cfe3d4; }
+.fire-roth small { font-size: var(--text-xs); line-height: 1.45; }
+.fire-roth small.positive { color: #1f7048; }
+.fire-roth small.negative { color: #a23d35; font-weight: 600; }
+
+/* Today: the money to-do list (baby steps) */
+.money-checklist { min-height: 0; }
+.checklist-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 0.6rem 1.5rem; margin-bottom: 0.6rem; }
+.checklist-heading h2 { display: flex; align-items: center; gap: 0.45rem; margin: 0 0 0.2rem; font-size: var(--text-md); }
+.checklist-heading p { margin: 0; font-size: var(--text-sm); }
+.checklist-count { display: grid; gap: 0.3rem; min-width: 9rem; font-size: var(--text-sm); text-align: right; }
+.checklist-steps { display: grid; gap: 0.4rem; margin: 0; padding: 0; list-style: none; }
+.checklist-steps li {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: start; gap: 0.75rem;
+  padding: 0.7rem 0.8rem; border: 1px solid var(--line); border-radius: 10px; background: #fff;
+}
+.checklist-steps li.done { border-color: #cfe3d4; background: #f5faf6; }
+.checklist-mark { margin-top: 0.05rem; color: #9ca3af; }
+.checklist-steps li.done .checklist-mark { color: #1f7048; }
+.checklist-text { display: grid; gap: 0.2rem; min-width: 0; }
+.checklist-text strong { display: inline-flex; align-items: center; gap: 0.35rem; font-size: var(--text-sm); }
+.checklist-text small { font-size: var(--text-xs); line-height: 1.45; }
+.checklist-info { width: 1.4rem; height: 1.4rem; }
+.checklist-more {
+  margin-top: 0.35rem; padding: 0.6rem 0.75rem; border-radius: 8px; background: #f3f6f8; font-size: var(--text-xs); line-height: 1.5;
+}
+.checklist-more p { margin: 0 0 0.35rem; }
+.checklist-more ul { margin: 0 0 0.35rem; padding-left: 1.1rem; }
+.checklist-meta { padding-top: 0.1rem; font-size: var(--text-sm); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.checklist-action { display: inline-flex; align-items: center; gap: 0.25rem; padding-top: 0.1rem; font-size: var(--text-xs); white-space: nowrap; }
+.checklist-action.done-label { color: #1f7048; font-weight: 700; }
+@media (max-width: 640px) {
+  .checklist-steps li { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .checklist-action { grid-column: 2 / -1; }
+  .checklist-count { text-align: left; }
+}
+
 /* Today: heat map of the holdings (box size = value, colour = today's move) */
 .holdings-heatmap { min-height: 0; }
 .heatmap-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem 1rem; margin-bottom: 0.6rem; }
