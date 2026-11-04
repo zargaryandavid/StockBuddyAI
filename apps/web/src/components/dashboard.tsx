@@ -23,6 +23,8 @@ import { EducationPage } from "@/components/education/education-page";
 import { AssetsPage } from "@/components/fire/assets-page";
 import { WishlistPage } from "@/components/wishlist/wishlist-page";
 import { AiPromptDialog } from "@/components/ai-prompt-dialog";
+import { FutureAllocation } from "@/components/future-allocation";
+import { PORTFOLIO_CURRENCIES } from "@/lib/currencies";
 import { ProfileDialog, type ProfileValues } from "@/components/profile-dialog";
 import { notEnoughData, RunTest } from "@/components/run-test";
 import { SupportPage } from "@/components/support-page";
@@ -60,6 +62,7 @@ import {
   Info,
   GraduationCap,
   Settings,
+  PieChart,
   Sparkles,
   ShieldCheck,
   ShoppingBag,
@@ -93,7 +96,7 @@ import { useT } from "@/lib/i18n/client";
 import { createClient } from "@/lib/supabase/client";
 import { defaultBook, type BookSettings, type Role } from "@/lib/workspace";
 
-type MainTab = "today" | "test" | "growth" | "portfolio" | "fire" | "assets" | "wishlist" | "education" | "support";
+type MainTab = "today" | "test" | "growth" | "allocation" | "portfolio" | "fire" | "assets" | "wishlist" | "education" | "support";
 type PortfolioView = "current" | "transactions" | "analytics";
 type ImportMode = "manual" | "csv" | "picture";
 type SortKey =
@@ -205,7 +208,8 @@ export function Dashboard({
   const [extracting, setExtracting] = useState(false);
   const [excludeEtfIndex, setExcludeEtfIndex] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("custom");
-  const portfolioSection = activeTab === "portfolio" || activeTab === "test" || activeTab === "growth";
+  const portfolioSection =
+    activeTab === "portfolio" || activeTab === "test" || activeTab === "growth" || activeTab === "allocation";
   const [dateOfBirth, setDateOfBirth] = useState<string | null>(null);
   // A Roth IRA or 529 account to add when FIRE opens from Today's to-do list.
   const [fireStart, setFireStart] = useState<FireStart | null>(null);
@@ -1154,6 +1158,15 @@ export function Dashboard({
             <TrendingUp size={15} aria-hidden="true" />
             {t("Growth calculator")}
           </button>
+          <button
+            type="button"
+            className={activeTab === "allocation" ? "active" : ""}
+            aria-current={activeTab === "allocation" ? "page" : undefined}
+            onClick={() => setActiveTab("allocation")}
+          >
+            <PieChart size={15} aria-hidden="true" />
+            {t("Future allocation")}
+          </button>
         </div>
         <button
           type="button"
@@ -1270,6 +1283,10 @@ export function Dashboard({
             currency={baseCurrency}
             start={growthStart}
           />
+        </section>
+      ) : activeTab === "allocation" ? (
+        <section className="simple-page allocation-shell">
+          <FutureAllocation />
         </section>
       ) : activeTab === "wishlist" ? (
         <section className="simple-page wishlist-shell">
@@ -2712,7 +2729,6 @@ function savedCash(entries: CashBalance[], base: string) {
   };
 }
 
-const PORTFOLIO_CURRENCIES = ["USD", "AMD", "EUR", "GBP", "RUB", "CAD", "CHF", "AUD", "JPY"];
 
 /** "$", "€", "֏"… for a currency code, or the code itself when it has no sign. */
 function currencySign(currency: string) {

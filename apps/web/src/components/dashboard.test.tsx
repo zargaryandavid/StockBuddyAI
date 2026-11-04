@@ -71,6 +71,7 @@ describe("Dashboard navigation", () => {
       "Transactions",
       "Ask Buddy",
       "Growth calculator",
+      "Future allocation",
       "Assets",
       "Wishlist",
       "Education",
@@ -84,6 +85,7 @@ describe("Dashboard navigation", () => {
       "Transactions",
       "Ask Buddy",
       "Growth calculator",
+      "Future allocation",
     ]);
     expect(screen.getByRole("button", { name: "Portfolio" }).getAttribute("aria-current")).toBe("page");
 

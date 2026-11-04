@@ -28,6 +28,7 @@ from fastapi import (
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ValidationError
 
+from stockbuddy.allocation import router as allocation_router
 from stockbuddy.analysis import AnalysisService, review_models
 from stockbuddy.books import router as books_router
 from stockbuddy.config import get_settings
@@ -153,6 +154,7 @@ async def _deliver_reminders(app: FastAPI) -> None:
 
 app = FastAPI(title="MyPortfolioBuddy API", version="0.1.0", lifespan=lifespan)
 app.include_router(net_worth_router)
+app.include_router(allocation_router)
 app.include_router(books_router)
 app.add_middleware(
     CORSMiddleware,
