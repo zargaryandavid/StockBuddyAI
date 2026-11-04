@@ -19,6 +19,33 @@ const portfolio: Record<string, string> = {
 
   // Portfolio page
   "See analytics": "Տեսնել վերլուծությունը",
+  // AI prompt
+  "AI prompt": "AI հրահանգ",
+  "AI prompt of your finances": "Ձեր ֆինանսների AI հրահանգը",
+  "A ready-made prompt with your portfolios, savings, bonds, property, income, expenses, FIRE plan and goals. Paste it into ChatGPT, Claude, Gemini or any AI to get an analysis that knows your whole picture.":
+    "Պատրաստի հրահանգ՝ ձեր պորտֆելներով, խնայողություններով, պարտատոմսերով, գույքով, եկամուտներով, ծախսերով, FIRE պլանով և նպատակներով։ Տեղադրեք այն ChatGPT-ում, Claude-ում, Gemini-ում կամ ցանկացած AI-ում՝ ձեր ամբողջ պատկերը հասկացող վերլուծություն ստանալու համար։",
+  "What should the AI help with?": "Ինչո՞ւմ պետք է օգնի AI-ը",
+  "A full review of my finances": "Իմ ֆինանսների ամբողջական վերլուծություն",
+  "Reach financial freedom (FIRE) sooner": "Ավելի շուտ հասնել ֆինանսական ազատության (FIRE)",
+  "Check my risk and diversification": "Ստուգել իմ ռիսկը և դիվերսիֆիկացիան",
+  "Retirement accounts and taxes (Roth IRA, 401(k), 529)": "Կենսաթոշակային հաշիվներ և հարկեր (Roth IRA, 401(k), 529)",
+  "My own question": "Իմ սեփական հարցը",
+  "Your question": "Ձեր հարցը",
+  "Anything to add? (optional)": "Ավելացնելու բա՞ն կա (ըստ ցանկության)",
+  "e.g. Should I pay off my car loan or invest more?": "օր.՝ Մարե՞մ մեքենայի վարկը, թե՞ ավելի շատ ներդնեմ",
+  "Round amounts to the nearest $100": "Կլորացնել գումարները մինչև $100",
+  "Leave out names (use categories only)": "Չներառել անունները (միայն կատեգորիաներ)",
+  "AI answers in": "AI-ը պատասխանում է",
+  "Could not load your data. Close this window and try again.": "Չհաջողվեց բեռնել ձեր տվյալները։ Փակեք պատուհանը և փորձեք նորից։",
+  "Reading your portfolios, plan and goals…": "Կարդում ենք ձեր պորտֆելները, պլանը և նպատակները…",
+  "The prompt": "Հրահանգը",
+  "Copied: now paste it into your AI": "Պատճենված է․ հիմա տեղադրեք այն ձեր AI-ում",
+  "Copy prompt": "Պատճենել հրահանգը",
+  "Download .txt": "Ներբեռնել .txt",
+  "Open:": "Բացել՝",
+  "Copy didn't work here. Click in the prompt, select all and copy it by hand.": "Պատճենումն այստեղ չաշխատեց։ Սեղմեք հրահանգի վրա, ընտրեք ամբողջը և պատճենեք ձեռքով։",
+  "Built on your device. Nothing is sent to any AI until you paste it yourself, and your email is never included. Read it before you share it.":
+    "Ստեղծվում է ձեր սարքում։ Ոչինչ չի ուղարկվում որևէ AI-ի, քանի դեռ ինքներդ չեք տեղադրել, և ձեր էլ. փոստը երբեք չի ներառվում։ Կարդացեք այն կիսվելուց առաջ։",
   "Portfolio name": "Պորտֆելի անվանում",
   "My portfolio": "Իմ պորտֆելը",
   "Loading portfolio summary": "Պորտֆելի ամփոփումը բեռնվում է",

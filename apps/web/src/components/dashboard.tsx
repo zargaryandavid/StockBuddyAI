@@ -22,6 +22,7 @@ import { IndustryIcon } from "@/components/industry-icon";
 import { EducationPage } from "@/components/education/education-page";
 import { AssetsPage } from "@/components/fire/assets-page";
 import { WishlistPage } from "@/components/wishlist/wishlist-page";
+import { AiPromptDialog } from "@/components/ai-prompt-dialog";
 import { ProfileDialog, type ProfileValues } from "@/components/profile-dialog";
 import { notEnoughData, RunTest } from "@/components/run-test";
 import { SupportPage } from "@/components/support-page";
@@ -208,6 +209,7 @@ export function Dashboard({
   const [dateOfBirth, setDateOfBirth] = useState<string | null>(null);
   // A Roth IRA or 529 account to add when FIRE opens from Today's to-do list.
   const [fireStart, setFireStart] = useState<FireStart | null>(null);
+  const [showAiPrompt, setShowAiPrompt] = useState(false);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const needsProfile = activeTab === "fire" || activeTab === "today" || showProfile;
@@ -1219,6 +1221,9 @@ export function Dashboard({
         )}
       </AppHeader>
 
+      {showAiPrompt && (
+        <AiPromptDialog portfolios={todayPortfolios} book={book} today={today} onClose={() => setShowAiPrompt(false)} />
+      )}
       {showProfile && (
         <ProfileDialog
           dateOfBirth={dateOfBirth}
@@ -1309,10 +1314,16 @@ export function Dashboard({
                   {t("Prices as of {date}", { date: latestPriceDate(positions) as string })}
                 </span>
               )}
-              <button type="button" className="button portfolio-analytics-link" onClick={openAnalytics}>
-                <IndustryIcon icon="chart-line" size={16} />
-                {t("See analytics")}
-              </button>
+              <div className="portfolio-head-actions">
+                <button type="button" className="button portfolio-ai-prompt" onClick={() => setShowAiPrompt(true)}>
+                  <Sparkles size={16} aria-hidden="true" />
+                  {t("AI prompt")}
+                </button>
+                <button type="button" className="button portfolio-analytics-link" onClick={openAnalytics}>
+                  <IndustryIcon icon="chart-line" size={16} />
+                  {t("See analytics")}
+                </button>
+              </div>
             </header>
           )}
           <div className={`portfolio-workspace ${portfolioView}-view`}>
