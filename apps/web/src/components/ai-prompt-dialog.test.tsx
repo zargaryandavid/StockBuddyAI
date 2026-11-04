@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const { apiMock } = vi.hoisted(() => ({ apiMock: vi.fn() }));
@@ -41,5 +41,12 @@ describe("AiPromptDialog", () => {
     expect(text.value).toContain("MyAmeria Portfolio");
     // Holdings 10 × $500 + cash $8,342 = $13,342 of net worth.
     expect(text.value).toContain("**$13,342.00**");
+
+    // Unticking a section takes it out of the prompt.
+    fireEvent.click(screen.getByRole("checkbox", { name: "Portfolios and stocks" }));
+    expect(text.value).not.toContain("## 💼 Portfolios and holdings");
+    expect(text.value).toContain("I chose not to share these parts");
+    fireEvent.click(screen.getByRole("button", { name: "Select all" }));
+    expect(text.value).toContain("## 💼 Portfolios and holdings");
   });
 });

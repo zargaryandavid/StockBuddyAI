@@ -644,6 +644,12 @@ input[type="number"] {
 }
 .ai-prompt-options textarea { resize: vertical; }
 .ai-prompt-switches { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.25rem; }
+.ai-prompt-sections {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: 0.35rem 1rem;
+  margin: 0; padding: 0.6rem 0.8rem 0.7rem; border: 1px solid var(--line); border-radius: 10px; background: #fff;
+}
+.ai-prompt-sections legend { display: flex; align-items: center; gap: 0.75rem; padding: 0 0.3rem; font-size: var(--text-sm); font-weight: 600; color: var(--label); }
+.ai-prompt-sections legend .text-button { font-size: var(--text-xs); font-weight: 600; }
 .ai-prompt-check { display: inline-flex; flex-direction: row; align-items: center; gap: 0.45rem; font-size: var(--text-sm); cursor: pointer; }
 .ai-prompt-check input[type="checkbox"] { width: 1rem; height: 1rem; margin: 0; flex-shrink: 0; }
 .ai-prompt-check select { width: auto; min-height: 30px; padding: 0.2rem 0.4rem; border: 1px solid var(--border); border-radius: 6px; font: inherit; }

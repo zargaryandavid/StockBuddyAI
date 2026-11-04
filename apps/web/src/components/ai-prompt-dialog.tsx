@@ -5,7 +5,14 @@ import { Check, Copy, Download, ExternalLink, Loader2, ShieldCheck, Sparkles } f
 
 import { api, type Portfolio } from "@/lib/api";
 import { ageOn } from "@/lib/age";
-import { buildAiPrompt, type PromptData, type PromptGoal, type PromptOptions } from "@/lib/ai-prompt";
+import {
+  PROMPT_SECTIONS,
+  buildAiPrompt,
+  type PromptData,
+  type PromptGoal,
+  type PromptOptions,
+  type PromptSection,
+} from "@/lib/ai-prompt";
 import { copyText } from "@/lib/copy";
 import type { FireAsset, FireEntry, FireSettings, FxRates } from "@/lib/fire";
 import { useI18n } from "@/lib/i18n/client";
@@ -169,6 +176,8 @@ export function AiPromptDialog({
   const data = !loadingPortfolios && loaded?.key === portfolioKey ? loaded.data : null;
   const prompt = useMemo(() => (data ? buildAiPrompt(data, options) : ""), [data, options]);
   const set = (patch: Partial<PromptOptions>) => setOptions((current) => ({ ...current, ...patch }));
+  const isOn = (section: PromptSection) => options.sections?.[section] !== false;
+  const allOn = PROMPT_SECTIONS.every((section) => isOn(section.key));
 
   async function copy() {
     if (await copyText(prompt)) {
@@ -251,6 +260,35 @@ export function AiPromptDialog({
             </label>
           </div>
         </div>
+
+        <fieldset className="ai-prompt-sections">
+          <legend>
+            {t("Sections to include")}
+            <button
+              type="button"
+              className="text-button"
+              onClick={() =>
+                set({
+                  sections: Object.fromEntries(
+                    PROMPT_SECTIONS.map((section) => [section.key, !allOn]),
+                  ) as Record<PromptSection, boolean>,
+                })
+              }
+            >
+              {allOn ? t("Clear all") : t("Select all")}
+            </button>
+          </legend>
+          {PROMPT_SECTIONS.map((section) => (
+            <label key={section.key} className="ai-prompt-check">
+              <input
+                type="checkbox"
+                checked={isOn(section.key)}
+                onChange={(event) => set({ sections: { ...options.sections, [section.key]: event.target.checked } })}
+              />
+              {t(section.label)}
+            </label>
+          ))}
+        </fieldset>
 
         {failed ? (
           <p className="alert" role="alert">

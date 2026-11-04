@@ -28,7 +28,25 @@ export type PromptOptions = {
   names: boolean;
   /** Language the other AI should answer in. */
   answerIn: "en" | "hy";
+  /** Sections to include; any left out is skipped. The request and the symbol legend always come. */
+  sections?: Partial<Record<PromptSection, boolean>>;
 };
+
+/** The parts of the snapshot the person can choose to include, in prompt order. */
+export const PROMPT_SECTIONS = [
+  { key: "profile", label: "About me (age, my limits)" },
+  { key: "networth", label: "Net worth" },
+  { key: "holdings", label: "Portfolios and stocks" },
+  { key: "accounts", label: "Savings, bonds and retirement accounts" },
+  { key: "property", label: "Property and other assets" },
+  { key: "cashflow", label: "Income and expenses" },
+  { key: "fire", label: "FIRE plan" },
+  { key: "steps", label: "Money to-do list" },
+  { key: "history", label: "Net worth over time" },
+  { key: "goals", label: "Goals (wishlist)" },
+] as const;
+
+export type PromptSection = (typeof PROMPT_SECTIONS)[number]["key"];
 
 export type PromptData = {
   today: string;
@@ -114,6 +132,8 @@ export function buildAiPrompt(data: PromptData, options: PromptOptions): string 
   const cell = (text: string) => text.replace(/\|/g, "/").replace(/\s+/g, " ").trim();
   const lines: string[] = [];
   const push = (...items: string[]) => lines.push(...items);
+  const on = (section: PromptSection) => options.sections?.[section] !== false;
+  const running = data.entries.filter((entry) => !entry.ends_on || entry.ends_on >= today);
 
   const snapshots = data.portfolios.map((portfolio) => portfolioSnapshot(portfolio, data.quotes, rates));
   const investments = snapshots.reduce((sum, item) => sum + item.total, 0);
@@ -157,208 +177,231 @@ export function buildAiPrompt(data: PromptData, options: PromptOptions): string 
     PROMPT_LEGEND.map(([symbol, meaning]) => `${symbol} = ${meaning}`).join(" · "),
     "",
   );
+  const skipped = PROMPT_SECTIONS.filter((section) => !on(section.key));
+  if (skipped.length) {
+    push(`I chose not to share these parts, so don't assume anything about them: ${skipped.map((section) => section.label).join("; ")}.`, "");
+  }
 
   // 2. Profile and limits
-  push("## 👤 About me", "");
-  push(`- Age: ${data.age ?? "not given"}`);
-  push(`- Main currency: ${currency}`);
-  push(
-    `- My own limits: at most ${pct(data.limits.max_position_pct * 100, 0)} of a portfolio in one company` +
-      (data.limits.max_industry_pct ? `, at most ${pct(data.limits.max_industry_pct * 100, 0)} in one sector` : "") +
-      `; keep at least ${pct((data.limits.min_cash_pct ?? 0.05) * 100, 0)} in cash.`,
-  );
-  push("");
+  if (on("profile")) {
+    push("## 👤 About me", "");
+    push(`- Age: ${data.age ?? "not given"}`);
+    push(`- Main currency: ${currency}`);
+    push(
+      `- My own limits: at most ${pct(data.limits.max_position_pct * 100, 0)} of a portfolio in one company` +
+        (data.limits.max_industry_pct ? `, at most ${pct(data.limits.max_industry_pct * 100, 0)} in one sector` : "") +
+        `; keep at least ${pct((data.limits.min_cash_pct ?? 0.05) * 100, 0)} in cash.`,
+    );
+    push("");
+  }
 
   // 3. Net worth
-  push("## 📊 Net worth today", "", "| Part | Amount | Share |", "|---|---:|---:|");
-  const parts: [string, number][] = [
-    ["💼 Investments (holdings)", holdingsValue],
-    ["💵 Cash in portfolios", cash],
-    ["🏦 Savings, CDs, Roth IRA and 529 balances", plan.savingsBalances],
-    ["📜 Bonds (face value)", plan.bondBalances],
-    ...plan.heldAssets.map((group): [string, number] => [`🏠 ${group.label}`, group.value]),
-  ];
-  for (const [name, value] of parts) {
-    if (!value) continue;
-    push(`| ${name} | ${format(value)} | ${pct(netWorth ? (value / netWorth) * 100 : null)} |`);
+  if (on("networth")) {
+    push("## 📊 Net worth today", "", "| Part | Amount | Share |", "|---|---:|---:|");
+    const parts: [string, number][] = [
+      ["💼 Investments (holdings)", holdingsValue],
+      ["💵 Cash in portfolios", cash],
+      ["🏦 Savings, CDs, Roth IRA and 529 balances", plan.savingsBalances],
+      ["📜 Bonds (face value)", plan.bondBalances],
+      ...plan.heldAssets.map((group): [string, number] => [`🏠 ${group.label}`, group.value]),
+    ];
+    for (const [name, value] of parts) {
+      if (!value) continue;
+      push(`| ${name} | ${format(value)} | ${pct(netWorth ? (value / netWorth) * 100 : null)} |`);
+    }
+    push(`| **Total net worth** | **${format(netWorth)}** | 100% |`, "");
+    if (holdingsValue) push(`Markets today moved my holdings by ${format(dayChange, currency, true)}${holdingsValue - dayChange > 0 ? ` (${pct((dayChange / (holdingsValue - dayChange)) * 100, 2, true)})` : ""}.`, "");
   }
-  push(`| **Total net worth** | **${format(netWorth)}** | 100% |`, "");
-  if (holdingsValue) push(`Markets today moved my holdings by ${format(dayChange, currency, true)}${holdingsValue - dayChange > 0 ? ` (${pct((dayChange / (holdingsValue - dayChange)) * 100, 2, true)})` : ""}.`, "");
 
   // 4. Portfolios and holdings
-  if (data.portfolios.length) push("## 💼 Portfolios and holdings", "");
-  const sectors = new Map<string, number>();
-  data.portfolios.forEach((portfolio, index) => {
-    const snapshot = snapshots[index];
-    const own = portfolio.base_currency ?? "USD";
-    push(
-      `### 💼 ${label(portfolio.name, `Portfolio ${index + 1}`)} (${own})`,
-      "",
-      `Value ${format(snapshot.total, own)} = holdings ${format(snapshot.holdingsValue, own)} + 💵 cash ${format(snapshot.cash, own)} (${pct(snapshot.total ? (snapshot.cash / snapshot.total) * 100 : null)} cash).`,
-      "",
-    );
-    if (!portfolio.portfolio_positions.length) {
-      push("No holdings yet.", "");
-      return;
-    }
-    push(
-      "| | Symbol | Name | Sector | Shares | Price | Value | Weight | Avg cost | Gain/loss | Today |",
-      "|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|",
-    );
-    const limit = portfolio.max_position_pct ?? data.limits.max_position_pct;
-    const rows = portfolio.portfolio_positions
-      .map((position) => {
-        const ticker = position.ticker.trim().toUpperCase();
-        const quote = data.quotes.get(ticker);
-        const shares = Number(position.shares) || 0;
-        const value = quote?.price == null ? null : quote.price * shares;
-        return { position, ticker, quote, shares, value };
-      })
-      .sort((a, b) => (b.value ?? -1) - (a.value ?? -1));
-    for (const { position, ticker, quote, shares, value } of rows) {
-      const fund = isFund({ ...position, ...quote, shares });
-      const weight = value != null && snapshot.total ? value / snapshot.total : null;
-      const cost = position.purchase_price == null ? null : Number(position.purchase_price);
-      const gain = cost && quote?.price != null ? (quote.price / cost - 1) * 100 : null;
-      const flag = !fund && weight != null && weight > limit ? " ⚠️" : "";
-      const sector = fund ? "Fund" : quote?.sector || position.sector || "—";
-      if (value != null) sectors.set(sector, (sectors.get(sector) ?? 0) + (own === currency ? value : (value * (rates[own] ?? 1))));
+  if (on("holdings")) {
+    if (data.portfolios.length) push("## 💼 Portfolios and holdings", "");
+    const sectors = new Map<string, number>();
+    data.portfolios.forEach((portfolio, index) => {
+      const snapshot = snapshots[index];
+      const own = portfolio.base_currency ?? "USD";
       push(
-        `| ${fund ? "🧺" : "📈"}${flag} | ${ticker} | ${cell(quote?.company_name || quote?.name || position.company_name || "—")} | ${cell(sector)} | ${shares} | ${quote?.price == null ? "—" : format(quote.price, own)} | ${value == null ? "no price" : format(value, own)} | ${pct(weight == null ? null : weight * 100)} | ${cost == null ? "—" : format(cost, own)} | ${pct(gain, 1, true)} | ${pct(quote?.day_change_percent, 2, true)} |`,
+        `### 💼 ${label(portfolio.name, `Portfolio ${index + 1}`)} (${own})`,
+        "",
+        `Value ${format(snapshot.total, own)} = holdings ${format(snapshot.holdingsValue, own)} + 💵 cash ${format(snapshot.cash, own)} (${pct(snapshot.total ? (snapshot.cash / snapshot.total) * 100 : null)} cash).`,
+        "",
+      );
+      if (!portfolio.portfolio_positions.length) {
+        push("No holdings yet.", "");
+        return;
+      }
+      push(
+        "| | Symbol | Name | Sector | Shares | Price | Value | Weight | Avg cost | Gain/loss | Today |",
+        "|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|",
+      );
+      const limit = portfolio.max_position_pct ?? data.limits.max_position_pct;
+      const rows = portfolio.portfolio_positions
+        .map((position) => {
+          const ticker = position.ticker.trim().toUpperCase();
+          const quote = data.quotes.get(ticker);
+          const shares = Number(position.shares) || 0;
+          const value = quote?.price == null ? null : quote.price * shares;
+          return { position, ticker, quote, shares, value };
+        })
+        .sort((a, b) => (b.value ?? -1) - (a.value ?? -1));
+      for (const { position, ticker, quote, shares, value } of rows) {
+        const fund = isFund({ ...position, ...quote, shares });
+        const weight = value != null && snapshot.total ? value / snapshot.total : null;
+        const cost = position.purchase_price == null ? null : Number(position.purchase_price);
+        const gain = cost && quote?.price != null ? (quote.price / cost - 1) * 100 : null;
+        const flag = !fund && weight != null && weight > limit ? " ⚠️" : "";
+        const sector = fund ? "Fund" : quote?.sector || position.sector || "—";
+        if (value != null) sectors.set(sector, (sectors.get(sector) ?? 0) + (own === currency ? value : (value * (rates[own] ?? 1))));
+        push(
+          `| ${fund ? "🧺" : "📈"}${flag} | ${ticker} | ${cell(quote?.company_name || quote?.name || position.company_name || "—")} | ${cell(sector)} | ${shares} | ${quote?.price == null ? "—" : format(quote.price, own)} | ${value == null ? "no price" : format(value, own)} | ${pct(weight == null ? null : weight * 100)} | ${cost == null ? "—" : format(cost, own)} | ${pct(gain, 1, true)} | ${pct(quote?.day_change_percent, 2, true)} |`,
+        );
+      }
+      push("");
+    });
+    if (sectors.size) {
+      const total = [...sectors.values()].reduce((sum, value) => sum + value, 0);
+      push(
+        "Holdings by sector, all portfolios: " +
+          [...sectors.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .map(([name, value]) => `${name} ${pct(total ? (value / total) * 100 : null)}`)
+            .join(" · "),
+        "",
       );
     }
-    push("");
-  });
-  if (sectors.size) {
-    const total = [...sectors.values()].reduce((sum, value) => sum + value, 0);
-    push(
-      "Holdings by sector, all portfolios: " +
-        [...sectors.entries()]
-          .sort((a, b) => b[1] - a[1])
-          .map(([name, value]) => `${name} ${pct(total ? (value / total) * 100 : null)}`)
-          .join(" · "),
-      "",
-    );
   }
 
   // 5. Accounts (savings, CDs, bonds, retirement)
-  const running = data.entries.filter((entry) => !entry.ends_on || entry.ends_on >= today);
-  const accounts = running.filter((entry) => entry.kind === "income" && categoryFor("income", entry.category).yields);
-  if (accounts.length) {
-    push("## 🏦 Savings, bonds and retirement accounts", "", "| | Name | Type | Balance / face value | Rate | Pays | Matures |", "|---|---|---|---:|---:|---|---|");
-    for (const entry of accounts) {
-      const category = categoryFor("income", entry.category);
-      push(
-        `| ${entryIcon(entry)} | ${cell(label(entry.name, category.label))} | ${category.label} | ${format(Number(entry.principal) || 0, entry.currency)} | ${pct(entry.yield_pct, 2)}${category.growth ? " expected return" : category.yields === "face" ? " coupon" : " APY"} | ${frequencyLabel(entry.frequency)} | ${entry.ends_on ?? "—"} |`,
-      );
+  if (on("accounts")) {
+    const accounts = running.filter((entry) => entry.kind === "income" && categoryFor("income", entry.category).yields);
+    if (accounts.length) {
+      push("## 🏦 Savings, bonds and retirement accounts", "", "| | Name | Type | Balance / face value | Rate | Pays | Matures |", "|---|---|---|---:|---:|---|---|");
+      for (const entry of accounts) {
+        const category = categoryFor("income", entry.category);
+        push(
+          `| ${entryIcon(entry)} | ${cell(label(entry.name, category.label))} | ${category.label} | ${format(Number(entry.principal) || 0, entry.currency)} | ${pct(entry.yield_pct, 2)}${category.growth ? " expected return" : category.yields === "face" ? " coupon" : " APY"} | ${frequencyLabel(entry.frequency)} | ${entry.ends_on ?? "—"} |`,
+        );
+      }
+      push("");
     }
-    push("");
   }
 
   // 6. Property and other assets
-  if (data.assets.length) {
-    push("## 🏠 Property and other assets", "", "| Name | Type | Market value |", "|---|---|---:|");
-    for (const asset of data.assets) {
-      const type = assetTypeFor(asset.asset_type).label;
-      push(`| ${cell(label(asset.name, type))} | ${type} | ${asset.market_value == null ? "—" : format(Number(asset.market_value), asset.currency)} |`);
+  if (on("property")) {
+    if (data.assets.length) {
+      push("## 🏠 Property and other assets", "", "| Name | Type | Market value |", "|---|---|---:|");
+      for (const asset of data.assets) {
+        const type = assetTypeFor(asset.asset_type).label;
+        push(`| ${cell(label(asset.name, type))} | ${type} | ${asset.market_value == null ? "—" : format(Number(asset.market_value), asset.currency)} |`);
+      }
+      push("");
     }
-    push("");
   }
 
   // 7. Cash flow
-  const flowRows = (kind: "income" | "expense") =>
-    running
-      .filter((entry) => entry.kind === kind && !(kind === "income" && categoryFor("income", entry.category).yields))
-      .map((entry) => ({ entry, monthly: monthlyAmount(entry, today, rates, currency) }))
-      .sort((a, b) => b.monthly - a.monthly);
-  const income = flowRows("income");
-  const expenses = flowRows("expense");
-  if (income.length || expenses.length) {
-    push("## ⬆️⬇️ Income and expenses", "", "| | Name | Category | Amount | How often | Per month | Ends |", "|---|---|---|---:|---|---:|---|");
-    for (const { entry, monthly } of [...income, ...expenses]) {
-      const category = categoryFor(entry.kind, entry.category);
+  if (on("cashflow")) {
+    const flowRows = (kind: "income" | "expense") =>
+      running
+        .filter((entry) => entry.kind === kind && !(kind === "income" && categoryFor("income", entry.category).yields))
+        .map((entry) => ({ entry, monthly: monthlyAmount(entry, today, rates, currency) }))
+        .sort((a, b) => b.monthly - a.monthly);
+    const income = flowRows("income");
+    const expenses = flowRows("expense");
+    if (income.length || expenses.length) {
+      push("## ⬆️⬇️ Income and expenses", "", "| | Name | Category | Amount | How often | Per month | Ends |", "|---|---|---|---:|---|---:|---|");
+      for (const { entry, monthly } of [...income, ...expenses]) {
+        const category = categoryFor(entry.kind, entry.category);
+        push(
+          `| ${entryIcon(entry)} | ${cell(label(entry.name, category.label))} | ${category.label} | ${format(Number(entry.amount) || 0, entry.currency)} | ${frequencyLabel(entry.frequency)} | ${entry.frequency === "once" ? `once on ${entry.starts_on}` : format(monthly)} | ${entry.ends_on ?? "—"} |`,
+        );
+      }
       push(
-        `| ${entryIcon(entry)} | ${cell(label(entry.name, category.label))} | ${category.label} | ${format(Number(entry.amount) || 0, entry.currency)} | ${frequencyLabel(entry.frequency)} | ${entry.frequency === "once" ? `once on ${entry.starts_on}` : format(monthly)} | ${entry.ends_on ?? "—"} |`,
+        "",
+        `Per month: ⬆️ income ${format(plan.monthlyIncome)} (including interest and coupons) · ⬇️ expenses ${format(plan.monthlyExpenses)}${plan.monthlyContributions ? `, of which 🔁 ${format(plan.monthlyContributions)} goes into my own accounts` : ""} · left over ${format(plan.monthlyNet, currency, true)} · savings rate ${pct(plan.savingsRate == null ? null : plan.savingsRate * 100)}.`,
+        "",
       );
     }
-    push(
-      "",
-      `Per month: ⬆️ income ${format(plan.monthlyIncome)} (including interest and coupons) · ⬇️ expenses ${format(plan.monthlyExpenses)}${plan.monthlyContributions ? `, of which 🔁 ${format(plan.monthlyContributions)} goes into my own accounts` : ""} · left over ${format(plan.monthlyNet, currency, true)} · savings rate ${pct(plan.savingsRate == null ? null : plan.savingsRate * 100)}.`,
-      "",
-    );
   }
 
   // 8. FIRE
-  push("## 🔥 My FIRE plan", "");
-  if (plan.fireNumber) {
-    push(
-      `- Yearly spending in retirement: ${format(plan.annualSpend)}; safe withdrawal rate ${pct(data.settings.withdrawal_rate_pct, 1)} → FIRE number ${format(plan.fireNumber)}.`,
-      `- Assets counted today: ${format(plan.currentAssets)} → ${pct((plan.currentAssets / plan.fireNumber) * 100)} of the way.`,
-      `- Investing about ${format(plan.monthlyInvest)} a month at ${pct(data.settings.expected_return_pct, 1)} expected return${data.settings.inflation_pct ? ` and ${pct(data.settings.inflation_pct, 1)} inflation` : ""}: FIRE in about ${yearsLabel(plan.hitMonth)}.`,
-    );
-  } else {
-    push("- No FIRE number yet: no expenses or retirement spending entered.");
+  if (on("fire")) {
+    push("## 🔥 My FIRE plan", "");
+    if (plan.fireNumber) {
+      push(
+        `- Yearly spending in retirement: ${format(plan.annualSpend)}; safe withdrawal rate ${pct(data.settings.withdrawal_rate_pct, 1)} → FIRE number ${format(plan.fireNumber)}.`,
+        `- Assets counted today: ${format(plan.currentAssets)} → ${pct((plan.currentAssets / plan.fireNumber) * 100)} of the way.`,
+        `- Investing about ${format(plan.monthlyInvest)} a month at ${pct(data.settings.expected_return_pct, 1)} expected return${data.settings.inflation_pct ? ` and ${pct(data.settings.inflation_pct, 1)} inflation` : ""}: FIRE in about ${yearsLabel(plan.hitMonth)}.`,
+      );
+    } else {
+      push("- No FIRE number yet: no expenses or retirement spending entered.");
+    }
+    push("");
   }
-  push("");
 
   // 9. Baby steps
-  const steps = babySteps({
-    entries: data.entries,
-    today,
-    rates,
-    baseCurrency: currency,
-    stocks: holdingsValue,
-    bonds: plan.bondBalances,
-    age: data.age,
-  });
-  push("## ✅ My money to-do list (baby steps)", "");
-  for (const step of steps) {
-    const mark = step.done ? "✅" : "⬜";
-    if (step.key === "emergency")
-      push(`- ${mark} Emergency fund: ${format(step.have)} in savings and CDs = ${step.months.toFixed(1)} months of expenses (+30%); target 3–6 months.`);
-    else if (step.key === "roth")
-      push(`- ${mark} 🛡️ Roth IRA: ${step.accounts ? `balance ${format(step.have)}, ` : "no account yet, "}contributions planned for ${step.year}: ${format(step.contributions)} of the ${format(step.limit, "USD")} limit.`);
-    else if (step.key === "invest")
-      push(`- ${mark} Stocks and bonds: stocks ${format(step.stocks)}, bonds ${format(step.bonds)}.`);
-    else push(`- ${mark} 🎓 529 education account: ${step.accounts ? format(step.have) : "none"}.`);
+  if (on("steps")) {
+    const steps = babySteps({
+      entries: data.entries,
+      today,
+      rates,
+      baseCurrency: currency,
+      stocks: holdingsValue,
+      bonds: plan.bondBalances,
+      age: data.age,
+    });
+    push("## ✅ My money to-do list (baby steps)", "");
+    for (const step of steps) {
+      const mark = step.done ? "✅" : "⬜";
+      if (step.key === "emergency")
+        push(`- ${mark} Emergency fund: ${format(step.have)} in savings and CDs = ${step.months.toFixed(1)} months of expenses (+30%); target 3–6 months.`);
+      else if (step.key === "roth")
+        push(`- ${mark} 🛡️ Roth IRA: ${step.accounts ? `balance ${format(step.have)}, ` : "no account yet, "}contributions planned for ${step.year}: ${format(step.contributions)} of the ${format(step.limit, "USD")} limit.`);
+      else if (step.key === "invest")
+        push(`- ${mark} Stocks and bonds: stocks ${format(step.stocks)}, bonds ${format(step.bonds)}.`);
+      else push(`- ${mark} 🎓 529 education account: ${step.accounts ? format(step.have) : "none"}.`);
+    }
+    push("");
   }
-  push("");
 
   // 10. Net worth history
-  const points = [...data.history].sort((a, b) => a.day.localeCompare(b.day));
-  if (points.length >= 2) {
-    const first = points[0];
-    const last = points[points.length - 1];
-    const change = Number(last.total) - Number(first.total);
-    push(
-      "## 📈 Net worth over time",
-      "",
-      `From ${first.day} (${format(Number(first.total))}) to ${last.day} (${format(Number(last.total))}): ${change >= 0 ? "▲" : "▼"} ${format(change, currency, true)} over ${points.length} saved days.`,
-      "",
-    );
+  if (on("history")) {
+    const points = [...data.history].sort((a, b) => a.day.localeCompare(b.day));
+    if (points.length >= 2) {
+      const first = points[0];
+      const last = points[points.length - 1];
+      const change = Number(last.total) - Number(first.total);
+      push(
+        "## 📈 Net worth over time",
+        "",
+        `From ${first.day} (${format(Number(first.total))}) to ${last.day} (${format(Number(last.total))}): ${change >= 0 ? "▲" : "▼"} ${format(change, currency, true)} over ${points.length} saved days.`,
+        "",
+      );
+    }
   }
 
   // 11. Goals
-  const open = data.wishes.filter((wish) => !wish.done);
-  if (open.length) {
-    push("## 🎯 My goals (my vision)", "");
-    const lists: [string, string][] = [
-      ["short", "Within 1 year"],
-      ["long", "1–5 years"],
-      ["want", "Anytime"],
-    ];
-    for (const [key, horizon] of lists) {
-      const items = open.filter((wish) => wish.list === key);
-      if (!items.length) continue;
-      push(
-        options.names
-          ? `- ${horizon}: ${items.slice(0, 12).map((wish) => cell(wish.text)).join("; ")}${items.length > 12 ? ` (+${items.length - 12} more)` : ""}`
-          : `- ${horizon}: ${items.length} goal${items.length === 1 ? "" : "s"}`,
-      );
+  if (on("goals")) {
+    const open = data.wishes.filter((wish) => !wish.done);
+    if (open.length) {
+      push("## 🎯 My goals (my vision)", "");
+      const lists: [string, string][] = [
+        ["short", "Within 1 year"],
+        ["long", "1–5 years"],
+        ["want", "Anytime"],
+      ];
+      for (const [key, horizon] of lists) {
+        const items = open.filter((wish) => wish.list === key);
+        if (!items.length) continue;
+        push(
+          options.names
+            ? `- ${horizon}: ${items.slice(0, 12).map((wish) => cell(wish.text)).join("; ")}${items.length > 12 ? ` (+${items.length - 12} more)` : ""}`
+            : `- ${horizon}: ${items.length} goal${items.length === 1 ? "" : "s"}`,
+        );
+      }
+      const done = data.wishes.length - open.length;
+      if (done) push(`- Already achieved: ${done}`);
+      push("");
     }
-    const done = data.wishes.length - open.length;
-    if (done) push(`- Already achieved: ${done}`);
-    push("");
   }
 
   push("---", "Please start with a 3-sentence summary of my situation, then answer what I asked above.");

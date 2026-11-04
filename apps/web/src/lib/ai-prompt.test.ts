@@ -117,4 +117,17 @@ describe("buildAiPrompt", () => {
   it("never includes an email address", () => {
     expect(buildAiPrompt(data, options)).not.toMatch(/@/);
   });
+
+  it("leaves out the sections I untick, and says so", () => {
+    const prompt = buildAiPrompt(data, { ...options, sections: { goals: false, property: false, cashflow: false } });
+    expect(prompt).not.toContain("## 🎯 My goals (my vision)");
+    expect(prompt).not.toContain("Buy a house for my parents");
+    expect(prompt).not.toContain("## 🏠 Property and other assets");
+    expect(prompt).not.toContain("## ⬆️⬇️ Income and expenses");
+    expect(prompt).toContain("I chose not to share these parts, so don't assume anything about them: Property and other assets; Income and expenses; Goals (wishlist).");
+    // The rest is still there, stocks included.
+    expect(prompt).toContain("## 💼 Portfolios and holdings");
+    expect(prompt).toMatch(/\| 📈 \| NVDA \|/);
+    expect(prompt).toContain("## 🎯 What I want from you");
+  });
 });
