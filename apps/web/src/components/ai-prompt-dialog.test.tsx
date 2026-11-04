@@ -7,10 +7,11 @@ const { apiMock } = vi.hoisted(() => ({ apiMock: vi.fn() }));
 vi.mock("@/lib/api", () => ({ api: apiMock }));
 
 import type { Portfolio } from "@/lib/api";
+import { defaultBook } from "@/lib/workspace";
 
 import { AiPromptDialog } from "./ai-prompt-dialog";
 
-const book = { max_position_pct: 0.25, max_industry_pct: 0.25, deep_value_weight: 0.5, trajectory_weight: 0.5, use_transaction_history_analytics: false };
+const book = { ...defaultBook, max_position_pct: 0.25 };
 const portfolio = {
   id: "p1",
   name: "MyAmeria Portfolio",
