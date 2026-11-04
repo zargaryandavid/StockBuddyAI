@@ -1222,7 +1222,13 @@ export function Dashboard({
       </AppHeader>
 
       {showAiPrompt && (
-        <AiPromptDialog portfolios={todayPortfolios} book={book} today={today} onClose={() => setShowAiPrompt(false)} />
+        <AiPromptDialog
+          portfolios={todayPortfolios}
+          loadingPortfolios={loadingPortfolios}
+          book={book}
+          today={today}
+          onClose={() => setShowAiPrompt(false)}
+        />
       )}
       {showProfile && (
         <ProfileDialog

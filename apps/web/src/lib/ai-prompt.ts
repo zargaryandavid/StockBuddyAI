@@ -183,7 +183,7 @@ export function buildAiPrompt(data: PromptData, options: PromptOptions): string 
     push(`| ${name} | ${format(value)} | ${pct(netWorth ? (value / netWorth) * 100 : null)} |`);
   }
   push(`| **Total net worth** | **${format(netWorth)}** | 100% |`, "");
-  push(`Markets today moved my holdings by ${format(dayChange, currency, true)}${holdingsValue - dayChange > 0 ? ` (${pct((dayChange / (holdingsValue - dayChange)) * 100, 2, true)})` : ""}.`, "");
+  if (holdingsValue) push(`Markets today moved my holdings by ${format(dayChange, currency, true)}${holdingsValue - dayChange > 0 ? ` (${pct((dayChange / (holdingsValue - dayChange)) * 100, 2, true)})` : ""}.`, "");
 
   // 4. Portfolios and holdings
   if (data.portfolios.length) push("## 💼 Portfolios and holdings", "");

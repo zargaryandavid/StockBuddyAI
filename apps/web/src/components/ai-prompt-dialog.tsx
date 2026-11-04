@@ -103,17 +103,20 @@ async function loadData(portfolios: Portfolio[], book: BookSettings, today: stri
  */
 export function AiPromptDialog({
   portfolios,
+  loadingPortfolios = false,
   book,
   today,
   onClose,
 }: {
   portfolios: Portfolio[];
+  /** Still fetching the portfolios: wait, so the prompt never leaves them out. */
+  loadingPortfolios?: boolean;
   book: BookSettings;
   today: string;
   onClose: () => void;
 }) {
   const { t, locale } = useI18n();
-  const [data, setData] = useState<PromptData | null>(null);
+  const [loaded, setLoaded] = useState<{ key: string; data: PromptData } | null>(null);
   const [failed, setFailed] = useState(false);
   const [options, setOptions] = useState<PromptOptions>({
     goal: "review",
@@ -125,11 +128,24 @@ export function AiPromptDialog({
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
 
+  // Holdings and cash as they are now, so the prompt follows the portfolios once they load
+  // (or change), not only what was on screen when the window opened.
+  const portfolioKey = JSON.stringify(
+    portfolios.map((portfolio) => [
+      portfolio.id,
+      portfolio.cash,
+      portfolio.base_currency,
+      portfolio.other_cash,
+      portfolio.portfolio_positions.map((position) => [position.ticker, position.shares, position.purchase_price]),
+    ]),
+  );
   useEffect(() => {
+    if (loadingPortfolios) return;
     let active = true;
+    const key = portfolioKey;
     loadData(portfolios, book, today)
-      .then((loaded) => {
-        if (active) setData(loaded);
+      .then((result) => {
+        if (active) setLoaded({ key, data: result });
       })
       .catch(() => {
         if (active) setFailed(true);
@@ -137,9 +153,9 @@ export function AiPromptDialog({
     return () => {
       active = false;
     };
-    // Loaded once per opening; the dialog is closed and opened again to refresh.
+    // portfolioKey stands for the portfolios' contents.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [portfolioKey, loadingPortfolios, book, today]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -149,6 +165,8 @@ export function AiPromptDialog({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  // Only the data read for the portfolios as they are now; older data waits for the new read.
+  const data = !loadingPortfolios && loaded?.key === portfolioKey ? loaded.data : null;
   const prompt = useMemo(() => (data ? buildAiPrompt(data, options) : ""), [data, options]);
   const set = (patch: Partial<PromptOptions>) => setOptions((current) => ({ ...current, ...patch }));
 
