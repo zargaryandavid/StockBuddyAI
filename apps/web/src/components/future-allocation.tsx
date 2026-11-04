@@ -233,12 +233,12 @@ export function FutureAllocation() {
                     className="allocation-ticker"
                     value={item.ticker}
                     maxLength={15}
-                    placeholder={t("Symbol, e.g. VXUS")}
+                    placeholder={t("Symbol")}
                     aria-label={t("Symbol")}
                     onChange={(event) => setItem(index, { ticker: event.target.value.toUpperCase().replace(/\s/g, "") })}
                   />
                   {item.ticker ? (
-                    <small className={missing ? "negative" : "muted"}>
+                    <small className={missing ? "negative" : "muted"} title={row.name ?? undefined}>
                       {missing ? t("Not found. Check the symbol.") : row.name ?? t("Looking up…")}
                       {row.fund && !missing ? ` · ${t("Fund")}` : ""}
                     </small>
@@ -246,7 +246,7 @@ export function FutureAllocation() {
                     <input
                       value={item.name}
                       maxLength={80}
-                      placeholder={t("Or a name, e.g. Armenian bonds")}
+                      placeholder={t("or a name, e.g. Armenian bonds")}
                       aria-label={t("Name")}
                       onChange={(event) => setItem(index, { name: event.target.value })}
                     />
@@ -274,17 +274,15 @@ export function FutureAllocation() {
                 </span>
                 <span role="cell" className="allocation-num">
                   <strong>{m(row.amount)}</strong>
-                  <small className="muted">{t("{pct} of the money", { pct: `${row.pct.toFixed(1)}%` })}</small>
+                  {item.mode === "amount" && <small className="muted">{`${row.pct.toFixed(1)}%`}</small>}
                 </span>
                 <span role="cell" className="allocation-num">{usd(row.usd)}</span>
                 <span role="cell" className="allocation-num">
                   {row.shares != null && row.price != null ? (
-                    <>
+                    <span title={t("{whole} whole at {price}", { whole: row.wholeShares ?? 0, price: usd(row.price) })}>
                       <strong>{row.shares.toLocaleString("en-US", { maximumFractionDigits: 2 })}</strong>
-                      <small className="muted">
-                        {t("{whole} whole at {price}", { whole: row.wholeShares ?? 0, price: usd(row.price) })}
-                      </small>
-                    </>
+                      <small className="muted">{` @ ${usd(row.price)}`}</small>
+                    </span>
                   ) : item.ticker ? (
                     "—"
                   ) : (
@@ -293,24 +291,20 @@ export function FutureAllocation() {
                 </span>
                 <span role="cell" className="allocation-num">
                   {item.ticker ? (
-                    <>
+                    <span title={t("1M {m} · 6M {s}", { m: signedPct(row.return1m), s: signedPct(row.return6m) })}>
                       <strong className={row.return1y == null ? "" : row.return1y >= 0 ? "positive" : "negative"}>{signedPct(row.return1y)}</strong>
-                      <small className="muted">
-                        {t("1M {m} · 6M {s}", { m: signedPct(row.return1m), s: signedPct(row.return6m) })}
-                      </small>
-                    </>
+                    </span>
                   ) : (
-                    <label className="allocation-typed">
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={item.expected_return_pct ?? ""}
-                        placeholder="%"
-                        aria-label={t("Expected yearly return (%)")}
-                        onChange={(event) => setItem(index, { expected_return_pct: event.target.value === "" ? null : Number(event.target.value) })}
-                      />
-                      <small className="muted">{t("your estimate")}</small>
-                    </label>
+                    <input
+                      className="allocation-typed"
+                      type="number"
+                      step="0.1"
+                      value={item.expected_return_pct ?? ""}
+                      placeholder={t("est. %")}
+                      title={t("your estimate")}
+                      aria-label={t("Expected yearly return (%)")}
+                      onChange={(event) => setItem(index, { expected_return_pct: event.target.value === "" ? null : Number(event.target.value) })}
+                    />
                   )}
                 </span>
                 <span role="cell" className="allocation-actions">
@@ -347,8 +341,7 @@ export function FutureAllocation() {
             </span>
             <span role="cell" />
             <span role="cell" className="allocation-num">
-              <strong>{signedPct(summary.weightedReturn)}</strong>
-              <small className="muted">{t("weighted")}</small>
+              <strong title={t("weighted")}>{signedPct(summary.weightedReturn)}</strong>
             </span>
             <span role="cell" />
           </div>

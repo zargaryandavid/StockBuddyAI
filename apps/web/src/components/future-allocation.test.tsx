@@ -34,9 +34,9 @@ describe("FutureAllocation", () => {
     // 33% of 54M AMD = 17.82M AMD ≈ $46,895 ≈ 669.9 shares at $70.
     expect(screen.getAllByText("AMD 17,820,000")).toHaveLength(2); // the row and the total
     expect(screen.getByText("669.92")).toBeTruthy();
-    expect(screen.getByText("669 whole at $70")).toBeTruthy();
+    expect(screen.getByTitle("669 whole at $70")).toBeTruthy();
     expect(screen.getAllByText("+18.6%").length).toBeGreaterThan(0);
-    expect(screen.getByText("1M +1.2% · 6M +9.4%")).toBeTruthy();
+    expect(screen.getByTitle("1M +1.2% · 6M +9.4%")).toBeTruthy();
     expect(screen.getByText(/AMD 36,180,000 not allocated yet/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Add investment" }));
