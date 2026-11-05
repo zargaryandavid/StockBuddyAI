@@ -625,10 +625,14 @@ describe("Dashboard navigation", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Actions for NVDA" }));
     fireEvent.click(screen.getByRole("button", { name: "Add transaction" }));
-    expect(screen.getByRole("group", { name: "Transaction for NVDA" })).toBeTruthy();
-    expect(screen.getByRole("spinbutton", { name: "Price" })).toHaveProperty("value", "100");
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(screen.queryByRole("group", { name: "Transaction for NVDA" })).toBeNull();
+    // The full form opens on NVDA, with every holding in the list and today's price filled in.
+    const form = screen.getByRole("dialog", { name: "Record transaction" });
+    const stock = within(form).getByRole("combobox", { name: "Stock" }) as HTMLSelectElement;
+    expect(stock.value).toBe("NVDA");
+    expect(stock.options.length).toBeGreaterThan(1);
+    expect(within(form).getByLabelText("Price per share (USD)")).toHaveProperty("value", "100");
+    fireEvent.click(within(form).getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog", { name: "Record transaction" })).toBeNull();
   });
 
   it("shows at once and fills in the account's role and settings from the browser", async () => {

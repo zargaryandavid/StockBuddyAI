@@ -130,3 +130,59 @@ def test_a_past_trade_can_be_kept_in_history_only():
     assert (method, table) == ("POST", "portfolio_transactions")
     assert row["ticker"] == "VO" and row["quantity"] == 35 and row["price"] == 80.14
     assert row["transacted_at"].startswith("2026-11-03T12:00:00")
+
+
+def test_edit_and_remove_a_transaction_through_the_database_functions():
+    from stockbuddy.supabase import SupabaseError
+
+    calls = []
+
+    class Db:
+        fail = False
+
+        async def rest(self, method, table, *, token=None, params=None, json=None, prefer=None):
+            calls.append((table, json))
+            if self.fail:
+                raise SupabaseError(
+                    "Supabase REST POST rpc failed: "
+                    '{"message":"holdings have fewer VO shares than this change needs"}'
+                )
+            return [{"id": "t1", "ticker": "VO", "quantity": 40}]
+
+    db = Db()
+
+    class Repository:
+        pass
+
+    Repository.db = db
+    app.dependency_overrides[current_user] = lambda: USER_ID
+    headers = {"Authorization": "Bearer user-token"}
+    base = f"/api/portfolios/{PORTFOLIO_ID}/transactions/22000000-0000-0000-0000-000000000001"
+    try:
+        with TestClient(app) as client:
+            app.state.repository = Repository()
+            edited = client.put(
+                base,
+                headers=headers,
+                json={
+                    "ticker": "vo",
+                    "kind": "buy",
+                    "quantity": 40,
+                    "price": 79,
+                    "transacted_at": "2026-11-03T12:00:00Z",
+                },
+            )
+            removed = client.delete(base + "?adjust_holdings=false", headers=headers)
+            db.fail = True
+            refused = client.delete(base, headers=headers)
+    finally:
+        app.dependency_overrides.clear()
+    assert edited.status_code == 200 and edited.json()["quantity"] == 40
+    assert calls[0][0] == "rpc/edit_portfolio_transaction"
+    assert calls[0][1]["new_ticker"] == "VO" and calls[0][1]["adjust_holdings"] is True
+    assert removed.status_code == 204
+    assert calls[1] == (
+        "rpc/remove_portfolio_transaction",
+        {"target_transaction_id": "22000000-0000-0000-0000-000000000001", "adjust_holdings": False},
+    )
+    assert refused.status_code == 422 and "enough shares" in refused.json()["detail"]

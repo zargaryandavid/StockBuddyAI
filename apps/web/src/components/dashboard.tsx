@@ -39,7 +39,7 @@ import { BondsSection, useBondHoldings, useOnVisible } from "@/components/bonds-
 import { CashLabel, CashSummary, cashTargetNote } from "@/components/cash-target";
 import { cashShortfall, cashTarget, DEFAULT_CASH_TARGET } from "@/lib/analytics";
 import { ReportReminderDialog } from "@/components/report-reminder-dialog";
-import { TransactionsView, type TransactionInput } from "@/components/transactions-view";
+import { RecordDialog, TransactionsView, type TransactionInput } from "@/components/transactions-view";
 import {
   Bot,
   Briefcase,
@@ -261,6 +261,16 @@ export function Dashboard({
   const [dirty, setDirty] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [actionRow, setActionRow] = useState<number | null>(null);
+  // The holding whose ⋯ menu opened the Record transaction form.
+  const [tradeFor, setTradeFor] = useState<string | null>(null);
+  const tradeHoldings = positions
+    .filter((position) => position.ticker.trim() && Number(position.shares) > 0)
+    .map((position) => ({
+      ticker: position.ticker,
+      shares: Number(position.shares),
+      price: position.price,
+      name: position.name || position.company_name,
+    }));
   const [actionSpot, setActionSpot] = useState({ top: 0, right: 0 });
   // A floating row menu would stay put while the page moves, so scrolling or resizing closes it.
   useEffect(() => {
@@ -285,10 +295,6 @@ export function Dashboard({
     quantity: "shares",
     averageCost: "purchase_price",
   });
-  const [transactionRow, setTransactionRow] = useState<number | null>(null);
-  const [transactionKind, setTransactionKind] = useState<"buy" | "sell">("buy");
-  const [transactionQuantity, setTransactionQuantity] = useState(1);
-  const [transactionPrice, setTransactionPrice] = useState(0);
   const [transactions, setTransactions] = useState<PortfolioTransaction[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
 
@@ -944,56 +950,37 @@ export function Dashboard({
     );
   }
 
-  async function applyTransaction(index: number) {
-    const position = positions[index];
-    if (!position || transactionQuantity <= 0 || transactionPrice < 0) return;
-    if (!editingId) {
-      setError(t("Save this portfolio before recording a transaction."));
-      return;
-    }
-    if (dirty) {
-      setError(t("Save your portfolio changes before recording a transaction."));
-      return;
-    }
-    if (transactionKind === "sell") {
-      if (transactionQuantity > Number(position.shares)) {
-        setError(t("Sale quantity cannot exceed the held quantity."));
-        return;
-      }
-    }
-    setError("");
-    try {
-      const recorded = await api<PortfolioTransaction>(
-        `/api/portfolios/${editingId}/transactions`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            ticker: position.ticker,
-            kind: transactionKind,
-            quantity: transactionQuantity,
-            price: transactionPrice,
-          }),
-        },
-      );
+  async function editTransaction(id: string, transaction: TransactionInput, adjustHoldings: boolean) {
+    if (!editingId) return;
+    await api<PortfolioTransaction>(
+      `/api/portfolios/${editingId}/transactions/${id}?adjust_holdings=${adjustHoldings}`,
+      { method: "PUT", body: JSON.stringify(transaction) },
+    );
+    await afterTradeChange(adjustHoldings);
+    setNotice(
+      t(adjustHoldings ? "Transaction updated; holdings updated too." : "Transaction updated in the history; holdings unchanged."),
+    );
+  }
+
+  async function removeTransaction(id: string, adjustHoldings: boolean) {
+    if (!editingId) return;
+    await api<void>(`/api/portfolios/${editingId}/transactions/${id}?adjust_holdings=${adjustHoldings}`, {
+      method: "DELETE",
+    });
+    await afterTradeChange(adjustHoldings);
+    setNotice(
+      t(adjustHoldings ? "Transaction removed; holdings updated too." : "Transaction removed from the history; holdings unchanged."),
+    );
+  }
+
+  /** Fresh history, and fresh holdings when a change reached them. */
+  async function afterTradeChange(holdingsChanged: boolean) {
+    if (holdingsChanged) {
       const rows = await loadPortfolios();
       const refreshed = rows.find((portfolio) => portfolio.id === editingId);
       if (refreshed) openPortfolio(refreshed);
-      setTransactions((current) => [
-        recorded,
-        ...current.filter((transaction) => transaction.id !== recorded.id),
-      ]);
-      setTransactionRow(null);
-      setNotice(t("Transaction recorded and portfolio position updated."));
-    } catch (cause) {
-      setError(
-        friendlyError(
-          cause instanceof Error
-            ? cause
-            : new Error("Could not record the transaction"),
-          t,
-        ),
-      );
     }
+    await loadTransactionHistory(editingId);
   }
 
   async function createPortfolio(event: FormEvent<HTMLFormElement>) {
@@ -1276,6 +1263,19 @@ export function Dashboard({
         )}
       </AppHeader>
 
+      {tradeFor && (
+        <RecordDialog
+          holdings={tradeHoldings}
+          currency={baseCurrency}
+          today={today}
+          initialTicker={tradeFor}
+          onClose={() => setTradeFor(null)}
+          onSave={async (transaction) => {
+            await recordTransaction(transaction);
+            setTradeFor(null);
+          }}
+        />
+      )}
       {showAiPrompt && (
         <AiPromptDialog
           portfolios={todayPortfolios}
@@ -1829,7 +1829,21 @@ export function Dashboard({
                               {actionRow === index && (
                                 <div className="actions-menu" style={{ top: actionSpot.top, right: actionSpot.right }}>
                                   <button type="button" onClick={() => { setSelectedId(editingId); setActiveTab("test"); }}>{t("Analyze position")}</button>
-                                  <button type="button" onClick={() => { setTransactionRow(index); setTransactionPrice(Math.round(Number(position.price ?? position.purchase_price ?? 0) * 100) / 100); setActionRow(null); toggleExpanded(setExpandedRows, index, true); }}>{t("Add transaction")}</button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActionRow(null);
+                                      if (!editingId) {
+                                        setError(t("Save this portfolio before recording a transaction."));
+                                      } else if (dirty) {
+                                        setError(t("Save your portfolio changes before recording a transaction."));
+                                      } else {
+                                        setTradeFor(position.ticker.trim().toUpperCase());
+                                      }
+                                    }}
+                                  >
+                                    {t("Add transaction")}
+                                  </button>
                                   <button type="button" onClick={() => { setRemoveRow(index); setActionRow(null); }}>{t("Remove position")}</button>
                                 </div>
                               )}
@@ -1855,17 +1869,6 @@ export function Dashboard({
                               <span className="detail-industry">
                                 {t("Industry")} <strong>{position.industry || t("Unknown")}</strong>
                               </span>
-                              {transactionRow === index && (
-                                <div className="transaction-editor" role="group" aria-label={t("Transaction for {ticker}", { ticker: position.ticker })}>
-                                  <label>{t("Transaction")}<select value={transactionKind} onChange={(event) => setTransactionKind(event.target.value as "buy" | "sell")}><option value="buy">{t("Buy")}</option><option value="sell">{t("Sell")}</option></select></label>
-                                  <label>{t("Quantity")}<input type="number" min="1" step="1" value={transactionQuantity} onChange={(event) => setTransactionQuantity(Number(event.target.value))} /></label>
-                                  <label>{t("Price")}<input type="number" min="0" step="0.01" value={transactionPrice} onChange={(event) => setTransactionPrice(Number(event.target.value))} /></label>
-                                  <div className="transaction-actions">
-                                    <button type="button" className="button" onClick={() => setTransactionRow(null)}>{t("Cancel")}</button>
-                                    <button type="button" className="button primary" onClick={() => void applyTransaction(index)}>{t("Apply")}</button>
-                                  </div>
-                                </div>
-                              )}
                             </div>
                           )}
                         </div>
@@ -2009,14 +2012,7 @@ export function Dashboard({
                 }}
                 transactions={transactions}
                 loading={loadingTransactions}
-                holdings={positions
-                  .filter((position) => position.ticker.trim() && Number(position.shares) > 0)
-                  .map((position) => ({
-                    ticker: position.ticker,
-                    shares: Number(position.shares),
-                    price: position.price,
-                    name: position.name || position.company_name,
-                  }))}
+                holdings={tradeHoldings}
                 currency={selected?.base_currency ?? baseCurrency}
                 today={today}
                 blockedReason={
@@ -2027,6 +2023,8 @@ export function Dashboard({
                       : null
                 }
                 onRecord={recordTransaction}
+                onEdit={editTransaction}
+                onRemove={removeTransaction}
               />
             )}
 

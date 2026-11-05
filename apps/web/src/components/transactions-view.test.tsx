@@ -100,7 +100,9 @@ describe("TransactionsView", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Record transaction" }));
     const dialog = screen.getByRole("dialog", { name: "Record transaction" });
-    fireEvent.change(within(dialog).getByRole("combobox", { name: "Symbol" }), { target: { value: "VO" } });
+    // VO isn't in the list yet: choose "Another stock…" and type its symbol.
+    fireEvent.change(within(dialog).getByRole("combobox", { name: "Stock" }), { target: { value: "__new__" } });
+    fireEvent.change(within(dialog).getByRole("textbox", { name: "Symbol" }), { target: { value: "vo" } });
     fireEvent.change(within(dialog).getByLabelText("Quantity"), { target: { value: "35" } });
     fireEvent.change(within(dialog).getByLabelText("Price per share (USD)"), { target: { value: "80.14" } });
     fireEvent.change(within(dialog).getByLabelText("Date"), { target: { value: "2026-10-03" } });
@@ -117,6 +119,41 @@ describe("TransactionsView", () => {
       transacted_at: "2026-10-03T12:00:00Z",
       history_only: true,
     });
+  });
+
+  it("edits a recorded trade with the holdings following, or only the history", async () => {
+    const onEdit = vi.fn(async () => undefined);
+    renderView({ onEdit });
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit Buy of AAPL" }));
+    const dialog = screen.getByRole("dialog", { name: "Edit transaction" });
+    expect(within(dialog).getByLabelText("Quantity")).toHaveProperty("value", "10");
+    expect(within(dialog).getByLabelText("Price per share (USD)")).toHaveProperty("value", "150");
+    expect(within(dialog).getByLabelText("Date")).toHaveProperty("value", "2026-03-02");
+    fireEvent.change(within(dialog).getByLabelText("Quantity"), { target: { value: "12" } });
+    fireEvent.click(within(dialog).getByRole("checkbox", { name: /Update my holdings too/ }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(onEdit).toHaveBeenCalledWith(
+      "t1",
+      { ticker: "AAPL", kind: "buy", quantity: 12, price: 150, transacted_at: "2026-03-02T12:00:00Z" },
+      false,
+    );
+  });
+
+  it("asks before removing a trade and undoes it in the holdings by default", async () => {
+    const onRemove = vi.fn(async () => undefined);
+    renderView({ onRemove });
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove Sell of NVDA" }));
+    const dialog = screen.getByRole("alertdialog", { name: "Remove this transaction?" });
+    expect(dialog.textContent).toContain("Sell of 2 NVDA at $200.00");
+    expect(within(dialog).getByRole("checkbox", { name: /put these shares back/ })).toHaveProperty("checked", true);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Remove" }));
+
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    expect(onRemove).toHaveBeenCalledWith("t2", true);
   });
 
   it("blocks selling more than you hold and future dates, inside the dialog", () => {

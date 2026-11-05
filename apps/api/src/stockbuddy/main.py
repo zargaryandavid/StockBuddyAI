@@ -1300,6 +1300,73 @@ async def add_position_transaction(
     return await repository.apply_transaction(token, portfolio_id, transaction)
 
 
+def _trade_change_error(exc: SupabaseError) -> HTTPException:
+    """The database's reason for refusing an edit or removal, in plain words."""
+    message = str(exc)
+    if "fewer" in message and "shares" in message:
+        return HTTPException(
+            status_code=422,
+            detail="Your holdings don't have enough shares for this change. "
+            "Turn off 'Update my holdings' to change only the history.",
+        )
+    if "not found" in message:
+        return HTTPException(status_code=404, detail="Transaction not found")
+    return HTTPException(status_code=422, detail="Could not change the transaction")
+
+
+@app.put("/api/portfolios/{portfolio_id}/transactions/{transaction_id}")
+async def edit_position_transaction(
+    portfolio_id: UUID,
+    transaction_id: UUID,
+    transaction: PositionTransaction,
+    request: Request,
+    token: Annotated[str, Depends(bearer_token)],
+    _user_id: Annotated[UUID, Depends(current_user)],
+    adjust_holdings: bool = True,
+):
+    """Changes a recorded trade; by default the holdings follow (old trade out, new one in)."""
+    try:
+        rows = await request.app.state.repository.db.rest(
+            "POST",
+            "rpc/edit_portfolio_transaction",
+            token=token,
+            json={
+                "target_transaction_id": str(transaction_id),
+                "new_ticker": transaction.ticker,
+                "new_kind": transaction.kind,
+                "new_quantity": transaction.quantity,
+                "new_price": transaction.price,
+                "new_transacted_at": transaction.transacted_at.isoformat(),
+                "adjust_holdings": adjust_holdings,
+            },
+        )
+    except SupabaseError as exc:
+        raise _trade_change_error(exc) from exc
+    return rows[0] if isinstance(rows, list) and rows else rows
+
+
+@app.delete("/api/portfolios/{portfolio_id}/transactions/{transaction_id}", status_code=204)
+async def remove_position_transaction(
+    portfolio_id: UUID,
+    transaction_id: UUID,
+    request: Request,
+    token: Annotated[str, Depends(bearer_token)],
+    _user_id: Annotated[UUID, Depends(current_user)],
+    adjust_holdings: bool = True,
+):
+    """Removes a recorded trade; by default its effect on the holdings is undone too."""
+    try:
+        await request.app.state.repository.db.rest(
+            "POST",
+            "rpc/remove_portfolio_transaction",
+            token=token,
+            json={"target_transaction_id": str(transaction_id), "adjust_holdings": adjust_holdings},
+        )
+    except SupabaseError as exc:
+        raise _trade_change_error(exc) from exc
+    return Response(status_code=204)
+
+
 @app.delete("/api/portfolios/{portfolio_id}", status_code=204)
 async def delete_portfolio(
     portfolio_id: UUID,

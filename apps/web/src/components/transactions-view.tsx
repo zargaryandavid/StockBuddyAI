@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Pencil, Plus, Search, Trash2 } from "lucide-react";
 
 import type { Portfolio, PortfolioTransaction } from "@/lib/api";
 import { useT } from "@/lib/i18n/client";
@@ -19,6 +19,9 @@ export type TransactionInput = {
 };
 
 type Holding = { ticker: string; shares: number; price?: number | null; name?: string | null };
+
+/** The stock list's choice for typing a symbol that isn't held. */
+const NEW_SYMBOL = "__new__";
 type Filter = "all" | "buy" | "sell";
 
 export function TransactionsView({
@@ -32,6 +35,8 @@ export function TransactionsView({
   today,
   blockedReason,
   onRecord,
+  onEdit,
+  onRemove,
 }: {
   portfolios: Portfolio[];
   selectedId: string;
@@ -44,9 +49,15 @@ export function TransactionsView({
   /** Why recording is not possible right now (for example unsaved portfolio changes). */
   blockedReason: string | null;
   onRecord: (transaction: TransactionInput) => Promise<void>;
+  /** Changes a recorded trade; `adjustHoldings` makes the holdings follow. */
+  onEdit?: (id: string, transaction: TransactionInput, adjustHoldings: boolean) => Promise<void>;
+  /** Removes a recorded trade; `adjustHoldings` undoes its effect on the holdings. */
+  onRemove?: (id: string, adjustHoldings: boolean) => Promise<void>;
 }) {
   const t = useT();
   const [filter, setFilter] = useState<Filter>("all");
+  const [editing, setEditing] = useState<PortfolioTransaction | null>(null);
+  const [removing, setRemoving] = useState<PortfolioTransaction | null>(null);
   const [query, setQuery] = useState("");
   const [recording, setRecording] = useState(false);
 
@@ -182,6 +193,9 @@ export function TransactionsView({
               <span role="columnheader">{t("Quantity")}</span>
               <span role="columnheader">{t("Price")}</span>
               <span role="columnheader">{t("Total")}</span>
+              <span role="columnheader">
+                <span className="sr-only">{t("Actions")}</span>
+              </span>
             </div>
             {visible.map((item) => (
               <div className="transactions-row" role="row" key={item.id}>
@@ -205,6 +219,30 @@ export function TransactionsView({
                   {item.kind === "buy" ? "−" : "+"}
                   {money(Number(item.quantity) * Number(item.price), currency)}
                 </strong>
+                <span role="cell" className="transactions-row-actions">
+                  {onEdit && (
+                    <button
+                      type="button"
+                      aria-label={t("Edit {kind} of {ticker}", { kind: item.kind === "buy" ? t("Buy") : t("Sell"), ticker: item.ticker })}
+                      title={t("Edit")}
+                      disabled={Boolean(blockedReason)}
+                      onClick={() => setEditing(item)}
+                    >
+                      <Pencil size={14} aria-hidden="true" />
+                    </button>
+                  )}
+                  {onRemove && (
+                    <button
+                      type="button"
+                      aria-label={t("Remove {kind} of {ticker}", { kind: item.kind === "buy" ? t("Buy") : t("Sell"), ticker: item.ticker })}
+                      title={t("Remove")}
+                      disabled={Boolean(blockedReason)}
+                      onClick={() => setRemoving(item)}
+                    >
+                      <Trash2 size={14} aria-hidden="true" />
+                    </button>
+                  )}
+                </span>
               </div>
             ))}
             {visible.length === 0 && (
@@ -214,6 +252,30 @@ export function TransactionsView({
         </>
       )}
 
+      {editing && onEdit && (
+        <RecordDialog
+          holdings={holdings}
+          currency={currency}
+          today={today}
+          existing={editing}
+          onClose={() => setEditing(null)}
+          onSave={async (transaction, adjustHoldings) => {
+            await onEdit(editing.id, transaction, adjustHoldings ?? true);
+            setEditing(null);
+          }}
+        />
+      )}
+      {removing && onRemove && (
+        <RemoveDialog
+          transaction={removing}
+          currency={currency}
+          onClose={() => setRemoving(null)}
+          onRemove={async (adjustHoldings) => {
+            await onRemove(removing.id, adjustHoldings);
+            setRemoving(null);
+          }}
+        />
+      )}
       {recording && (
         <RecordDialog
           holdings={holdings}
@@ -230,29 +292,44 @@ export function TransactionsView({
   );
 }
 
-function RecordDialog({
+/** Record (or edit) a trade: any holding or a new symbol, buy or sell, with its price and date. */
+export function RecordDialog({
   holdings,
   currency,
   today,
+  existing = null,
+  initialTicker,
   onClose,
   onSave,
 }: {
   holdings: Holding[];
   currency: string;
   today: string;
+  /** A recorded trade to edit, filled in. */
+  existing?: PortfolioTransaction | null;
+  /** The holding to start on, e.g. the row whose ⋯ menu opened the form. */
+  initialTicker?: string;
   onClose: () => void;
-  onSave: (transaction: TransactionInput) => Promise<void>;
+  onSave: (transaction: TransactionInput, adjustHoldings?: boolean) => Promise<void>;
 }) {
   const t = useT();
-  const [kind, setKind] = useState<"buy" | "sell">("buy");
-  const [ticker, setTicker] = useState(holdings[0]?.ticker ?? "");
-  const [quantity, setQuantity] = useState("");
+  const [kind, setKind] = useState<"buy" | "sell">(existing?.kind ?? "buy");
+  const [ticker, setTicker] = useState(existing?.ticker ?? initialTicker ?? holdings[0]?.ticker ?? "");
+  const [quantity, setQuantity] = useState(existing ? String(existing.quantity) : "");
   const held = holdings.find((holding) => holding.ticker.toUpperCase() === ticker.trim().toUpperCase());
   const [price, setPrice] = useState(
-    held?.price != null ? String(Math.round(Number(held.price) * 100) / 100) : "",
+    existing
+      ? String(Number(existing.price))
+      : held?.price != null
+        ? String(Math.round(Number(held.price) * 100) / 100)
+        : "",
   );
-  const [date, setDate] = useState(today);
+  const [date, setDate] = useState(existing ? existing.transacted_at.slice(0, 10) : today);
   const [historyOnly, setHistoryOnly] = useState(false);
+  // Buying a stock that isn't held yet: its symbol is typed in.
+  const [typingNew, setTypingNew] = useState(!holdings.length || Boolean(existing && !held));
+  // Editing: whether the holdings follow the change (on unless the person turns it off).
+  const [adjustHoldings, setAdjustHoldings] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -280,7 +357,7 @@ function RecordDialog({
     if (!(shares > 0) || !Number.isInteger(shares)) return setError(t("Enter a whole number of shares above 0."));
     if (!(each >= 0) || price === "") return setError(t("Enter the price per share."));
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today) return setError(t("Pick a date that is not in the future."));
-    if (kind === "sell" && !historyOnly) {
+    if (kind === "sell" && !historyOnly && !existing) {
       if (!held) return setError(t("You don't hold {ticker} in this portfolio.", { ticker: symbol }));
       if (shares > Number(held.shares)) {
         return setError(
@@ -294,14 +371,17 @@ function RecordDialog({
     setError(null);
     setSaving(true);
     try {
-      await onSave({
-        ticker: symbol,
-        kind,
-        quantity: shares,
-        price: each,
-        transacted_at: `${date}T12:00:00Z`,
-        ...(historyOnly ? { history_only: true } : {}),
-      });
+      await onSave(
+        {
+          ticker: symbol,
+          kind,
+          quantity: shares,
+          price: each,
+          transacted_at: `${date}T12:00:00Z`,
+          ...(historyOnly && !existing ? { history_only: true } : {}),
+        },
+        existing ? adjustHoldings : undefined,
+      );
     } catch (cause) {
       setError(cause instanceof Error ? t(cause.message) : t("Could not record the transaction"));
       setSaving(false);
@@ -318,7 +398,7 @@ function RecordDialog({
     >
       <section className="add-holding-modal" role="dialog" aria-modal="true" aria-labelledby="record-title">
         <div className="modal-heading">
-          <h2 id="record-title">{t("Record transaction")}</h2>
+          <h2 id="record-title">{existing ? t("Edit transaction") : t("Record transaction")}</h2>
           <button type="button" aria-label={t("Close")} onClick={onClose}>
             ×
           </button>
@@ -362,20 +442,51 @@ function RecordDialog({
               </select>
             </label>
           ) : (
-            <label>
-              {t("Symbol")}
-              <input
-                list="record-holdings"
-                value={ticker}
-                placeholder="AAPL"
-                onChange={(event) => chooseTicker(event.target.value.toUpperCase())}
-              />
-              <datalist id="record-holdings">
-                {holdings.map((holding) => (
-                  <option key={holding.ticker} value={holding.ticker} />
-                ))}
-              </datalist>
-            </label>
+            <>
+              <label>
+                {t("Stock")}
+                <select
+                  value={typingNew ? NEW_SYMBOL : held?.ticker ?? NEW_SYMBOL}
+                  onChange={(event) => {
+                    if (event.target.value === NEW_SYMBOL) {
+                      setTypingNew(true);
+                      setTicker("");
+                      setPrice("");
+                    } else {
+                      setTypingNew(false);
+                      chooseTicker(event.target.value);
+                    }
+                  }}
+                >
+                  {holdings.map((holding) => (
+                    <option key={holding.ticker} value={holding.ticker}>
+                      {holding.name
+                        ? t("{ticker} · {name} · {shares} shares", {
+                            ticker: holding.ticker,
+                            name: holding.name,
+                            shares: Number(holding.shares).toLocaleString("en-US"),
+                          })
+                        : t("{ticker} · {shares} shares", {
+                            ticker: holding.ticker,
+                            shares: Number(holding.shares).toLocaleString("en-US"),
+                          })}
+                    </option>
+                  ))}
+                  <option value={NEW_SYMBOL}>{t("Another stock…")}</option>
+                </select>
+              </label>
+              {(typingNew || !held) && (
+                <label>
+                  {t("Symbol")}
+                  <input
+                    value={ticker}
+                    placeholder="AAPL"
+                    autoFocus={typingNew}
+                    onChange={(event) => chooseTicker(event.target.value.toUpperCase().replace(/\s/g, ""))}
+                  />
+                </label>
+              )}
+            </>
           )}
           <div className="fire-dialog-row">
             <label>
@@ -391,18 +502,32 @@ function RecordDialog({
             {t("Date")}
             <input type="date" max={today} value={date} onChange={(event) => setDate(event.target.value)} />
           </label>
-          <label className="record-history-only">
-            <input type="checkbox" checked={historyOnly} onChange={(event) => setHistoryOnly(event.target.checked)} />
-            <span>
-              <strong>{t("Already in my holdings")}</strong>
-              <small className="muted">
-                {t("Add this past trade to the history only. Your holdings and average cost stay as they are.")}
-              </small>
-            </span>
-          </label>
+          {existing ? (
+            <label className="record-history-only">
+              <input type="checkbox" checked={adjustHoldings} onChange={(event) => setAdjustHoldings(event.target.checked)} />
+              <span>
+                <strong>{t("Update my holdings too")}</strong>
+                <small className="muted">
+                  {t("The old trade comes out of your holdings and the changed one goes in. Turn off to change only the history.")}
+                </small>
+              </span>
+            </label>
+          ) : (
+            <label className="record-history-only">
+              <input type="checkbox" checked={historyOnly} onChange={(event) => setHistoryOnly(event.target.checked)} />
+              <span>
+                <strong>{t("Already in my holdings")}</strong>
+                <small className="muted">
+                  {t("Add this past trade to the history only. Your holdings and average cost stay as they are.")}
+                </small>
+              </span>
+            </label>
+          )}
           {Number.isFinite(total) && total > 0 && (
             <p className="notice" role="status">
-              {historyOnly
+              {existing
+                ? t(kind === "buy" ? "Pays {amount}" : "Receives {amount}", { amount: money(total, currency) })
+                : historyOnly
                 ? t("History only: {kind} of {amount} on {date}. Holdings won't change.", {
                     amount: money(total, currency),
                     kind: kind === "buy" ? t("Buy") : t("Sell"),
@@ -430,9 +555,103 @@ function RecordDialog({
             </p>
           )}
           <button type="submit" className="button primary" disabled={saving}>
-            {saving ? t("Saving…") : historyOnly ? t("Add to history") : kind === "buy" ? t("Record buy") : t("Record sell")}
+            {saving
+              ? t("Saving…")
+              : existing
+                ? t("Save changes")
+                : historyOnly
+                  ? t("Add to history")
+                  : kind === "buy"
+                    ? t("Record buy")
+                    : t("Record sell")}
           </button>
         </form>
+      </section>
+    </div>
+  );
+}
+
+/** Asks before removing a trade, and whether the holdings should follow. */
+function RemoveDialog({
+  transaction,
+  currency,
+  onClose,
+  onRemove,
+}: {
+  transaction: PortfolioTransaction;
+  currency: string;
+  onClose: () => void;
+  onRemove: (adjustHoldings: boolean) => Promise<void>;
+}) {
+  const t = useT();
+  const [adjustHoldings, setAdjustHoldings] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const buy = transaction.kind === "buy";
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      className="modal-backdrop"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section className="add-holding-modal confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="remove-trade-title">
+        <h2 id="remove-trade-title">{t("Remove this transaction?")}</h2>
+        <p className="muted">
+          {t(buy ? "Buy of {quantity} {ticker} at {price} on {date}." : "Sell of {quantity} {ticker} at {price} on {date}.", {
+            quantity: Number(transaction.quantity).toLocaleString("en-US"),
+            ticker: transaction.ticker,
+            price: money(Number(transaction.price), currency),
+            date: formatDate(transaction.transacted_at),
+          })}
+        </p>
+        <label className="record-history-only">
+          <input type="checkbox" checked={adjustHoldings} onChange={(event) => setAdjustHoldings(event.target.checked)} />
+          <span>
+            <strong>{buy ? t("Also take these shares out of my holdings") : t("Also put these shares back into my holdings")}</strong>
+            <small className="muted">
+              {t("Turn off if this trade was a mistake that never changed your holdings.")}
+            </small>
+          </span>
+        </label>
+        {error && (
+          <p className="alert" role="alert">
+            {error}
+          </p>
+        )}
+        <div className="confirm-actions">
+          <button type="button" className="button" onClick={onClose} disabled={busy} autoFocus>
+            {t("Cancel")}
+          </button>
+          <button
+            type="button"
+            className="button danger"
+            disabled={busy}
+            aria-busy={busy}
+            onClick={async () => {
+              setBusy(true);
+              setError(null);
+              try {
+                await onRemove(adjustHoldings);
+              } catch (cause) {
+                setError(cause instanceof Error ? t(cause.message) : t("Could not change the transaction"));
+                setBusy(false);
+              }
+            }}
+          >
+            {busy ? t("Removing…") : t("Remove")}
+          </button>
+        </div>
       </section>
     </div>
   );
