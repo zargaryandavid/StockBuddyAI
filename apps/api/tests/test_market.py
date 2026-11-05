@@ -176,3 +176,51 @@ def test_close_history_returns_sorted_closes_and_tolerates_failures():
         {"date": "2026-10-22", "close": 12},
     ]
     assert history["BAD"] == []
+
+
+def test_an_exact_fund_symbol_wins_over_a_company_name_starting_the_same():
+    class VoCompanies(Companies):
+        def search_companies(self, query, limit=8):
+            # "VO" is not an SEC company; the name search finds Vontier ("VO..." in its name).
+            return [{"ticker": "VNT", "name": "Vontier Corp"}][:limit]
+
+    asked = []
+
+    class FundPrices(Prices):
+        def get_prices(self, ticker, start_date, end_date, **kwargs):
+            asked.append(ticker)
+            return [
+                Price(open=270, high=271, low=269, close=270, volume=10, time="2025-10-20"),
+                Price(open=290, high=291, low=289, close=290, volume=12, time="2026-10-22"),
+            ]
+
+        def name_for(self, ticker):
+            return "Vanguard Mid-Cap ETF" if ticker == "VO" else "Vontier Corp"
+
+        def instrument_type_for(self, ticker):
+            return "ETF" if ticker == "VO" else "EQUITY"
+
+    for typed in ("VO", "vo"):
+        overview = SecurityOverviewService(VoCompanies(), FundPrices()).resolve(
+            typed, as_of=date(2026, 10, 23)
+        )
+        assert overview["ticker"] == "VO"
+        assert overview["name"] == "Vanguard Mid-Cap ETF"
+    assert "VNT" not in asked
+
+
+def test_a_short_symbol_with_no_prices_still_falls_back_to_the_name_search():
+    class MissingSymbolPrices(Prices):
+        def get_prices(self, ticker, start_date, end_date, **kwargs):
+            if ticker != "AAPL":
+                raise RuntimeError(f"no prices for {ticker}")
+            return super().get_prices(ticker, start_date, end_date)
+
+    class AppleByName(Companies):
+        def search_companies(self, query, limit=8):
+            return [{"ticker": "AAPL", "name": "Apple Inc."}][:limit]
+
+    overview = SecurityOverviewService(AppleByName(), MissingSymbolPrices()).resolve(
+        "APPL", as_of=date(2026, 10, 23)
+    )
+    assert overview["ticker"] == "AAPL"

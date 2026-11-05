@@ -257,6 +257,18 @@ export function Dashboard({
   const [dirty, setDirty] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [actionRow, setActionRow] = useState<number | null>(null);
+  const [actionSpot, setActionSpot] = useState({ top: 0, right: 0 });
+  // A floating row menu would stay put while the page moves, so scrolling or resizing closes it.
+  useEffect(() => {
+    if (actionRow === null) return;
+    const close = () => setActionRow(null);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [actionRow]);
   const [removeRow, setRemoveRow] = useState<number | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showReturns, setShowReturns] = useState(true);
@@ -1761,9 +1773,31 @@ export function Dashboard({
                               {t(status.status)}
                             </button>
                             <div className="position-actions">
-                              <button type="button" aria-label={t("Actions for {ticker}", { ticker: position.ticker })} aria-expanded={actionRow === index} onClick={() => setActionRow(actionRow === index ? null : index)}><Ellipsis size={18} /></button>
+                              <button
+                                type="button"
+                                aria-label={t("Actions for {ticker}", { ticker: position.ticker })}
+                                aria-expanded={actionRow === index}
+                                onClick={(event) => {
+                                  if (actionRow === index) {
+                                    setActionRow(null);
+                                    return;
+                                  }
+                                  // The menu floats over the page, so the table's scroll area can't cut it
+                                  // off; it opens upward when there's no room below the button.
+                                  const box = event.currentTarget.getBoundingClientRect();
+                                  const height = 140;
+                                  const below = box.bottom + 4 + height <= window.innerHeight;
+                                  setActionSpot({
+                                    top: below ? box.bottom + 4 : Math.max(8, box.top - height - 4),
+                                    right: Math.max(8, window.innerWidth - box.right),
+                                  });
+                                  setActionRow(index);
+                                }}
+                              >
+                                <Ellipsis size={18} />
+                              </button>
                               {actionRow === index && (
-                                <div className="actions-menu">
+                                <div className="actions-menu" style={{ top: actionSpot.top, right: actionSpot.right }}>
                                   <button type="button" onClick={() => { setSelectedId(editingId); setActiveTab("test"); }}>{t("Analyze position")}</button>
                                   <button type="button" onClick={() => { setTransactionRow(index); setTransactionPrice(Math.round(Number(position.price ?? position.purchase_price ?? 0) * 100) / 100); setActionRow(null); toggleExpanded(setExpandedRows, index, true); }}>{t("Add transaction")}</button>
                                   <button type="button" onClick={() => { setRemoveRow(index); setActionRow(null); }}>{t("Remove position")}</button>

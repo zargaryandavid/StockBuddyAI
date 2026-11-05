@@ -37,26 +37,42 @@ class SecurityOverviewService:
         as_of: date | None = None,
         base_currency: str = "USD",
     ) -> dict[str, Any]:
-        matches = self.companies.search_companies(query, limit=1)
-        if not matches:
-            matches = self._search_listed_symbol(query)
+        end = as_of or date.today()
         ticker_query = query.strip().upper()
-        if not matches and not re.fullmatch(r"[A-Z][A-Z0-9.-]{0,11}", ticker_query):
-            raise SecurityNotFoundError(f"No company or ticker matched '{query.strip()}'")
+        looks_like_ticker = bool(re.fullmatch(r"[A-Z][A-Z0-9.-]{0,11}", ticker_query))
+        matches = self.companies.search_companies(query, limit=1)
+        bars: list[Price] | None = None
+        # A symbol that is listed but not an SEC company (a fund such as VO) must not lose to a
+        # company whose name merely starts with the same letters (VO → "Vontier"): when the
+        # search did not find that exact ticker, the symbol itself is tried first.
+        typed = query.strip()
+        typed_as_symbol = looks_like_ticker and (len(typed) <= 4 or typed == ticker_query)
+        if typed_as_symbol and not (matches and matches[0]["ticker"] == ticker_query):
+            bars = self._price_bars(ticker_query, end)
+            if bars:
+                matches = []
+        if bars is None or not bars:
+            bars = None
+            if not matches:
+                matches = self._search_listed_symbol(query)
+            if not matches and not looks_like_ticker:
+                raise SecurityNotFoundError(f"No company or ticker matched '{query.strip()}'")
 
         match = matches[0] if matches else {"ticker": ticker_query, "name": ticker_query}
         ticker = match["ticker"]
-        end = as_of or date.today()
-        try:
-            bars = self.prices.get_prices(
-                ticker,
-                (end - timedelta(days=370)).isoformat(),
-                end.isoformat(),
-            )
-        except RuntimeError:
-            if matches:
-                raise
-            raise SecurityNotFoundError(f"No company or ticker matched '{query.strip()}'") from None
+        if bars is None:
+            try:
+                bars = self.prices.get_prices(
+                    ticker,
+                    (end - timedelta(days=370)).isoformat(),
+                    end.isoformat(),
+                )
+            except RuntimeError:
+                if matches:
+                    raise
+                raise SecurityNotFoundError(
+                    f"No company or ticker matched '{query.strip()}'"
+                ) from None
         eligible = sorted(
             (bar for bar in bars if bar.time[:10] <= end.isoformat()), key=lambda bar: bar.time
         )
@@ -153,6 +169,15 @@ class SecurityOverviewService:
             "is_etf_index": classification["asset_type"]
             in {"ETF", "Mutual Fund", "Closed-End Fund", "Trust", "Index"},
         }
+
+    def _price_bars(self, ticker: str, end: date) -> list[Price]:
+        """A year of closes for a symbol, or an empty list when it has none."""
+        try:
+            return self.prices.get_prices(
+                ticker, (end - timedelta(days=370)).isoformat(), end.isoformat()
+            )
+        except RuntimeError:
+            return []
 
     def _search_listed_symbol(self, query: str) -> list[dict[str, str]]:
         search = getattr(self.prices, "search_symbol", None)

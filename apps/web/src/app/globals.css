@@ -2483,8 +2483,9 @@ textarea {
 .status-review, .status-not-analyzed { border-color: #d2a66f; color: #7b511c; }
 .status-high-risk, .status-insufficient-data { border-color: #d49a8e; color: #8d3229; }
 .position-actions { position: relative; }
+/* Floats over the page (fixed), placed from the ⋯ button, so the table's scroll area can't clip it. */
 .actions-menu {
-  position: absolute; z-index: 20; top: 2rem; right: 0; display: grid;
+  position: fixed; z-index: 60; display: grid;
   width: 175px; padding: 0.35rem; border: 1px solid var(--line);
   background: #fff; box-shadow: 0 8px 24px #173d3420;
 }
