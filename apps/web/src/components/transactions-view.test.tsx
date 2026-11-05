@@ -95,6 +95,30 @@ describe("TransactionsView", () => {
     });
   });
 
+  it("keeps a past trade in the history only, without changing the holdings", async () => {
+    const onRecord = renderView();
+
+    fireEvent.click(screen.getByRole("button", { name: "Record transaction" }));
+    const dialog = screen.getByRole("dialog", { name: "Record transaction" });
+    fireEvent.change(within(dialog).getByRole("combobox", { name: "Symbol" }), { target: { value: "VO" } });
+    fireEvent.change(within(dialog).getByLabelText("Quantity"), { target: { value: "35" } });
+    fireEvent.change(within(dialog).getByLabelText("Price per share (USD)"), { target: { value: "80.14" } });
+    fireEvent.change(within(dialog).getByLabelText("Date"), { target: { value: "2026-10-03" } });
+    fireEvent.click(within(dialog).getByRole("checkbox", { name: /Already in my holdings/ }));
+    expect(within(dialog).getByRole("status").textContent).toContain("History only: Buy of $2,804.90 on 2026-10-03. Holdings won't change.");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add to history" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(onRecord).toHaveBeenCalledWith({
+      ticker: "VO",
+      kind: "buy",
+      quantity: 35,
+      price: 80.14,
+      transacted_at: "2026-10-03T12:00:00Z",
+      history_only: true,
+    });
+  });
+
   it("blocks selling more than you hold and future dates, inside the dialog", () => {
     const onRecord = renderView();
 

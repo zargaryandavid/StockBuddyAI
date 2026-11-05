@@ -142,6 +142,8 @@ class PositionTransaction(BaseModel):
     quantity: int = Field(gt=0)
     price: float = Field(ge=0)
     transacted_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    # A past trade already reflected in the holdings: kept in the history only.
+    history_only: bool = False
 
     @field_validator("ticker")
     @classmethod

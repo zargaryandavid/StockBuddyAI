@@ -21,6 +21,13 @@ const portfolio: Record<string, string> = {
   "See analytics": "Տեսնել վերլուծությունը",
   // Future allocation
   "Future allocation": "Ապագա բաշխում",
+  "Already in my holdings": "Արդեն իմ ակտիվներում է",
+  "Add this past trade to the history only. Your holdings and average cost stay as they are.":
+    "Ավելացնել այս անցյալ գործարքը միայն պատմության մեջ։ Ձեր ակտիվներն ու միջին արժեքը չեն փոխվի։",
+  "History only: {kind} of {amount} on {date}. Holdings won't change.": "Միայն պատմություն՝ {kind} {amount} {date}-ին։ Ակտիվները չեն փոխվի։",
+  "Add to history": "Ավելացնել պատմությանը",
+  "Buy of {quantity} {ticker} added to the history; holdings unchanged.": "{quantity} {ticker}-ի գնումն ավելացվեց պատմությանը․ ակտիվները չեն փոխվել։",
+  "Sell of {quantity} {ticker} added to the history; holdings unchanged.": "{quantity} {ticker}-ի վաճառքն ավելացվեց պատմությանը․ ակտիվները չեն փոխվել։",
   "Loading your plan…": "Ձեր պլանը բեռնվում է…",
   "Could not load your plan": "Չհաջողվեց բեռնել ձեր պլանը",
   "Could not save your plan": "Չհաջողվեց պահպանել ձեր պլանը",

@@ -932,9 +932,13 @@ export function Dashboard({
     );
     setNotice(
       t(
-        transaction.kind === "buy"
-          ? "Buy of {quantity} {ticker} recorded; holdings updated."
-          : "Sell of {quantity} {ticker} recorded; holdings updated.",
+        transaction.history_only
+          ? transaction.kind === "buy"
+            ? "Buy of {quantity} {ticker} added to the history; holdings unchanged."
+            : "Sell of {quantity} {ticker} added to the history; holdings unchanged."
+          : transaction.kind === "buy"
+            ? "Buy of {quantity} {ticker} recorded; holdings updated."
+            : "Sell of {quantity} {ticker} recorded; holdings updated.",
         { quantity: transaction.quantity, ticker: transaction.ticker },
       ),
     );

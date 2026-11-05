@@ -4085,3 +4085,12 @@ input.allocation-typed { width: 5.5rem; text-align: right; }
 .allocation-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1rem; font-size: var(--text-sm); }
 .allocation-footer .button { display: inline-flex; align-items: center; gap: 0.35rem; }
 .allocation-note { margin: 0; font-size: var(--text-xs); }
+
+/* Record transaction: a past trade kept in the history only */
+.record-history-only {
+  display: flex; flex-direction: row; align-items: flex-start; gap: 0.55rem; padding: 0.55rem 0.7rem;
+  border: 1px dashed var(--line); border-radius: 8px; background: #fbfcfb; cursor: pointer;
+}
+.record-history-only input { width: 1rem; height: 1rem; margin-top: 0.15rem; flex-shrink: 0; }
+.record-history-only span { display: grid; gap: 0.1rem; }
+.record-history-only small { font-size: var(--text-xs); line-height: 1.4; }

@@ -1262,6 +1262,28 @@ async def add_position_transaction(
     portfolio = await repository.get_portfolio(portfolio_id, user_id)
     if portfolio is None:
         raise HTTPException(status_code=404, detail="Portfolio not found")
+    if transaction.history_only:
+        # Already in the holdings (e.g. typed into the table before history was kept):
+        # written to the history as it was, without changing the holdings again.
+        rows = await repository.db.rest(
+            "POST",
+            "portfolio_transactions",
+            token=token,
+            params={
+                "select": "id,portfolio_id,ticker,kind,quantity,price,transacted_at,created_at"
+            },
+            json={
+                "portfolio_id": str(portfolio_id),
+                "user_id": str(user_id),
+                "ticker": transaction.ticker,
+                "kind": transaction.kind,
+                "quantity": transaction.quantity,
+                "price": round(transaction.price, 6),
+                "transacted_at": transaction.transacted_at.isoformat(),
+            },
+            prefer="return=representation",
+        )
+        return rows[0] if isinstance(rows, list) and rows else rows
     if transaction.kind == "sell":
         matching = next(
             (

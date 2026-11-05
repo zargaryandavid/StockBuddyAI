@@ -88,3 +88,45 @@ def test_saving_holdings_writes_their_history_without_failing_the_save():
     ]
     assert all(row["user_id"] == str(USER_ID) for row in rows)
     assert main.holding_changes([], []) == []
+
+
+def test_a_past_trade_can_be_kept_in_history_only():
+    calls = []
+
+    class Db:
+        async def rest(self, method, table, *, token=None, params=None, json=None, prefer=None):
+            calls.append((method, table, json))
+            return [{**json, "id": "t1"}]
+
+    class Repository:
+        db = Db()
+
+        async def get_portfolio(self, portfolio_id, user_id):
+            return {"portfolio_positions": [{"ticker": "VO", "shares": 35}]}
+
+        async def apply_transaction(self, token, portfolio_id, transaction):
+            raise AssertionError("history-only trades must not change the holdings")
+
+    app.dependency_overrides[current_user] = lambda: USER_ID
+    try:
+        with TestClient(app) as client:
+            app.state.repository = Repository()
+            response = client.post(
+                f"/api/portfolios/{PORTFOLIO_ID}/transactions",
+                headers={"Authorization": "Bearer user-token"},
+                json={
+                    "ticker": "vo",
+                    "kind": "buy",
+                    "quantity": 35,
+                    "price": 80.14,
+                    "transacted_at": "2026-11-03T12:00:00Z",
+                    "history_only": True,
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+    assert response.status_code == 201
+    method, table, row = calls[-1]
+    assert (method, table) == ("POST", "portfolio_transactions")
+    assert row["ticker"] == "VO" and row["quantity"] == 35 and row["price"] == 80.14
+    assert row["transacted_at"].startswith("2026-11-03T12:00:00")

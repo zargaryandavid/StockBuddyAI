@@ -14,6 +14,8 @@ export type TransactionInput = {
   quantity: number;
   price: number;
   transacted_at: string;
+  /** A past trade already in the holdings: kept in the history without changing them. */
+  history_only?: boolean;
 };
 
 type Holding = { ticker: string; shares: number; price?: number | null; name?: string | null };
@@ -250,6 +252,7 @@ function RecordDialog({
     held?.price != null ? String(Math.round(Number(held.price) * 100) / 100) : "",
   );
   const [date, setDate] = useState(today);
+  const [historyOnly, setHistoryOnly] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -277,7 +280,7 @@ function RecordDialog({
     if (!(shares > 0) || !Number.isInteger(shares)) return setError(t("Enter a whole number of shares above 0."));
     if (!(each >= 0) || price === "") return setError(t("Enter the price per share."));
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today) return setError(t("Pick a date that is not in the future."));
-    if (kind === "sell") {
+    if (kind === "sell" && !historyOnly) {
       if (!held) return setError(t("You don't hold {ticker} in this portfolio.", { ticker: symbol }));
       if (shares > Number(held.shares)) {
         return setError(
@@ -291,7 +294,14 @@ function RecordDialog({
     setError(null);
     setSaving(true);
     try {
-      await onSave({ ticker: symbol, kind, quantity: shares, price: each, transacted_at: `${date}T12:00:00Z` });
+      await onSave({
+        ticker: symbol,
+        kind,
+        quantity: shares,
+        price: each,
+        transacted_at: `${date}T12:00:00Z`,
+        ...(historyOnly ? { history_only: true } : {}),
+      });
     } catch (cause) {
       setError(cause instanceof Error ? t(cause.message) : t("Could not record the transaction"));
       setSaving(false);
@@ -381,9 +391,24 @@ function RecordDialog({
             {t("Date")}
             <input type="date" max={today} value={date} onChange={(event) => setDate(event.target.value)} />
           </label>
+          <label className="record-history-only">
+            <input type="checkbox" checked={historyOnly} onChange={(event) => setHistoryOnly(event.target.checked)} />
+            <span>
+              <strong>{t("Already in my holdings")}</strong>
+              <small className="muted">
+                {t("Add this past trade to the history only. Your holdings and average cost stay as they are.")}
+              </small>
+            </span>
+          </label>
           {Number.isFinite(total) && total > 0 && (
             <p className="notice" role="status">
-              {held
+              {historyOnly
+                ? t("History only: {kind} of {amount} on {date}. Holdings won't change.", {
+                    amount: money(total, currency),
+                    kind: kind === "buy" ? t("Buy") : t("Sell"),
+                    date,
+                  })
+                : held
                 ? t(
                     kind === "buy"
                       ? "Pays {amount} · you hold {shares} {ticker} now"
@@ -405,7 +430,7 @@ function RecordDialog({
             </p>
           )}
           <button type="submit" className="button primary" disabled={saving}>
-            {saving ? t("Saving…") : kind === "buy" ? t("Record buy") : t("Record sell")}
+            {saving ? t("Saving…") : historyOnly ? t("Add to history") : kind === "buy" ? t("Record buy") : t("Record sell")}
           </button>
         </form>
       </section>
