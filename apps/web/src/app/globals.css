@@ -3752,6 +3752,23 @@ button.today-row:hover { background: var(--row-hover); }
 
 /* Saved: the Save button turns green and gives a small pop. */
 .button.primary.is-saved { background: #1f7048; border-color: #1f7048; color: #fff; animation: saved-pop 0.4s ease-out; }
+.button.portfolio-save { display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; transition: background-color 200ms, color 200ms; }
+/* Saving: a moving shine across the button while the portfolio is sent */
+.button.portfolio-save.is-saving {
+  position: relative; overflow: hidden; cursor: progress; opacity: 1;
+  background: color-mix(in srgb, var(--gold) 80%, white);
+}
+.button.portfolio-save.is-saving::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: save-shine 1.1s ease-in-out infinite;
+}
+@keyframes save-shine { to { transform: translateX(100%); } }
+.button.portfolio-save .save-check { animation: save-check-pop 0.45s ease-out backwards; }
+@media (prefers-reduced-motion: reduce) {
+  .button.portfolio-save.is-saving::after, .button.portfolio-save .save-check { animation: none; }
+}
+@keyframes save-check-pop { 0% { transform: scale(0.2) rotate(-25deg); opacity: 0; } 70% { transform: scale(1.25); opacity: 1; } 100% { transform: scale(1); } }
 @keyframes saved-pop { 35% { transform: scale(1.05); } }
 
 /* Clickable cards lift a little under the pointer. */

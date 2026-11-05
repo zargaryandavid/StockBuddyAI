@@ -295,7 +295,10 @@ describe("Dashboard navigation", () => {
     await screen.findByText("Apple Inc.");
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
-    expect(await screen.findByRole("button", { name: "Updated ✓" })).toBeTruthy();
+    // While it saves, the button says so and can't be pressed again.
+    const saving = screen.getByRole("button", { name: "Saving…" });
+    expect(saving).toHaveProperty("disabled", true);
+    expect(await screen.findByRole("button", { name: "Updated" })).toBeTruthy();
 
     fireEvent.change(screen.getByRole("textbox", { name: "Cash" }), {
       target: { value: "100" },

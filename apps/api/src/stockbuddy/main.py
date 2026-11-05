@@ -8,7 +8,7 @@ import re
 from contextlib import asynccontextmanager, suppress
 from datetime import UTC, date, datetime, timedelta
 from email.message import EmailMessage
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
@@ -1103,14 +1103,114 @@ async def exchange_rate(
     return {"from": source.upper(), "to": target.upper(), "rate": rate}
 
 
+def holding_changes(
+    before: list[dict[str, Any]], after: list[PositionInput]
+) -> list[dict[str, Any]]:
+    """The buys and sells implied by saving holdings straight into the table, so the
+    Transactions history shows them too. More shares is a buy, priced so the average cost
+    comes out as entered; fewer shares, or a removed holding, is a sell (priced later)."""
+    old = {
+        str(row["ticker"]).upper(): (
+            int(row.get("shares") or 0),
+            float(row["purchase_price"]) if row.get("purchase_price") is not None else None,
+        )
+        for row in before
+    }
+    new = {
+        position.ticker.strip().upper(): (int(position.shares), position.purchase_price)
+        for position in after
+    }
+    changes: list[dict[str, Any]] = []
+    for ticker, (shares, cost) in new.items():
+        held, held_cost = old.get(ticker, (0, None))
+        if shares > held:
+            added = shares - held
+            price = cost or 0.0
+            if held and held_cost is not None and cost is not None:
+                implied = (cost * shares - held_cost * held) / added
+                price = implied if implied > 0 else cost
+            changes.append({"ticker": ticker, "kind": "buy", "quantity": added, "price": price})
+        elif shares < held:
+            changes.append(
+                {"ticker": ticker, "kind": "sell", "quantity": held - shares, "price": None}
+            )
+    for ticker, (held, _cost) in old.items():
+        if ticker not in new and held > 0:
+            changes.append({"ticker": ticker, "kind": "sell", "quantity": held, "price": None})
+    return changes
+
+
+async def record_holding_changes(
+    request: Request,
+    token: str,
+    user_id: UUID,
+    portfolio_id: str,
+    before: list[dict[str, Any]],
+    after: list[PositionInput],
+) -> None:
+    """Writes the history of a direct edit. The holdings are already saved, so these rows
+    only describe what changed; a failure here never undoes the save."""
+    changes = holding_changes(before, after)
+    if not changes:
+        return
+    market = request.app.state.market
+    today = date.today()
+
+    def last_close(ticker: str) -> float | None:
+        try:
+            bars = market.prices.get_prices(
+                ticker, (today - timedelta(days=10)).isoformat(), today.isoformat()
+            )
+        except Exception:
+            return None
+        closes = [bar.close for bar in sorted(bars, key=lambda bar: bar.time) if bar.close]
+        return closes[-1] if closes else None
+
+    costs = {
+        str(row["ticker"]).upper(): row.get("purchase_price")
+        for row in before
+        if row.get("purchase_price") is not None
+    }
+    now = datetime.now(UTC).isoformat()
+    rows = []
+    for change in changes:
+        price = change["price"]
+        if price is None:
+            price = await asyncio.to_thread(last_close, change["ticker"])
+        if price is None:
+            price = float(costs.get(change["ticker"]) or 0)
+        rows.append(
+            {
+                "portfolio_id": portfolio_id,
+                "user_id": str(user_id),
+                "ticker": change["ticker"],
+                "kind": change["kind"],
+                "quantity": change["quantity"],
+                "price": round(float(price), 6),
+                "transacted_at": now,
+            }
+        )
+    try:
+        await request.app.state.repository.db.rest(
+            "POST", "portfolio_transactions", token=token, json=rows, prefer="return=minimal"
+        )
+    except Exception:
+        logger.warning("Could not record the history of a holdings edit")
+
+
 @app.post("/api/portfolios", status_code=201)
 async def create_portfolio(
     payload: PortfolioCreate,
     request: Request,
     token: Annotated[str, Depends(bearer_token)],
-    _user_id: Annotated[UUID, Depends(current_user)],
+    user_id: Annotated[UUID, Depends(current_user)],
 ):
-    return await request.app.state.repository.create_portfolio(token, payload)
+    portfolio = await request.app.state.repository.create_portfolio(token, payload)
+    if isinstance(portfolio, dict) and portfolio.get("id"):
+        await record_holding_changes(
+            request, token, user_id, str(portfolio["id"]), [], payload.positions
+        )
+    return portfolio
 
 
 @app.put("/api/portfolios/{portfolio_id}")
@@ -1119,11 +1219,21 @@ async def update_portfolio(
     payload: PortfolioCreate,
     request: Request,
     token: Annotated[str, Depends(bearer_token)],
-    _user_id: Annotated[UUID, Depends(current_user)],
+    user_id: Annotated[UUID, Depends(current_user)],
 ):
-    portfolio = await request.app.state.repository.update_portfolio(token, portfolio_id, payload)
+    repository = request.app.state.repository
+    before = await repository.get_portfolio(portfolio_id, user_id)
+    portfolio = await repository.update_portfolio(token, portfolio_id, payload)
     if portfolio is None:
         raise HTTPException(status_code=404, detail="Portfolio not found")
+    await record_holding_changes(
+        request,
+        token,
+        user_id,
+        str(portfolio_id),
+        (before or {}).get("portfolio_positions") or [],
+        payload.positions,
+    )
     return portfolio
 
 

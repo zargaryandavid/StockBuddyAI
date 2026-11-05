@@ -44,6 +44,7 @@ import {
   Bot,
   Briefcase,
   Building2,
+  Check,
   ChevronDown,
   ChevronRight,
   ChevronUp,
@@ -60,6 +61,7 @@ import {
   GripVertical,
   History,
   Info,
+  Loader2,
   GraduationCap,
   Settings,
   PieChart,
@@ -206,6 +208,8 @@ export function Dashboard({
     "saved" | "updated" | null
   >(null);
   const [extracting, setExtracting] = useState(false);
+  // True while the portfolio is being sent and the holdings reloaded.
+  const [savingPortfolio, setSavingPortfolio] = useState(false);
   const [excludeEtfIndex, setExcludeEtfIndex] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("custom");
   const portfolioSection =
@@ -998,6 +1002,7 @@ export function Dashboard({
       setError(t("Add at least one ticker and share amount."));
       return;
     }
+    setSavingPortfolio(true);
     try {
       const resolvedPositions = await Promise.all(pendingPositions.map(resolvePosition));
       const cleanPositions = resolvedPositions.map((position, index) => ({
@@ -1052,6 +1057,8 @@ export function Dashboard({
       setError(
         friendlyError(cause instanceof Error ? cause : new Error("Could not save portfolio"), t),
       );
+    } finally {
+      setSavingPortfolio(false);
     }
   }
 
@@ -1867,15 +1874,29 @@ export function Dashboard({
                 </div>
 
                 <button
-                  className={`button primary${saveConfirmation ? " is-saved" : ""}`}
+                  className={`button primary portfolio-save${savingPortfolio ? " is-saving" : saveConfirmation ? " is-saved" : ""}`}
                   type="submit"
-                  disabled={extracting || !positions.length}
+                  disabled={extracting || savingPortfolio || !positions.length}
+                  aria-busy={savingPortfolio}
                 >
-                  {saveConfirmation === "updated"
-                    ? t("Updated ✓")
-                    : saveConfirmation === "saved"
-                      ? t("Saved ✓")
-                      : t("Save changes")}
+                  {savingPortfolio ? (
+                    <>
+                      <Loader2 size={16} className="spinning" aria-hidden="true" />
+                      {t("Saving…")}
+                    </>
+                  ) : saveConfirmation === "updated" ? (
+                    <>
+                      <Check size={16} aria-hidden="true" className="save-check" />
+                      {t("Updated")}
+                    </>
+                  ) : saveConfirmation === "saved" ? (
+                    <>
+                      <Check size={16} aria-hidden="true" className="save-check" />
+                      {t("Saved")}
+                    </>
+                  ) : (
+                    t("Save changes")
+                  )}
                 </button>
                 {dirty && <p className="unsaved-state">{t("Unsaved changes")}</p>}
               </form>
