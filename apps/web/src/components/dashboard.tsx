@@ -1007,6 +1007,19 @@ export function Dashboard({
       return;
     }
     setSavingPortfolio(true);
+    // How many buys and sells this save writes to the history (new, changed or removed holdings).
+    const savedShares = new Map(
+      (portfolios.find((portfolio) => portfolio.id === editingId)?.portfolio_positions ?? []).map((position) => [
+        position.ticker.trim().toUpperCase(),
+        Number(position.shares) || 0,
+      ]),
+    );
+    const typedShares = new Map(
+      pendingPositions.map((position) => [position.ticker.trim().toUpperCase(), Number(position.shares) || 0]),
+    );
+    const trades =
+      [...typedShares].filter(([ticker, shares]) => shares !== (savedShares.get(ticker) ?? 0)).length +
+      [...savedShares].filter(([ticker, shares]) => shares > 0 && !typedShares.has(ticker)).length;
     try {
       const resolvedPositions = await Promise.all(pendingPositions.map(resolvePosition));
       const cleanPositions = resolvedPositions.map((position, index) => ({
@@ -1056,7 +1069,13 @@ export function Dashboard({
       setEditingId(saved.id);
       setSaveConfirmation(wasUpdating ? "updated" : "saved");
       setDirty(false);
-      setNotice(wasUpdating ? t("Portfolio updated.") : t("Portfolio saved."));
+      const saidSaved = wasUpdating ? t("Portfolio updated.") : t("Portfolio saved.");
+      setNotice(
+        trades
+          ? `${saidSaved} ${t(trades === 1 ? "1 trade added to Transactions." : "{count} trades added to Transactions.", { count: trades })}`
+          : saidSaved,
+      );
+      if (trades) void loadTransactionHistory(saved.id);
     } catch (cause) {
       setError(
         friendlyError(cause instanceof Error ? cause : new Error("Could not save portfolio"), t),

@@ -246,6 +246,19 @@ describe("Holdings table", () => {
     expect(window.localStorage.getItem("mpb.showAmounts")).toBe("0");
   });
 
+  it("says how many trades a save adds to Transactions", async () => {
+    render(<Dashboard initialTab="portfolio" email="owner@example.com" today="2026-10-23" />);
+    await screen.findByText("18.2");
+
+    // AAA goes from 10 to 15 shares: one buy goes into the history.
+    fireEvent.change(screen.getByLabelText("Quantity 1"), { target: { value: "15" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    expect(await screen.findByText(/Portfolio updated\. 1 trade added to Transactions\./)).toBeTruthy();
+    const history = vi.mocked(api).mock.calls.filter(([path]) => String(path).endsWith(`/api/portfolios/${portfolio.id}/transactions`));
+    expect(history.length).toBeGreaterThan(0);
+  });
+
   it("moves a row with the arrow keys on its handle", async () => {
     render(<Dashboard initialTab="portfolio" email="owner@example.com" today="2026-10-23" />);
     await screen.findByText("18.2");

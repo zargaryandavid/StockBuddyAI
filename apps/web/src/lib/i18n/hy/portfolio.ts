@@ -21,6 +21,8 @@ const portfolio: Record<string, string> = {
   "See analytics": "Տեսնել վերլուծությունը",
   // Future allocation
   "Future allocation": "Ապագա բաշխում",
+  "1 trade added to Transactions.": "1 գործարք ավելացվեց «Գործարքներ» բաժնում։",
+  "{count} trades added to Transactions.": "{count} գործարք ավելացվեց «Գործարքներ» բաժնում։",
   "Already in my holdings": "Արդեն իմ ակտիվներում է",
   "Add this past trade to the history only. Your holdings and average cost stay as they are.":
     "Ավելացնել այս անցյալ գործարքը միայն պատմության մեջ։ Ձեր ակտիվներն ու միջին արժեքը չեն փոխվի։",
