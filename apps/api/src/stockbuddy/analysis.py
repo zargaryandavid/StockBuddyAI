@@ -185,7 +185,7 @@ class AnalysisService:
             raise ValueError(f"{ticker} has no valid closing price near {as_of}")
 
         positions = {
-            row["ticker"].upper(): int(row["shares"])
+            row["ticker"].upper(): float(row["shares"])
             for row in portfolio.get("portfolio_positions", [])
         }
         marks: dict[str, float] = {}

@@ -56,7 +56,7 @@ export function SharedPortfolioView({ portfolio }: { portfolio: SharedPortfolio 
                     <strong>{row.ticker}</strong>
                     <span>{row.name ?? row.sector ?? ""}</span>
                   </th>
-                  <td>{Number(row.shares).toLocaleString("en-US")}</td>
+                  <td>{Number(row.shares).toLocaleString("en-US", { maximumFractionDigits: 6 })}</td>
                   <td>{row.price == null ? "—" : money(row.price, currency)}</td>
                   <td>{row.value == null ? "—" : money(row.value, currency)}</td>
                   <td>{row.value == null || !totals.total ? "—" : `${((row.value / totals.total) * 100).toFixed(1)}%`}</td>

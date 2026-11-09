@@ -7,7 +7,8 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 class PositionInput(BaseModel):
     ticker: str = Field(min_length=1, max_length=12)
-    shares: int = Field(ge=0)
+    # Fractional shares are allowed (e.g. 5.48), up to 6 decimal places.
+    shares: float = Field(ge=0, le=1e12)
     purchase_price: float | None = Field(default=None, ge=0)
     sector: str | None = Field(default=None, min_length=1, max_length=80)
     display_order: int | None = Field(default=None, ge=0)
@@ -139,11 +140,16 @@ class Portfolio(BaseModel):
 class PositionTransaction(BaseModel):
     ticker: str = Field(min_length=1, max_length=12)
     kind: Literal["buy", "sell"]
-    quantity: int = Field(gt=0)
+    quantity: float = Field(gt=0, le=1e12)
     price: float = Field(ge=0)
     transacted_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     # A past trade already reflected in the holdings: kept in the history only.
     history_only: bool = False
+
+    @field_validator("quantity")
+    @classmethod
+    def six_decimals_quantity(cls, value: float) -> float:
+        return round(value, 6)
 
     @field_validator("ticker")
     @classmethod

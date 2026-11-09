@@ -277,8 +277,8 @@ const portfolio: Record<string, string> = {
   // Warnings (static ones; position status)
   "Sector concentration exceeded: {sector} represents {share}% of the portfolio. Your configured limit is {limit}%.":
     "Ոլորտի կենտրոնացումը գերազանցված է՝ «{sector}» ոլորտը կազմում է պորտֆելի {share}%-ը։ Ձեր սահմանած սահմանաչափը {limit}% է։",
-  "Invalid quantity: enter a non-negative whole number.":
-    "Անվավեր քանակ՝ մուտքագրեք ոչ բացասական ամբողջ թիվ։",
+  "Invalid quantity: enter a number, 0 or more.":
+    "Անվավեր քանակ՝ մուտքագրեք 0 կամ ավելի մեծ թիվ։",
   "Invalid cost basis: average cost cannot be negative.":
     "Անվավեր ձեռքբերման արժեք՝ միջին գինը չի կարող բացասական լինել։",
   "Fundamentals deteriorating: lifecycle evidence indicates Decline.":
@@ -433,7 +433,7 @@ const portfolio: Record<string, string> = {
   Total: "Ընդամենը",
   "No transactions match this filter.": "Այս զտիչին համապատասխանող գործարքներ չկան։",
   "Enter a valid ticker symbol.": "Մուտքագրեք վավեր տիկեր։",
-  "Enter a whole number of shares above 0.": "Մուտքագրեք 0-ից մեծ ամբողջ թվով բաժնետոմսեր։",
+  "Enter a number of shares above 0, e.g. 5 or 5.48.": "Մուտքագրեք 0-ից մեծ բաժնետոմսերի քանակ, օր.՝ 5 կամ 5.48։",
   "Enter the price per share.": "Մուտքագրեք մեկ բաժնետոմսի գինը։",
   "Pick a date that is not in the future.": "Ընտրեք ամսաթիվ, որը ապագայում չէ։",
   "You don't hold {ticker} in this portfolio.": "Այս պորտֆելում {ticker} չունեք։",

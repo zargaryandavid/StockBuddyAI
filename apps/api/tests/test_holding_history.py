@@ -186,3 +186,17 @@ def test_edit_and_remove_a_transaction_through_the_database_functions():
         {"target_transaction_id": "22000000-0000-0000-0000-000000000001", "adjust_holdings": False},
     )
     assert refused.status_code == 422 and "enough shares" in refused.json()["detail"]
+
+
+def test_fractional_shares_are_kept_and_recorded():
+    assert PositionInput(ticker="VXUS", shares=5.48).shares == 5.48
+    before = [{"ticker": "VXUS", "shares": "5.480000", "purchase_price": 80}]
+    # 0.52 more shares bring the average to 80.8667: they cost about $90 each.
+    [buy] = holding_changes(before, [position("VXUS", 6, 80.866667)])
+    assert (buy["kind"], buy["quantity"]) == ("buy", 0.52)
+    assert abs(buy["price"] - 90) < 0.01
+    assert holding_changes(before, [position("VXUS", 3.25, 80)]) == [
+        {"ticker": "VXUS", "kind": "sell", "quantity": 2.23, "price": None},
+    ]
+    # A difference below a millionth of a share is no trade.
+    assert holding_changes(before, [position("VXUS", 5.4800001, 80)]) == []

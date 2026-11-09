@@ -64,8 +64,6 @@ const today: Record<string, string> = {
   "Choose a CSV file": "Ընտրեք CSV ֆայլ",
   "A positions export from Fidelity, Schwab, Vanguard, E*TRADE, Interactive Brokers and others, or any file with ticker and shares columns.":
     "Դիրքերի արտահանում Fidelity-ից, Schwab-ից, Vanguard-ից, E*TRADE-ից, Interactive Brokers-ից և այլն, կամ ցանկացած ֆայլ՝ տիկերի և բաժնետոմսերի սյունակներով։",
-  "{ticker}: {shares} shares rounded down to {whole}; MyPortfolioBuddy keeps whole shares.":
-    "{ticker}՝ {shares} բաժնետոմսը կլորացվել է մինչև {whole}. MyPortfolioBuddy-ն պահում է միայն ամբողջ բաժնետոմսեր։",
   "Line {line}: {reason}": "Տող {line}՝ {reason}",
   "Read as a {broker} export. Confirm the preview before importing.":
     "Կարդացվել է որպես {broker}-ի արտահանում։ Ներմուծելուց առաջ հաստատեք նախադիտումը։",

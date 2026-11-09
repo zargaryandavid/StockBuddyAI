@@ -14,10 +14,14 @@ describe("parsePortfolioCsv", () => {
     ]);
   });
 
-  it("rejects fractional shares", () => {
-    expect(() => parsePortfolioCsv("ticker,shares\nAAPL,1.5\n")).toThrow(
-      "non-negative whole number",
-    );
+  it("keeps fractional shares", () => {
+    expect(parsePortfolioCsv("ticker,shares\nAAPL,5.48\n")).toEqual([
+      { ticker: "AAPL", shares: 5.48 },
+    ]);
+  });
+
+  it("rejects negative shares", () => {
+    expect(() => parsePortfolioCsv("ticker,shares\nAAPL,-1\n")).toThrow("0 or more");
   });
 
   it("imports an optional purchase price", () => {

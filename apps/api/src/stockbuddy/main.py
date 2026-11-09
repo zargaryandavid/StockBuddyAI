@@ -1111,28 +1111,34 @@ def holding_changes(
     comes out as entered; fewer shares, or a removed holding, is a sell (priced later)."""
     old = {
         str(row["ticker"]).upper(): (
-            int(row.get("shares") or 0),
+            float(row.get("shares") or 0),
             float(row["purchase_price"]) if row.get("purchase_price") is not None else None,
         )
         for row in before
     }
     new = {
-        position.ticker.strip().upper(): (int(position.shares), position.purchase_price)
+        position.ticker.strip().upper(): (float(position.shares), position.purchase_price)
         for position in after
     }
     changes: list[dict[str, Any]] = []
     for ticker, (shares, cost) in new.items():
-        held, held_cost = old.get(ticker, (0, None))
-        if shares > held:
-            added = shares - held
+        held, held_cost = old.get(ticker, (0.0, None))
+        # Fractional shares: differences below a millionth of a share are no change.
+        if shares > held + 1e-6:
+            added = round(shares - held, 6)
             price = cost or 0.0
             if held and held_cost is not None and cost is not None:
                 implied = (cost * shares - held_cost * held) / added
                 price = implied if implied > 0 else cost
             changes.append({"ticker": ticker, "kind": "buy", "quantity": added, "price": price})
-        elif shares < held:
+        elif shares < held - 1e-6:
             changes.append(
-                {"ticker": ticker, "kind": "sell", "quantity": held - shares, "price": None}
+                {
+                    "ticker": ticker,
+                    "kind": "sell",
+                    "quantity": round(held - shares, 6),
+                    "price": None,
+                }
             )
     for ticker, (held, _cost) in old.items():
         if ticker not in new and held > 0:
@@ -1295,7 +1301,7 @@ async def add_position_transaction(
         )
         if matching is None:
             raise HTTPException(status_code=422, detail="Cannot sell a position not held")
-        if transaction.quantity > int(matching["shares"]):
+        if transaction.quantity > float(matching["shares"]) + 1e-6:
             raise HTTPException(status_code=422, detail="Sale exceeds the held quantity")
     return await repository.apply_transaction(token, portfolio_id, transaction)
 

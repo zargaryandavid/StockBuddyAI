@@ -213,7 +213,7 @@ export function TransactionsView({
                     <small>{names.get(item.ticker.toUpperCase())}</small>
                   )}
                 </span>
-                <span role="cell">{Number(item.quantity).toLocaleString("en-US")}</span>
+                <span role="cell">{Number(item.quantity).toLocaleString("en-US", { maximumFractionDigits: 6 })}</span>
                 <span role="cell">{money(Number(item.price), currency)}</span>
                 <strong role="cell" className={item.kind === "buy" ? "negative" : "positive"}>
                   {item.kind === "buy" ? "−" : "+"}
@@ -354,7 +354,7 @@ export function RecordDialog({
     const shares = Number(quantity);
     const each = Number(price);
     if (!/^[A-Z0-9.-]{1,12}$/.test(symbol)) return setError(t("Enter a valid ticker symbol."));
-    if (!(shares > 0) || !Number.isInteger(shares)) return setError(t("Enter a whole number of shares above 0."));
+    if (!(shares > 0)) return setError(t("Enter a number of shares above 0, e.g. 5 or 5.48."));
     if (!(each >= 0) || price === "") return setError(t("Enter the price per share."));
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today) return setError(t("Pick a date that is not in the future."));
     if (kind === "sell" && !historyOnly && !existing) {
@@ -362,7 +362,7 @@ export function RecordDialog({
       if (shares > Number(held.shares)) {
         return setError(
           t("You hold {shares} {ticker}; you can't sell more than that.", {
-            shares: Number(held.shares).toLocaleString("en-US"),
+            shares: Number(held.shares).toLocaleString("en-US", { maximumFractionDigits: 6 }),
             ticker: symbol,
           }),
         );
@@ -375,7 +375,8 @@ export function RecordDialog({
         {
           ticker: symbol,
           kind,
-          quantity: shares,
+          // Fractional shares are kept to 6 decimal places.
+          quantity: Math.round(shares * 1e6) / 1e6,
           price: each,
           transacted_at: `${date}T12:00:00Z`,
           ...(historyOnly && !existing ? { history_only: true } : {}),
@@ -435,7 +436,7 @@ export function RecordDialog({
                   <option key={holding.ticker} value={holding.ticker}>
                     {t("{ticker} · {shares} shares", {
                       ticker: holding.ticker,
-                      shares: Number(holding.shares).toLocaleString("en-US"),
+                      shares: Number(holding.shares).toLocaleString("en-US", { maximumFractionDigits: 6 }),
                     })}
                   </option>
                 ))}
@@ -464,11 +465,11 @@ export function RecordDialog({
                         ? t("{ticker} · {name} · {shares} shares", {
                             ticker: holding.ticker,
                             name: holding.name,
-                            shares: Number(holding.shares).toLocaleString("en-US"),
+                            shares: Number(holding.shares).toLocaleString("en-US", { maximumFractionDigits: 6 }),
                           })
                         : t("{ticker} · {shares} shares", {
                             ticker: holding.ticker,
-                            shares: Number(holding.shares).toLocaleString("en-US"),
+                            shares: Number(holding.shares).toLocaleString("en-US", { maximumFractionDigits: 6 }),
                           })}
                     </option>
                   ))}
@@ -491,7 +492,7 @@ export function RecordDialog({
           <div className="fire-dialog-row">
             <label>
               {t("Quantity")}
-              <input type="number" min="1" step="1" value={quantity} onChange={(event) => setQuantity(event.target.value)} />
+              <input type="number" min="0" step="any" value={quantity} onChange={(event) => setQuantity(event.target.value)} />
             </label>
             <label>
               {t("Price per share ({currency})", { currency })}
@@ -540,7 +541,7 @@ export function RecordDialog({
                       : "Receives {amount} · you hold {shares} {ticker} now",
                     {
                       amount: money(total, currency),
-                      shares: Number(held.shares).toLocaleString("en-US"),
+                      shares: Number(held.shares).toLocaleString("en-US", { maximumFractionDigits: 6 }),
                       ticker: held.ticker,
                     },
                   )
@@ -609,7 +610,7 @@ function RemoveDialog({
         <h2 id="remove-trade-title">{t("Remove this transaction?")}</h2>
         <p className="muted">
           {t(buy ? "Buy of {quantity} {ticker} at {price} on {date}." : "Sell of {quantity} {ticker} at {price} on {date}.", {
-            quantity: Number(transaction.quantity).toLocaleString("en-US"),
+            quantity: Number(transaction.quantity).toLocaleString("en-US", { maximumFractionDigits: 6 }),
             ticker: transaction.ticker,
             price: money(Number(transaction.price), currency),
             date: formatDate(transaction.transacted_at),

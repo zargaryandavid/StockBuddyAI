@@ -6,7 +6,7 @@ from hedge_fund.pipeline.execution import build_orders
 
 def recommendation_for(
     ticker: str,
-    shares: int,
+    shares: float,
     mark: float,
     equity: float,
     target_weight: float,
@@ -31,7 +31,8 @@ def recommendation_for(
 
     orders = build_orders(
         {ticker: effective_target},
-        {ticker: Position(ticker=ticker, shares=shares)},
+        # The order builder trades whole shares; a fraction of a share is left as it is.
+        {ticker: Position(ticker=ticker, shares=int(shares))},
         {ticker: mark},
         equity,
     )

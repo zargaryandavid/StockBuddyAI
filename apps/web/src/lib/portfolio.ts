@@ -136,8 +136,8 @@ export function parsePortfolioCsvPreview(
       errors.push(`Row ${index + 2}: invalid ticker`);
       return;
     }
-    if (!Number.isInteger(shares) || shares < 0) {
-      errors.push(`Row ${index + 2}: quantity must be a non-negative whole number`);
+    if (!Number.isFinite(shares) || shares < 0) {
+      errors.push(`Row ${index + 2}: quantity must be a number, 0 or more`);
       return;
     }
     if (purchasePrice !== null && (!Number.isFinite(purchasePrice) || purchasePrice < 0)) {

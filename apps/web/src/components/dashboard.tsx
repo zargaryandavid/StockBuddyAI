@@ -1770,7 +1770,7 @@ export function Dashboard({
                                 <span>{resolvingRows.includes(index) ? t("Finding…") : position.name || position.company_name || t("Company unavailable")}</span>
                               </div>
                             </div>
-                            <input aria-label={t("Quantity {number}", { number: index + 1 })} type="number" min="0" step="1" value={position.shares} onChange={(event) => updatePosition(index, { shares: Number(event.target.value.replace(/^0+(?=\d)/, "")) })} />
+                            <input aria-label={t("Quantity {number}", { number: index + 1 })} type="number" min="0" step="any" value={position.shares} onChange={(event) => updatePosition(index, { shares: Number(event.target.value.replace(/^0+(?=\d)/, "")) })} />
                             <input aria-label={t("Purchase price {number}", { number: index + 1 })} type="number" min="0" step="0.01" placeholder="—" value={position.purchase_price ?? ""} onChange={(event) => updatePosition(index, { purchase_price: event.target.value === "" ? null : Number(event.target.value) })} />
                             <span className="financial-cell" role="cell">{position.price == null ? <span className="data-state"><CircleAlert size={14} /> {t("Missing price")}</span> : <FlashValue value={position.price}>{money(position.price, baseCurrency)}</FlashValue>}</span>
                             <span className="financial-cell" role="cell" title={t("Price ÷ trailing 12-month EPS (SEC filings)")}>{position.is_etf_index ? t("N/A") : position.pe_ratio == null ? "—" : position.pe_ratio.toFixed(1)}</span>
@@ -2305,7 +2305,7 @@ export function Dashboard({
                         aria-label={t("New stock shares")}
                         type="number"
                         min="0"
-                        step="1"
+                        step="any"
                         value={draftPosition.shares}
                         onChange={(event) => {
                           const normalized = event.currentTarget.value.replace(
@@ -2373,27 +2373,19 @@ export function Dashboard({
                             (broker.rows.length > 0 && preview.errors.length > 0)
                           ) {
                             setCsvText("");
-                            // MyPortfolioBuddy keeps whole shares; say so when a file has fractions.
-                            const rounded = broker.rows.filter((row) => !Number.isInteger(row.shares));
                             setImportPreview({
                               positions: broker.rows
-                                .filter((row) => Math.floor(row.shares) > 0)
+                                .filter((row) => row.shares > 0)
                                 .map((row) => {
                                   // Class shares are BRK-B at Yahoo and the SEC.
                                   const ticker = /^[A-Z]+\.[A-Z]$/.test(row.ticker) ? row.ticker.replace(".", "-") : row.ticker;
-                                  const shares = Math.floor(row.shares);
+                                  // Fractional shares are kept, to 6 decimal places.
+                                  const shares = Math.round(row.shares * 1e6) / 1e6;
                                   return row.purchase_price == null
                                     ? { ticker, shares }
                                     : { ticker, shares, purchase_price: row.purchase_price };
                                 }),
                               errors: [
-                                ...rounded.map((row) =>
-                                  t("{ticker}: {shares} shares rounded down to {whole}; MyPortfolioBuddy keeps whole shares.", {
-                                    ticker: row.ticker,
-                                    shares: row.shares,
-                                    whole: Math.floor(row.shares),
-                                  }),
-                                ),
                                 ...broker.skipped.map((line) =>
                                 t("Line {line}: {reason}", {
                                   line: line.line,

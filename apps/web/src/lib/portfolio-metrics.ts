@@ -146,8 +146,8 @@ export function positionStatus(
   },
 ): { status: MyPortfolioBuddyStatus; warnings: string[] } {
   const warnings: string[] = [];
-  if (!Number.isInteger(Number(position.shares)) || Number(position.shares) < 0) {
-    warnings.push("Invalid quantity: enter a non-negative whole number.");
+  if (!Number.isFinite(Number(position.shares)) || Number(position.shares) < 0) {
+    warnings.push("Invalid quantity: enter a number, 0 or more.");
   }
   if (
     position.purchase_price != null &&
@@ -179,7 +179,7 @@ export function positionStatus(
   if (
     position.price == null ||
     position.resolve_error ||
-    !Number.isInteger(Number(position.shares))
+    !Number.isFinite(Number(position.shares))
   ) {
     return { status: "Insufficient Data", warnings };
   }
