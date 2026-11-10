@@ -37,10 +37,23 @@ _SECTOR_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 
+# Large companies whose SEC industry code points at the wrong sector (Visa files as "Business
+# Services", Alphabet and Meta as "Computer Programming"), so the GICS sector is used instead.
+_KNOWN_SECTORS: dict[str, str] = {
+    **dict.fromkeys(("V", "MA", "PYPL", "AXP", "FI", "FISV"), "Financials"),
+    **dict.fromkeys(
+        ("GOOGL", "GOOG", "META", "NFLX", "DIS", "CMCSA", "T", "VZ", "TMUS"),
+        "Communication Services",
+    ),
+    **dict.fromkeys(("COST", "WMT", "TGT", "DG", "DLTR"), "Consumer Staples"),
+}
+
+
 def classify_security(
     instrument_type: str | None,
     name: str | None,
     industry: str | None,
+    ticker: str | None = None,
 ) -> dict[str, str | None]:
     kind = (instrument_type or "").upper()
     label = (name or "").casefold()
@@ -68,7 +81,9 @@ def classify_security(
     pooled = asset_type in {"ETF", "Mutual Fund", "Closed-End Fund", "Trust", "Index"}
     return {
         "asset_type": asset_type,
-        "sector": "Not Applicable" if pooled else classify_sector(industry),
+        "sector": "Not Applicable"
+        if pooled
+        else _KNOWN_SECTORS.get((ticker or "").upper()) or classify_sector(industry),
         "industry": industry,
         "investment_category": investment_category(name) if pooled else None,
     }
@@ -93,7 +108,14 @@ def investment_category(name: str | None) -> str:
         ("International", ("international", "global", "emerging", "ex-us", "foreign")),
         ("Sector", ("sector", "technology", "health care", "financial", "energy")),
         ("Thematic", ("thematic", "innovation", "clean energy", "robotics", "artificial")),
-        ("Broad Market", ("s&p", "total market", "nasdaq", "dow", "broad market", "index")),
+        (
+            "Broad Market",
+            (
+                "s&p", "total market", "total stock", "stock market", "nasdaq", "qqq", "dow",
+                "russell", "broad market", "large cap", "mid cap", "small cap", "large-cap",
+                "mid-cap", "small-cap", "index",
+            ),
+        ),
     )
     for category, keywords in rules:
         if any(keyword in folded for keyword in keywords):

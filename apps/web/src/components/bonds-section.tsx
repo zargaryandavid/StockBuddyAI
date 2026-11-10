@@ -146,6 +146,7 @@ export function BondsSection({
   loading,
   currency,
   stocksValue = null,
+  bondFundsValue = 0,
   onEdit,
   onVisible,
 }: {
@@ -153,8 +154,10 @@ export function BondsSection({
   total: number;
   loading: boolean;
   currency: string;
-  /** Holdings value, for "you have X% in bonds now". */
+  /** Holdings value outside bond funds, for "you have X% in bonds now". */
   stocksValue?: number | null;
+  /** Bond funds held in the portfolio (BND, AGG…), on the bonds side of the mix. */
+  bondFundsValue?: number;
   onEdit: () => void;
   /** Called once when the section first scrolls into view. */
   onVisible?: () => void;
@@ -171,7 +174,11 @@ export function BondsSection({
             <ScrollText size={17} aria-hidden="true" />
             {t("Bonds")}
             <AgeInBondsInfo
-              bondShare={!loading && stocksValue != null && total + stocksValue > 0 ? total / (total + stocksValue) : null}
+              bondShare={
+                !loading && stocksValue != null && total + bondFundsValue + stocksValue > 0
+                  ? (total + bondFundsValue) / (total + bondFundsValue + stocksValue)
+                  : null
+              }
             />
           </h2>
           <p className="muted">

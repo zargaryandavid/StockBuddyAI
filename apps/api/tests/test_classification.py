@@ -67,3 +67,27 @@ def test_lifecycle_uses_documented_growth_evidence():
 
     assert phase == "Hyper Growth"
     assert evidence["revenue_growth"] == 0.25
+
+
+def test_known_companies_use_their_real_sector():
+    visa = classify_security("EQUITY", "VISA INC.", "Services-Business Services, NEC", "V")
+    assert visa["sector"] == "Financials"
+    meta = classify_security(
+        "EQUITY", "Meta Platforms, Inc.", "Services-Computer Programming, Data Processing", "META"
+    )
+    assert meta["sector"] == "Communication Services"
+    assert classify_security("EQUITY", "Costco", "Retail-Variety Stores", "COST")["sector"] == (
+        "Consumer Staples"
+    )
+
+
+def test_stock_market_funds_are_broad_market():
+    for name in (
+        "Vanguard Total Stock Market ETF",
+        "Invesco QQQ Trust",
+        "Avantis US Small Cap Value ETF",
+    ):
+        assert classify_security("ETF", name, None)["investment_category"] == "Broad Market"
+    assert classify_security("ETF", "iShares 20+ Year Treasury Bond ETF", None)[
+        "investment_category"
+    ] == "Fixed Income"

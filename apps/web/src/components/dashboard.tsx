@@ -394,6 +394,18 @@ export function Dashboard({
     () => calculatePortfolioMetrics(positions, totalCash),
     [positions, totalCash],
   );
+  // Bond funds (BND, AGG, TLT…) count on the bonds side of the mix, not as stocks.
+  const bondFundsValue = useMemo(
+    () =>
+      positions.reduce(
+        (sum, position) =>
+          position.investment_category === "Fixed Income"
+            ? sum + (metrics.byTicker.get(position.ticker)?.marketValue ?? 0)
+            : sum,
+        0,
+      ),
+    [positions, metrics],
+  );
   const cashGoal = cashTarget(minCash, book.min_cash_pct);
   const marketValue = metrics.holdingsValue;
   const costBasis = metrics.totalCostBasis;
@@ -1577,8 +1589,8 @@ export function Dashboard({
                     />
                     <SummaryCard label={t("Benchmark")} value={benchmarkLabel(benchmark, t)} />
                     <BondsVsStocksCard
-                      bonds={bondData.loading ? null : bondData.total}
-                      stocks={metrics.holdingsValue}
+                      bonds={bondData.loading ? null : bondData.total + bondFundsValue}
+                      stocks={metrics.holdingsValue - bondFundsValue}
                       onVisible={wantBonds}
                     />
                   </section>
@@ -1932,7 +1944,8 @@ export function Dashboard({
                 total={bondData.total}
                 loading={bondData.loading}
                 currency={baseCurrency}
-                stocksValue={metrics.holdingsValue}
+                stocksValue={metrics.holdingsValue - bondFundsValue}
+                bondFundsValue={bondFundsValue}
                 onEdit={() => {
                   setFireStart(null);
                   setActiveTab("fire");
@@ -2830,7 +2843,7 @@ function withOverview(position: Position, overview: Omit<Position, "shares">): P
   };
 }
 
-/** Bonds (from FIRE) against stocks and funds, as shares of the two together. */
+/** Bonds (from FIRE, plus bond funds held) against stocks and stock funds, as shares of the two. */
 function BondsVsStocksCard({
   bonds,
   stocks,

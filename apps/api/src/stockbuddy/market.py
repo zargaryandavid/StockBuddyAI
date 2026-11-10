@@ -121,7 +121,7 @@ class SecurityOverviewService:
             (facts.name if facts and facts.name else None) or provider_name or match["name"]
         )
         industry = (facts.industry or facts.sic_industry) if facts else None
-        classification = classify_security(instrument_type, security_name, industry)
+        classification = classify_security(instrument_type, security_name, industry, ticker)
         metrics: list[Any] = []
         metrics_loader = getattr(self.companies, "get_financial_metrics", None)
         if facts and metrics_loader:
