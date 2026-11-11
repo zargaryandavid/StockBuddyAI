@@ -287,7 +287,6 @@ describe("Dashboard navigation", () => {
     vi.mocked(api)
       .mockResolvedValueOnce([portfolio])
       .mockResolvedValueOnce(batch(overview))
-      .mockResolvedValueOnce(overview)
       .mockResolvedValueOnce(portfolio)
       .mockResolvedValueOnce([portfolio]);
     render(<Dashboard initialTab="portfolio" email="owner@example.com" today="2026-10-23" />);
@@ -299,6 +298,8 @@ describe("Dashboard navigation", () => {
     const saving = screen.getByRole("button", { name: "Saving…" });
     expect(saving).toHaveProperty("disabled", true);
     expect(await screen.findByRole("button", { name: "Updated" })).toBeTruthy();
+    // Holdings already on screen are not looked up again before saving: one lookup, at load.
+    expect(vi.mocked(api).mock.calls.filter(([path]) => String(path).startsWith("/api/securities/"))).toHaveLength(1);
 
     fireEvent.change(screen.getByRole("textbox", { name: "Cash" }), {
       target: { value: "100" },
@@ -661,4 +662,21 @@ describe("Dashboard navigation", () => {
     fireEvent.click(screen.getByRole("button", { name: "About the cash target" }));
     expect(screen.getByText(/Target 5%: \$0\.00/)).toBeTruthy();
   });
+
+  it("shows a confirmation only on the page it was made on, for a few seconds", async () => {
+    const { container } = render(<Dashboard initialTab="portfolio" email="owner@example.com" today="2026-10-23" />);
+    fireEvent.click(await screen.findByRole("button", { name: "+ Import CSV" }));
+    const input = container.querySelector<HTMLInputElement>('.file-drop input[type="file"]')!;
+    const file = new File(["ticker,shares\nAAPL,5.48\n"], "holdings.csv", { type: "text/csv" });
+    Object.defineProperty(file, "text", { value: () => Promise.resolve("ticker,shares\nAAPL,5.48\n") });
+    fireEvent.change(input, { target: { files: [file] } });
+    expect(await screen.findByText(/Confirm the preview before importing/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Today" }));
+    expect(screen.queryByText(/Confirm the preview before importing/)).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Portfolio" }));
+    // Still within its few seconds, it shows again on its own page, then goes away.
+    await waitFor(() => expect(screen.queryByText(/Confirm the preview before importing/)).toBeNull(), { timeout: 7_000 });
+  }, 10_000);
 });

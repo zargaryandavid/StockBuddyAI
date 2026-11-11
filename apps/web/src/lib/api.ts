@@ -176,7 +176,25 @@ async function withSession<T>(run: (token: string) => Promise<T>, token: string)
   }
 }
 
-export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+/**
+ * The same holdings asked for in a different order (Today sorts them, Portfolio keeps the
+ * table order) are one lookup: the list is sorted and de-duplicated, so the second page
+ * reuses the first page's answer instead of making the server look everything up again.
+ */
+function sameLookup(path: string, init?: RequestInit): RequestInit | undefined {
+  if (path.split("?")[0] !== "/api/securities/resolve-batch" || typeof init?.body !== "string") return init;
+  try {
+    const body = JSON.parse(init.body) as { queries?: unknown };
+    if (!Array.isArray(body.queries)) return init;
+    const queries = [...new Set(body.queries.map((query) => String(query).trim()).filter(Boolean))].sort();
+    return { ...init, body: JSON.stringify({ ...body, queries }) };
+  } catch {
+    return init;
+  }
+}
+
+export async function api<T>(path: string, rawInit?: RequestInit): Promise<T> {
+  const init = sameLookup(path, rawInit);
   const supabase = createClient();
   const { data } = await supabase.auth.getSession();
   if (!data.session) return endSession();

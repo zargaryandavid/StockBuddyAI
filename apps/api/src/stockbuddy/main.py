@@ -39,6 +39,7 @@ from stockbuddy.emails import invite as invite_email
 from stockbuddy.emails import link_shared as link_shared_email
 from stockbuddy.emails import welcome as welcome_email
 from stockbuddy.market import SecurityNotFoundError, SecurityOverviewService
+from stockbuddy.market_cache import CachedCompanies, MarketCache
 from stockbuddy.net_worth import router as net_worth_router
 from stockbuddy.personas import builtin_prompts
 from stockbuddy.portfolio_image import PortfolioImageError, PortfolioImageExtractor
@@ -128,8 +129,12 @@ async def apply_connections(app: FastAPI) -> None:
     app.state.analysis = AnalysisService(
         settings, repository, load_settings=repository.load_settings
     )
+    # SEC company data is kept in the database for a day, shared by every server copy.
     app.state.market = SecurityOverviewService(
-        EdgarClient(settings.sec_user_agent, cache_dir=settings.sec_cache_dir),
+        CachedCompanies(
+            EdgarClient(settings.sec_user_agent, cache_dir=settings.sec_cache_dir),
+            MarketCache(settings),
+        ),
         YahooPriceClient(),
     )
     app.state.reminders = ReminderService(settings, repository)
@@ -1002,6 +1007,10 @@ async def resolve_securities(
         raise HTTPException(status_code=422, detail=f"At most {MAX_RESOLVE_BATCH} holdings at once")
     market = request.app.state.market
     limit = asyncio.Semaphore(8)
+    # The company data for the whole portfolio in one database read.
+    preload = getattr(getattr(market, "companies", None), "preload", None)
+    if preload:
+        await asyncio.to_thread(preload, queries)
 
     async def one(query: str) -> dict:
         async with limit:

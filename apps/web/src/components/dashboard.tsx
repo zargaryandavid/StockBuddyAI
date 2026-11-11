@@ -122,6 +122,9 @@ const localDay = () => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 };
 
+/** How long a confirmation stays on screen. */
+const NOTICE_MS = 6_000;
+
 export function Dashboard({
   email,
   today: serverToday,
@@ -203,7 +206,26 @@ export function Dashboard({
   const [resolvingRows, setResolvingRows] = useState<number[]>([]);
   const [pendingDeleteId, setPendingDeleteId] = useState("");
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  // A confirmation ("Buy of 10 MU recorded…") belongs to the page it was made on: it shows
+  // there for a few seconds and is gone when another page opens.
+  const pageKey = `${activeTab}-${portfolioView}`;
+  const pageRef = useRef(pageKey);
+  useEffect(() => {
+    pageRef.current = pageKey;
+  }, [pageKey]);
+  const [noticeState, setNoticeState] = useState<{ text: string; page: string; at: number }>({ text: "", page: "", at: 0 });
+  const setNotice = useCallback((text: string) => {
+    setNoticeState({ text, page: pageRef.current, at: Date.now() });
+  }, []);
+  useEffect(() => {
+    if (!noticeState.text) return;
+    const timer = window.setTimeout(
+      () => setNoticeState((current) => (current.at === noticeState.at ? { text: "", page: "", at: 0 } : current)),
+      NOTICE_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [noticeState]);
+  const notice = noticeState.text && noticeState.page === pageKey ? noticeState.text : "";
   const [saveConfirmation, setSaveConfirmation] = useState<
     "saved" | "updated" | null
   >(null);
@@ -1020,7 +1042,29 @@ export function Dashboard({
       [...typedShares].filter(([ticker, shares]) => shares !== (savedShares.get(ticker) ?? 0)).length +
       [...savedShares].filter(([ticker, shares]) => shares > 0 && !typedShares.has(ticker)).length;
     try {
-      const resolvedPositions = await Promise.all(pendingPositions.map(resolvePosition));
+      // Holdings already on screen keep the data they were shown with; only new or changed
+      // symbols are looked up, all in one request (looking each one up again made saving slow).
+      const unresolved = [
+        ...new Set(
+          pendingPositions
+            .filter((position) => position.price == null || position.resolve_error)
+            .map((position) => position.ticker.trim()),
+        ),
+      ].sort();
+      const lookedUp = new Map<string, ResolveResult>();
+      if (unresolved.length) {
+        const answers = await api<ResolveResult[]>("/api/securities/resolve-batch", {
+          method: "POST",
+          body: JSON.stringify({ queries: unresolved, base_currency: baseCurrency }),
+        });
+        for (const item of answers) lookedUp.set(item.query, item);
+      }
+      const resolvedPositions = pendingPositions.map((position) => {
+        const answer = lookedUp.get(position.ticker.trim());
+        if (!answer) return position;
+        if (!answer.data) throw new Error(`${position.ticker.trim()}: ${answer.error ?? t("Market data is unavailable right now")}`);
+        return withOverview(position, answer.data);
+      });
       const cleanPositions = resolvedPositions.map((position, index) => ({
         ticker: position.ticker,
         shares: Number(position.shares),
@@ -1312,7 +1356,7 @@ export function Dashboard({
       )}
 
       {error && <div className="alert page-message" role="alert">{t(error)}</div>}
-      {notice && <div className="notice page-message">{t(notice)}</div>}
+      {notice && <div className="notice page-message" role="status">{t(notice)}</div>}
 
       {/* Restarts on every page change: a thin bar across the top while the page opens. */}
       <div className="page-progress" key={`${activeTab}-${portfolioView}`} aria-hidden="true" />

@@ -103,3 +103,19 @@ describe("where API calls go", () => {
     expect(apiBase()).toBe(process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000");
   });
 });
+
+describe("holdings lookups", () => {
+  it("are one request when two pages ask for the same holdings in a different order", async () => {
+    const lookup = (queries: string[]) =>
+      api("/api/securities/resolve-batch", {
+        method: "POST",
+        body: JSON.stringify({ queries, base_currency: "USD" }),
+      });
+    await Promise.all([lookup(["VOO", "AAPL", "MU"]), lookup(["AAPL", "MU", "VOO", "MU"])]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+      queries: ["AAPL", "MU", "VOO"],
+      base_currency: "USD",
+    });
+  });
+});
