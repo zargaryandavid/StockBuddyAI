@@ -450,6 +450,10 @@ const portfolio: Record<string, string> = {
   "Receives {amount} · you hold {shares} {ticker} now":
     "Ստանում եք {amount} · այժմ ունեք {shares} {ticker}",
   "Saving…": "Պահպանվում է…",
+  "Save": "Պահպանել",
+  "Ignore": "Չպահպանել",
+  "You have unsaved portfolio changes": "Պորտֆելում ունեք չպահպանված փոփոխություններ",
+  "Do you want to save them before you go?": "Ցանկանո՞ւմ եք պահպանել դրանք նախքան էջից դուրս գալը։",
   "Record buy": "Գրանցել գնումը",
   "Record sell": "Գրանցել վաճառքը",
 

@@ -6,6 +6,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
@@ -212,7 +213,18 @@ describe("Holdings table", () => {
     });
   });
 
-  it("shows cash typed on Portfolio on Today before it is saved, and says so", async () => {
+  it("asks to save cash typed on Portfolio before opening Today, then shows it there", async () => {
+    // The server keeps what is saved, so Today shows the new cash after saving.
+    const base = vi.mocked(api).getMockImplementation()!;
+    let saved = portfolio;
+    vi.mocked(api).mockImplementation(async (path: string, init?: RequestInit) => {
+      if (path === `/api/portfolios/${portfolio.id}` && init?.method === "PUT") {
+        saved = { ...portfolio, cash: JSON.parse(String(init.body)).cash };
+        return saved;
+      }
+      if (path === "/api/portfolios" && !init) return [saved];
+      return base(path, init);
+    });
     render(<Dashboard initialTab="portfolio" email="owner@example.com" today="2026-10-23" />);
     await screen.findByText("18.2");
     const amount = screen.getByRole("textbox", { name: "Cash" });
@@ -221,7 +233,10 @@ describe("Holdings table", () => {
     fireEvent.blur(amount);
 
     fireEvent.click(screen.getByRole("button", { name: "Today" }));
-    expect(await screen.findByText(/changes to .* that are not saved yet/)).toBeTruthy();
+    // Leaving with unsaved changes asks first; saving them opens Today with the new cash.
+    const dialog = await screen.findByRole("dialog", { name: "You have unsaved portfolio changes" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+    expect(await screen.findByRole("heading", { name: "Today" })).toBeTruthy();
     const card = (await screen.findAllByText("Cash")).map((node) => node.closest(".today-card")).find(Boolean);
     // Amounts start hidden on this device until the eye button shows them.
     await waitFor(() => expect(card?.textContent).toContain("•••••"));

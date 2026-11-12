@@ -208,6 +208,8 @@ export function Dashboard({
   const [error, setError] = useState("");
   // A confirmation ("Buy of 10 MU recorded…") belongs to the page it was made on: it shows
   // there for a few seconds and is gone when another page opens.
+  // What to do once the "unsaved portfolio changes" question is answered.
+  const [unsavedAction, setUnsavedAction] = useState<(() => void) | null>(null);
   const pageKey = `${activeTab}-${portfolioView}`;
   const pageRef = useRef(pageKey);
   useEffect(() => {
@@ -281,6 +283,16 @@ export function Dashboard({
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [loadingPortfolios, setLoadingPortfolios] = useState(true);
   const [dirty, setDirty] = useState(false);
+  // Refreshing or closing the tab with unsaved edits: the browser asks first (its own dialog).
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [actionRow, setActionRow] = useState<number | null>(null);
   // The holding whose ⋯ menu opened the Record transaction form.
@@ -1019,13 +1031,18 @@ export function Dashboard({
 
   async function createPortfolio(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    await savePortfolio();
+  }
+
+  /** Saves the portfolio being edited; true when it was saved. */
+  async function savePortfolio(): Promise<boolean> {
     const wasUpdating = Boolean(editingId);
     setError("");
     setNotice("");
     const pendingPositions = positions.filter((position) => position.ticker.trim());
     if (!pendingPositions.length) {
       setError(t("Add at least one ticker and share amount."));
-      return;
+      return false;
     }
     setSavingPortfolio(true);
     // How many buys and sells this save writes to the history (new, changed or removed holdings).
@@ -1119,13 +1136,43 @@ export function Dashboard({
           : saidSaved,
       );
       if (trades) void loadTransactionHistory(saved.id);
+      return true;
     } catch (cause) {
       setError(
         friendlyError(cause instanceof Error ? cause : new Error("Could not save portfolio"), t),
       );
+      return false;
     } finally {
       setSavingPortfolio(false);
     }
+  }
+
+  /**
+   * Runs a step that would lose unsaved portfolio edits (opening another page from the
+   * Portfolio editor, another portfolio, signing out) only after asking: Save or Ignore.
+   */
+  function guardUnsaved(action: () => void, { fromEditorOnly = false } = {}) {
+    const onEditor = activeTab === "portfolio" && portfolioView === "current";
+    if (!dirty || (fromEditorOnly && !onEditor)) {
+      action();
+      return;
+    }
+    setUnsavedAction(() => action);
+  }
+
+  async function saveThenContinue() {
+    const next = unsavedAction;
+    setUnsavedAction(null);
+    if ((await savePortfolio()) && next) next();
+  }
+
+  function ignoreThenContinue() {
+    const next = unsavedAction;
+    setUnsavedAction(null);
+    const saved = portfolios.find((portfolio) => portfolio.id === editingId);
+    if (saved) openPortfolio(saved);
+    else startNewPortfolio();
+    next?.();
   }
 
   async function deletePortfolio(portfolio: Portfolio) {
@@ -1168,12 +1215,12 @@ export function Dashboard({
 
   return (
     <main className="app-shell simple-shell">
-      <AppHeader email={email} onSignOut={signOut} onOpenProfile={() => setShowProfile(true)}>
+      <AppHeader email={email} onSignOut={() => guardUnsaved(() => void signOut())} onOpenProfile={() => setShowProfile(true)}>
         <button
           type="button"
           className={activeTab === "today" ? "active" : ""}
           aria-current={activeTab === "today" ? "page" : undefined}
-          onClick={() => setActiveTab("today")}
+          onClick={() => guardUnsaved(() => setActiveTab("today"), { fromEditorOnly: true })}
         >
           <Home size={16} aria-hidden="true" />
           {t("Today")}
@@ -1182,10 +1229,12 @@ export function Dashboard({
           type="button"
           className={activeTab === "fire" ? "active" : ""}
           aria-current={activeTab === "fire" ? "page" : undefined}
-          onClick={() => {
-            setFireStart(null);
-            setActiveTab("fire");
-          }}
+          onClick={() =>
+            guardUnsaved(() => {
+              setFireStart(null);
+              setActiveTab("fire");
+            }, { fromEditorOnly: true })
+          }
         >
           <Flame size={16} aria-hidden="true" />
           FIRE
@@ -1217,6 +1266,7 @@ export function Dashboard({
             className={activeTab === "portfolio" && portfolioView === "transactions" ? "active" : ""}
             aria-current={activeTab === "portfolio" && portfolioView === "transactions" ? "page" : undefined}
             onClick={() => {
+              // Analytics and Transactions are part of Portfolio: edits stay on screen, no question.
               setActiveTab("portfolio");
               setPortfolioView("transactions");
               void loadTransactionHistory(selectedId);
@@ -1229,7 +1279,7 @@ export function Dashboard({
             type="button"
             className={activeTab === "test" ? "active" : ""}
             aria-current={activeTab === "test" ? "page" : undefined}
-            onClick={() => setActiveTab("test")}
+            onClick={() => guardUnsaved(() => setActiveTab("test"), { fromEditorOnly: true })}
           >
             <Bot size={15} aria-hidden="true" />
             {t("Ask Buddy")}
@@ -1238,7 +1288,7 @@ export function Dashboard({
             type="button"
             className={activeTab === "growth" ? "active" : ""}
             aria-current={activeTab === "growth" ? "page" : undefined}
-            onClick={() => setActiveTab("growth")}
+            onClick={() => guardUnsaved(() => setActiveTab("growth"), { fromEditorOnly: true })}
           >
             <TrendingUp size={15} aria-hidden="true" />
             {t("Growth calculator")}
@@ -1247,7 +1297,7 @@ export function Dashboard({
             type="button"
             className={activeTab === "allocation" ? "active" : ""}
             aria-current={activeTab === "allocation" ? "page" : undefined}
-            onClick={() => setActiveTab("allocation")}
+            onClick={() => guardUnsaved(() => setActiveTab("allocation"), { fromEditorOnly: true })}
           >
             <PieChart size={15} aria-hidden="true" />
             {t("Future allocation")}
@@ -1257,7 +1307,7 @@ export function Dashboard({
           type="button"
           className={activeTab === "assets" ? "active" : ""}
           aria-current={activeTab === "assets" ? "page" : undefined}
-          onClick={() => setActiveTab("assets")}
+          onClick={() => guardUnsaved(() => setActiveTab("assets"), { fromEditorOnly: true })}
         >
           <Building2 size={16} aria-hidden="true" />
           {t("Assets")}
@@ -1266,7 +1316,7 @@ export function Dashboard({
           type="button"
           className={activeTab === "wishlist" ? "active" : ""}
           aria-current={activeTab === "wishlist" ? "page" : undefined}
-          onClick={() => setActiveTab("wishlist")}
+          onClick={() => guardUnsaved(() => setActiveTab("wishlist"), { fromEditorOnly: true })}
         >
           <Sparkles size={16} aria-hidden="true" />
           {t("Wishlist")}
@@ -1275,7 +1325,7 @@ export function Dashboard({
           type="button"
           className={activeTab === "education" ? "active" : ""}
           aria-current={activeTab === "education" ? "page" : undefined}
-          onClick={() => setActiveTab("education")}
+          onClick={() => guardUnsaved(() => setActiveTab("education"), { fromEditorOnly: true })}
         >
           <GraduationCap size={16} aria-hidden="true" />
           {t("Education")}
@@ -1284,7 +1334,7 @@ export function Dashboard({
           type="button"
           className={activeTab === "support" ? "active" : ""}
           aria-current={activeTab === "support" ? "page" : undefined}
-          onClick={() => setActiveTab("support")}
+          onClick={() => guardUnsaved(() => setActiveTab("support"), { fromEditorOnly: true })}
         >
           <Heart size={16} aria-hidden="true" />
           {t("Support us")}
@@ -1357,6 +1407,33 @@ export function Dashboard({
 
       {error && <div className="alert page-message" role="alert">{t(error)}</div>}
       {notice && <div className="notice page-message" role="status">{t(notice)}</div>}
+      {unsavedAction && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setUnsavedAction(null);
+          }}
+        >
+          <section className="add-holding-modal unsaved-dialog" role="dialog" aria-modal="true" aria-labelledby="unsaved-title">
+            <div className="modal-heading">
+              <h2 id="unsaved-title">{t("You have unsaved portfolio changes")}</h2>
+              <button type="button" aria-label={t("Close")} onClick={() => setUnsavedAction(null)}>
+                ×
+              </button>
+            </div>
+            <p className="muted">{t("Do you want to save them before you go?")}</p>
+            <div className="unsaved-actions">
+              <button type="button" className="button" onClick={ignoreThenContinue}>
+                {t("Ignore")}
+              </button>
+              <button type="button" className="button primary" onClick={() => void saveThenContinue()} autoFocus>
+                {t("Save")}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {/* Restarts on every page change: a thin bar across the top while the page opens. */}
       <div className="page-progress" key={`${activeTab}-${portfolioView}`} aria-hidden="true" />
@@ -1561,6 +1638,16 @@ export function Dashboard({
                           }}
                         >
                           <Plus size={16} aria-hidden="true" />
+                        </button>
+                      )}
+                      {dirty && (
+                        <button
+                          type="submit"
+                          className="button primary cash-save"
+                          disabled={savingPortfolio}
+                          aria-busy={savingPortfolio || undefined}
+                        >
+                          {savingPortfolio ? t("Saving…") : t("Save")}
                         </button>
                       )}
                     </span>
@@ -1990,10 +2077,12 @@ export function Dashboard({
                 currency={baseCurrency}
                 stocksValue={metrics.holdingsValue - bondFundsValue}
                 bondFundsValue={bondFundsValue}
-                onEdit={() => {
-                  setFireStart(null);
-                  setActiveTab("fire");
-                }}
+                onEdit={() =>
+                  guardUnsaved(() => {
+                    setFireStart(null);
+                    setActiveTab("fire");
+                  })
+                }
                 onVisible={wantBonds}
               />
 
@@ -2006,7 +2095,9 @@ export function Dashboard({
                         <button
                           type="button"
                           className={portfolio.id === selectedId ? "selected" : ""}
-                          onClick={() => openPortfolio(portfolio)}
+                          onClick={() => {
+                            if (portfolio.id !== editingId) guardUnsaved(() => openPortfolio(portfolio));
+                          }}
                         >
                           <strong>{portfolio.name}</strong>
                           <span>{t(portfolio.portfolio_positions.length === 1 ? "{count} holding" : "{count} holdings", { count: portfolio.portfolio_positions.length })}</span>
@@ -2047,7 +2138,7 @@ export function Dashboard({
                   <button
                     type="button"
                     className="button new-portfolio"
-                    onClick={startNewPortfolio}
+                    onClick={() => guardUnsaved(startNewPortfolio)}
                   >
                     {t("+ Create new portfolio")}
                   </button>
@@ -2063,8 +2154,10 @@ export function Dashboard({
                 onSelectPortfolio={(portfolioId) => {
                   const portfolio = portfolios.find((item) => item.id === portfolioId);
                   if (portfolio) {
-                    openPortfolio(portfolio);
-                    void loadTransactionHistory(portfolio.id);
+                    guardUnsaved(() => {
+                      openPortfolio(portfolio);
+                      void loadTransactionHistory(portfolio.id);
+                    });
                   }
                 }}
                 transactions={transactions}
@@ -2109,7 +2202,7 @@ export function Dashboard({
                   const portfolio = portfolios.find(
                     (item) => item.id === portfolioId,
                   );
-                  if (portfolio) openPortfolio(portfolio);
+                  if (portfolio) guardUnsaved(() => openPortfolio(portfolio));
                   if (book.use_transaction_history_analytics) {
                     void loadTransactionHistory(portfolioId);
                   }

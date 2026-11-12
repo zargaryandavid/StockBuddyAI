@@ -679,4 +679,39 @@ describe("Dashboard navigation", () => {
     // Still within its few seconds, it shows again on its own page, then goes away.
     await waitFor(() => expect(screen.queryByText(/Confirm the preview before importing/)).toBeNull(), { timeout: 7_000 });
   }, 10_000);
+
+  it("shows Save beside Cash after a change, and asks Save or Ignore before leaving the page", async () => {
+    const portfolio = { id: "portfolio-1", name: "My portfolio", cash: 0, portfolio_positions: [{ ticker: "AAPL", shares: 1 }] };
+    const overview = { ticker: "AAPL", name: "Apple Inc.", price: 120, growth: 5, sector: "Technology" };
+    vi.mocked(api).mockImplementation(async (path: string) => {
+      if (path === "/api/portfolios") return [portfolio];
+      if (path.startsWith("/api/securities/resolve-batch")) return batch(overview);
+      if (path === "/api/portfolios/portfolio-1") return portfolio;
+      return [];
+    });
+    render(<Dashboard initialTab="portfolio" email="owner@example.com" today="2026-10-23" />);
+    await screen.findByText("Apple Inc.");
+    expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Cash" }), { target: { value: "500" } });
+    expect(screen.getByRole("button", { name: "Save" })).toBeTruthy();
+
+    // Ignore: the edit is dropped and the other page opens.
+    fireEvent.click(screen.getByRole("button", { name: "Today" }));
+    const dialog = await screen.findByRole("dialog", { name: "You have unsaved portfolio changes" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Ignore" }));
+    expect(await screen.findByRole("heading", { name: "Today" })).toBeTruthy();
+    expect(vi.mocked(api).mock.calls.some(([path, init]) => path === "/api/portfolios/portfolio-1" && init?.method === "PUT")).toBe(false);
+
+    // Save: the change is saved first, then the other page opens.
+    fireEvent.click(screen.getByRole("button", { name: "Portfolio" }));
+    await waitFor(() => expect((screen.getByRole("textbox", { name: "Cash" }) as HTMLInputElement).value).toBe("0"));
+    fireEvent.change(screen.getByRole("textbox", { name: "Cash" }), { target: { value: "700" } });
+    fireEvent.click(screen.getByRole("button", { name: "Wishlist" }));
+    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(vi.mocked(api).mock.calls.some(([path, init]) => path === "/api/portfolios/portfolio-1" && init?.method === "PUT")).toBe(true),
+    );
+    expect(await screen.findByRole("heading", { name: "Wishlist" })).toBeTruthy();
+  }, 15_000);
 });
