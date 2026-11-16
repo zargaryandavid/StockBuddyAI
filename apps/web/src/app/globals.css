@@ -3486,6 +3486,9 @@ button.today-row:hover { background: var(--row-hover); }
 .holdings-heatmap { min-height: 0; }
 .heatmap-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem 1rem; margin-bottom: 0.6rem; }
 .heatmap-heading h2 { display: flex; align-items: center; gap: 0.45rem; margin: 0; font-size: var(--text-md); }
+.heatmap-total { display: inline-flex; align-items: baseline; gap: 0.45rem; margin-right: auto; font-variant-numeric: tabular-nums; }
+.heatmap-total strong { font-size: var(--text-md); }
+.heatmap-total span { font-size: var(--text-sm); font-weight: 600; }
 .heatmap-legend { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--muted); font-size: var(--text-xs); }
 .heatmap-scale { width: 7rem; height: 0.55rem; border-radius: 999px; background: linear-gradient(90deg, rgb(196, 36, 46), rgb(138, 147, 150), rgb(27, 122, 61)); }
 .heatmap-frame { position: relative; width: 100%; min-height: 240px; overflow: hidden; border-radius: 8px; background: #1f2a24; }

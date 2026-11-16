@@ -7,7 +7,7 @@ import { ShimmerLines } from "@/components/shimmer";
 import { useT } from "@/lib/i18n/client";
 import { money, signedMoney } from "@/lib/portfolio-metrics";
 import { HIDDEN_AMOUNT } from "@/lib/privacy";
-import type { HoldingTile } from "@/lib/today";
+import { holdingsDayTotal, type HoldingTile } from "@/lib/today";
 import { changeColor, squarify, type Box } from "@/lib/treemap";
 
 /** Height of a sector's name strip above its boxes, in pixels. */
@@ -88,6 +88,7 @@ export function HoldingsHeatmap({
     () => (tiles?.length && width ? layout(tiles, width, height) : []),
     [tiles, width, height],
   );
+  const total = useMemo(() => (tiles?.length ? holdingsDayTotal(tiles) : null), [tiles]);
   const pct = (value: number | null) => (value == null ? "—" : `${value > 0 ? "+" : ""}${value.toFixed(2)}%`);
 
   return (
@@ -97,6 +98,18 @@ export function HoldingsHeatmap({
           <LayoutGrid size={17} aria-hidden="true" />
           {t("Your holdings today")}
         </h2>
+        {total && (
+          <span
+            className={`heatmap-total ${total.change >= 0 ? "positive" : "negative"}`}
+            aria-label={t("All holdings today: {amount} ({percent})", {
+              amount: hidden ? HIDDEN_AMOUNT : signedMoney(total.change, currency),
+              percent: pct(total.pct),
+            })}
+          >
+            <strong>{hidden ? HIDDEN_AMOUNT : signedMoney(total.change, currency)}</strong>
+            <span>{pct(total.pct)}</span>
+          </span>
+        )}
         <span className="heatmap-legend" aria-hidden="true">
           <span>−3%</span>
           <span className="heatmap-scale" />

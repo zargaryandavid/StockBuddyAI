@@ -309,6 +309,15 @@ export type HoldingTile = {
   impact: number | null;
 };
 
+/** Today's gain or loss across all holdings, in money and as a percent of yesterday's value. */
+export function holdingsDayTotal(tiles: HoldingTile[]): { change: number; pct: number } | null {
+  const known = tiles.filter((tile) => tile.impact != null);
+  if (!known.length) return null;
+  const change = known.reduce((sum, tile) => sum + (tile.impact ?? 0), 0);
+  const before = known.reduce((sum, tile) => sum + tile.value, 0) - change;
+  return { change, pct: before > 0 ? (change / before) * 100 : 0 };
+}
+
 function knownSector(sector: string | null | undefined) {
   const name = sector?.trim();
   return !name || name === "Unknown" || name === "Not Applicable" ? "Other" : name;

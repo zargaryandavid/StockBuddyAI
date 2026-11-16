@@ -9,6 +9,7 @@ import {
   cashFlowsBetween,
   changeSinceLast,
   holdingTiles,
+  holdingsDayTotal,
   portfolioSnapshot,
   todayMovers,
   upcomingReports,
@@ -193,5 +194,19 @@ describe("holdingTiles", () => {
       ["VOO", "Funds", 500, -0.2, -1],
       ["ODD", "Other", 30, null, null],
     ]);
+  });
+});
+
+describe("holdingsDayTotal", () => {
+  it("adds today's moves and gives the percent of yesterday's value", () => {
+    const total = holdingsDayTotal([
+      { ticker: "VOO", name: null, sector: "Funds", value: 9_800, pct: -2, impact: -200 },
+      { ticker: "UNH", name: null, sector: "Health Care", value: 2_100, pct: 5, impact: 100 },
+      // No price move known: left out of both the change and the percent.
+      { ticker: "SPCX", name: null, sector: "Other", value: 5_000, pct: null, impact: null },
+    ]);
+    expect(total?.change).toBe(-100);
+    expect(total?.pct).toBeCloseTo((-100 / 12_000) * 100, 6);
+    expect(holdingsDayTotal([{ ticker: "X", name: null, sector: "Other", value: 1, pct: null, impact: null }])).toBeNull();
   });
 });

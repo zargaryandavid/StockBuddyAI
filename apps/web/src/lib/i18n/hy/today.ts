@@ -207,6 +207,7 @@ const today: Record<string, string> = {
   "Read it on SEC.gov": "Կարդալ SEC.gov-ում",
   "{amount} from the day before": "{amount} նախորդ օրվա համեմատ",
   "Your holdings today": "Ձեր ակտիվներն այսօր",
+  "All holdings today: {amount} ({percent})": "Բոլոր ակտիվներն այսօր՝ {amount} ({percent})",
   Worth: "Արժեքը",
   Funds: "Ֆոնդեր",
   "Show amounts": "Ցույց տալ գումարները",
