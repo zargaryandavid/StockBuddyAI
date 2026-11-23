@@ -25,6 +25,9 @@ export type FireEntry = {
   /** Bonds: how many, and the price of one; face value = quantity × unit_price. */
   quantity?: number | null;
   unit_price?: number | null;
+  /** Roth IRA: money put in during contributed_year, apart from the regular contributions. */
+  contributed?: number | null;
+  contributed_year?: number | null;
   note: string | null;
   /** Rental income: the asset that earns it. */
   asset_id?: string | null;

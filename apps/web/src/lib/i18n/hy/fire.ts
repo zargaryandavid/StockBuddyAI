@@ -238,6 +238,9 @@ const fire: Record<string, string> = {
   "Enter the market value (zero or more), or leave it blank.":
     "Նշեք շուկայական արժեքը (զրո կամ ավելի) կամ թողեք դատարկ։",
   "Enter the balance (zero or more).": "Նշեք մնացորդը (զրո կամ ավելի)։",
+  "Put in this year (optional)": "Այս տարի ներդրված (ըստ ցանկության)",
+  "Counts towards this year's IRA limit, with any monthly contributions.": "Հաշվվում է այս տարվա IRA սահմանաչափի մեջ՝ ամսական ներդրումների հետ միասին։",
+  "Enter what you put in this year (zero or more), or leave it blank.": "Նշեք այս տարի ներդրված գումարը (զրո կամ ավելի) կամ թողեք դատարկ։",
   "Enter a rate between 0% and 100%.": "Նշեք տոկոսադրույք 0%-ից 100% միջակայքում։",
   "Enter an amount of zero or more.": "Նշեք զրո կամ ավելի գումար։",
   "Pick the date.": "Ընտրեք ամսաթիվը։",

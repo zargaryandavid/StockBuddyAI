@@ -156,6 +156,8 @@ type Draft = {
   yield_pct: string;
   quantity: string;
   unit_price: string;
+  /** Roth IRA: put in this year, outside the regular contributions. */
+  contributed: string;
   note: string;
   /** Rental income: an existing asset's id, or "new" to create one from this entry. */
   asset_id: string;
@@ -178,6 +180,7 @@ function newDraft(kind: FireKind, today: string, currency: string): Draft {
     yield_pct: "",
     quantity: "",
     unit_price: "",
+    contributed: "",
     note: "",
     asset_id: "new",
     asset_type: "residential",
@@ -185,7 +188,7 @@ function newDraft(kind: FireKind, today: string, currency: string): Draft {
   };
 }
 
-function draftFrom(entry: FireEntry): Draft {
+function draftFrom(entry: FireEntry, today: string): Draft {
   return {
     id: entry.id,
     kind: entry.kind,
@@ -200,6 +203,11 @@ function draftFrom(entry: FireEntry): Draft {
     yield_pct: entry.yield_pct == null ? "" : String(entry.yield_pct),
     quantity: entry.quantity == null ? "" : String(Number(entry.quantity)),
     unit_price: entry.unit_price == null ? "" : String(Number(entry.unit_price)),
+    // Last year's deposit doesn't count towards this year's limit.
+    contributed:
+      entry.contributed != null && entry.contributed_year === Number(today.slice(0, 4))
+        ? String(Number(entry.contributed))
+        : "",
     note: entry.note ?? "",
     asset_id: entry.asset_id ?? "new",
     asset_type: "residential",
@@ -237,6 +245,9 @@ export function draftProblem(draft: Draft, t: Translate = translator("en")): str
     !(Number(draft.market_value) >= 0)
   ) {
     return t("Enter the market value (zero or more), or leave it blank.");
+  }
+  if (category.key === "roth_ira" && draft.contributed !== "" && !(Number(draft.contributed) >= 0)) {
+    return t("Enter what you put in this year (zero or more), or leave it blank.");
   }
   if (category.yields) {
     if (category.yields === "balance" && (draft.principal === "" || !(Number(draft.principal) >= 0))) {
@@ -487,6 +498,9 @@ export function FireDashboard({
       yield_pct: category.yields ? yieldPct : null,
       quantity: category.yields === "face" ? Number(draft.quantity) : null,
       unit_price: category.yields === "face" ? Number(draft.unit_price) : null,
+      contributed: category.key === "roth_ira" && Number(draft.contributed) > 0 ? Number(draft.contributed) : null,
+      contributed_year:
+        category.key === "roth_ira" && Number(draft.contributed) > 0 ? Number(today.slice(0, 4)) : null,
       note: draft.note.trim() || null,
       asset_id: category.rental && draft.asset_id !== "new" ? draft.asset_id : null,
       new_asset:
@@ -784,7 +798,7 @@ export function FireDashboard({
                           <button
                             type="button"
                             aria-label={t("Edit {name}", { name: entry.name })}
-                            onClick={() => setDraft(draftFrom(entry))}
+                            onClick={() => setDraft(draftFrom(entry, today))}
                           >
                             <Pencil size={15} aria-hidden="true" />
                           </button>
@@ -1781,6 +1795,20 @@ function EntryDialog({
                     value={draft.principal}
                     onChange={(event) => set({ principal: cleanNumberInput(event.target) })}
                   />
+                </label>
+              )}
+              {category.key === "roth_ira" && (
+                <label>
+                  {t("Put in this year (optional)")}
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0"
+                    value={draft.contributed}
+                    onChange={(event) => set({ contributed: cleanNumberInput(event.target) })}
+                  />
+                  <small className="muted">{t("Counts towards this year's IRA limit, with any monthly contributions.")}</small>
                 </label>
               )}
               <label>

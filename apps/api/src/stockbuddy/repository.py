@@ -39,7 +39,7 @@ _REMINDER_SELECT = (
 )
 _FIRE_ENTRY_SELECT = (
     "id,kind,category,name,amount,currency,frequency,starts_on,ends_on,principal,"
-    "yield_pct,quantity,unit_price,note,asset_id,created_at,updated_at"
+    "yield_pct,quantity,unit_price,contributed,contributed_year,note,asset_id,created_at,updated_at"
 )
 
 _WISH_SELECT = "id,list,text,done,position,created_at,updated_at"

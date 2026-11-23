@@ -82,8 +82,13 @@ export function babySteps({
   const { limit, base, older } = iraLimit(thisYear, age);
   const year = thisYear;
   const roth = balance("roth_ira");
+  // Money put straight into a Roth account this year, as entered on the account itself.
+  const deposited = entries
+    .filter((entry) => entry.kind === "income" && entry.category === "roth_ira")
+    .filter((entry) => entry.contributed_year === thisYear)
+    .reduce((sum, entry) => sum + (toBase(Number(entry.contributed) || 0, entry.currency, rates, baseCurrency) ?? 0), 0);
   // Every Roth contribution paid this calendar year, past and still to come.
-  const contributions = entries
+  const contributions = deposited + entries
     .filter((entry) => entry.kind === "expense" && categoryFor("expense", entry.category).into === "roth_ira")
     .reduce(
       (sum, entry) =>

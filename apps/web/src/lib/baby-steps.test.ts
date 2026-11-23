@@ -110,4 +110,20 @@ describe("Roth contributions from pay", () => {
     });
     expect(roth).toMatchObject({ done: false, contributions: 0 });
   });
+
+  it("adds what was put into the account this year, but not last year's deposit", () => {
+    const [, roth] = babySteps({
+      entries: [
+        entry({ name: "Roth", category: "roth_ira", principal: 2000, contributed: 2000, contributed_year: 2026 }),
+        entry({ name: "Old Roth", category: "roth_ira", principal: 9000, contributed: 6000, contributed_year: 2025 }),
+        // $500 a month from September: Sep–Dec = $2,000.
+        entry({ kind: "expense", category: "roth_contribution", amount: 500, starts_on: "2026-09-01" }),
+      ],
+      today: "2026-11-16",
+      stocks: 0,
+      bonds: 0,
+      age: 30,
+    });
+    expect(roth).toMatchObject({ contributions: 4000, have: 11000, done: false });
+  });
 });

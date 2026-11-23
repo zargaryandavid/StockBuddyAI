@@ -295,6 +295,9 @@ class FireEntryInput(BaseModel):
     yield_pct: float | None = Field(default=None, ge=0, le=100)
     quantity: float | None = Field(default=None, ge=0)
     unit_price: float | None = Field(default=None, ge=0)
+    # Roth IRA: money put in during contributed_year outside the regular contributions.
+    contributed: float | None = Field(default=None, ge=0, le=1e9)
+    contributed_year: int | None = Field(default=None, ge=2000, le=2100)
     note: str | None = Field(default=None, max_length=500)
     # Rental income: the asset that earns it, or a new asset to create and link.
     asset_id: UUID | None = None
@@ -333,6 +336,11 @@ class FireEntryInput(BaseModel):
         if self.quantity is not None and self.unit_price is not None:
             # Face value is always quantity × price per bond.
             self.principal = round(self.quantity * self.unit_price, 2)
+        if self.category != "roth_ira" or not self.contributed:
+            self.contributed = None
+            self.contributed_year = None
+        elif self.contributed_year is None:
+            raise ValueError("Say which year the Roth IRA money was put in")
         return self
 
 
