@@ -12,9 +12,10 @@ import logging
 import re
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
-import anthropic
+if TYPE_CHECKING:
+    import anthropic
 
 logger = logging.getLogger(__name__)
 
@@ -98,8 +99,21 @@ def basic_matches(text: str, existing: list[dict[str, Any]]) -> list[WishMatch]:
 
 
 class WishMatcher:
-    def __init__(self, client: anthropic.AsyncAnthropic | None) -> None:
-        self.client = client
+    def __init__(
+        self, client: anthropic.AsyncAnthropic | None = None, api_key: str | None = None
+    ) -> None:
+        # With only a key, the Anthropic library loads on the first wish check instead of
+        # when the server starts, which keeps cold starts short.
+        self._client = client
+        self._api_key = api_key
+
+    @property
+    def client(self) -> anthropic.AsyncAnthropic | None:
+        if self._client is None and self._api_key:
+            import anthropic
+
+            self._client = anthropic.AsyncAnthropic(api_key=self._api_key)
+        return self._client
 
     async def find(
         self,
@@ -120,6 +134,8 @@ class WishMatcher:
         if self.client is not None and ai_allowed is not None and not await ai_allowed():
             return MatchResult(basic_matches(text, existing), "limit")
         if self.client is not None:
+            import anthropic
+
             try:
                 return MatchResult(await self._ask_claude(text, existing), "ai")
             except (anthropic.APIError, ValueError, KeyError, TypeError) as exc:

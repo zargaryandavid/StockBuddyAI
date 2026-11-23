@@ -3,13 +3,15 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from decimal import Decimal
-
-from hedge_fund.fund.spec import Fund, FundSpec
-from hedge_fund.llm.client import make_llm
-from hedge_fund.signals import ALPHA_MODEL_REGISTRY, LLMAgent
+from typing import TYPE_CHECKING
 
 from stockbuddy.industries import DEFAULT_INDUSTRIES, suggest_industry_icon
 from stockbuddy.personas import PERSONA_BY_NAME, PERSONAS, prompt_is_usable
+
+if TYPE_CHECKING:
+    # Only for type hints; the review library loads when a review runs.
+    from hedge_fund.fund.spec import Fund, FundSpec
+    from hedge_fund.signals import LLMAgent
 
 # An Amazon Associates tracking id such as "stockbuddy-20"; empty turns tagging off.
 AFFILIATE_TAG = re.compile(r"[A-Za-z0-9-]{0,64}")
@@ -212,6 +214,10 @@ def _with_prompt(agent_cls: type[LLMAgent], prompt: str) -> type[LLMAgent]:
 
 
 def fund_with_settings(spec: FundSpec, settings: StudioSettings | None) -> Fund:
+    from hedge_fund.fund.spec import Fund
+    from hedge_fund.llm.client import make_llm
+    from hedge_fund.signals import ALPHA_MODEL_REGISTRY, LLMAgent
+
     prompts = {item.persona: item.prompt for item in settings.personas} if settings else {}
     model_id = settings.llm_model if settings else None
     staffed: dict[str, list] = {}

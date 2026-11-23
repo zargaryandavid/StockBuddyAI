@@ -16,7 +16,6 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from typing import Any, Literal
 
-import anthropic
 import httpx
 from cryptography.fernet import Fernet, InvalidToken, MultiFernet
 
@@ -397,6 +396,8 @@ def _readable(exc: Exception, settings: Settings) -> str:
     for secret in (settings.anthropic_api_key, settings.openai_api_key, settings.smtp_password):
         if secret:
             text = text.replace(secret, "••••")
+    import anthropic  # loaded only when a connection test fails, not at server start
+
     if isinstance(exc, anthropic.AuthenticationError):
         return "Anthropic rejected the API key (invalid or revoked)."
     if isinstance(exc, anthropic.NotFoundError):
@@ -418,6 +419,8 @@ async def _test_anthropic(settings: Settings, context: dict[str, Any]) -> str:
     model = context.get("model") or "claude-opus-5-5"
     if not str(model).startswith("claude"):
         model = "claude-opus-5-5"
+    import anthropic
+
     async with anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key) as client:
         found = await client.models.retrieve(model)
     return f"Key works. {found.display_name} is available."

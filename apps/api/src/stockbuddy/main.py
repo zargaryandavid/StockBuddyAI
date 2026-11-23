@@ -12,7 +12,6 @@ from typing import Annotated, Any
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
-import anthropic
 from fastapi import (
     BackgroundTasks,
     Depends,
@@ -29,7 +28,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ValidationError
 
 from stockbuddy.allocation import router as allocation_router
-from stockbuddy.analysis import AnalysisService, review_models
 from stockbuddy.books import router as books_router
 from stockbuddy.config import get_settings
 from stockbuddy.connections import ConnectionSetupError, ConnectionsService
@@ -90,11 +88,21 @@ async def lifespan(app: FastAPI):
     if "PYTEST_CURRENT_TEST" not in os.environ:
         await app.state.connections.load()
     await apply_connections(app)
-    await gateway.ensure_admin_user()
+    admin_task = None
+    if settings.serverless:
+        # Checking the admin account takes Supabase round trips; on Vercel it runs beside
+        # the first requests instead of making every new server copy wait for it.
+        admin_task = asyncio.create_task(gateway.ensure_admin_user())
+    else:
+        await gateway.ensure_admin_user()
     reminder_task = None
     if "PYTEST_CURRENT_TEST" not in os.environ and not settings.serverless:
         reminder_task = asyncio.create_task(_deliver_reminders(app))
     yield
+    if admin_task and not admin_task.done():
+        admin_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await admin_task
     if reminder_task:
         reminder_task.cancel()
         with suppress(asyncio.CancelledError):
@@ -105,8 +113,34 @@ async def lifespan(app: FastAPI):
 
 async def _close_wish_client(app: FastAPI) -> None:
     matcher = getattr(app.state, "wish_matcher", None)
-    if matcher is not None and matcher.client is not None:
-        await matcher.client.close()
+    client = getattr(matcher, "_client", None)
+    if client is not None:
+        await client.close()
+
+
+class _Lazy:
+    """Builds a service the first time it is used, so heavy libraries stay out of start-up."""
+
+    def __init__(self, factory: Any) -> None:
+        self._factory = factory
+        self._service: Any = None
+
+    def __getattr__(self, name: str) -> Any:
+        if self._service is None:
+            self._service = self._factory()
+        return getattr(self._service, name)
+
+
+def _analysis_service(settings: Any, repository: Repository) -> Any:
+    from stockbuddy.analysis import AnalysisService
+
+    return AnalysisService(settings, repository, load_settings=repository.load_settings)
+
+
+def _review_models() -> list[dict[str, str]]:
+    from stockbuddy.analysis import review_models
+
+    return review_models()
 
 
 async def apply_connections(app: FastAPI) -> None:
@@ -126,9 +160,8 @@ async def apply_connections(app: FastAPI) -> None:
             os.environ[name] = value
         else:
             os.environ.pop(name, None)
-    app.state.analysis = AnalysisService(
-        settings, repository, load_settings=repository.load_settings
-    )
+    # The review library (pandas, AI clients) loads on the first review, not at start.
+    app.state.analysis = _Lazy(lambda: _analysis_service(settings, repository))
     # SEC company data is kept in the database for a day, shared by every server copy.
     app.state.market = SecurityOverviewService(
         CachedCompanies(
@@ -140,11 +173,7 @@ async def apply_connections(app: FastAPI) -> None:
     app.state.reminders = ReminderService(settings, repository)
     app.state.shares = ShareService(repository, app.state.market)
     await _close_wish_client(app)
-    app.state.wish_matcher = WishMatcher(
-        anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
-        if settings.anthropic_api_key
-        else None
-    )
+    app.state.wish_matcher = WishMatcher(api_key=settings.anthropic_api_key or None)
 
 
 async def _deliver_reminders(app: FastAPI) -> None:
@@ -219,7 +248,7 @@ def _studio_payload(settings) -> dict:
             }
             for persona in settings.personas
         ],
-        "models": review_models(),
+        "models": _review_models(),
     }
 
 

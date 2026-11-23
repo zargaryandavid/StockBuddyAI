@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from hedge_fund.signals import ALPHA_MODEL_REGISTRY, LLMAgent
-
 
 @dataclass(frozen=True)
 class PersonaProfile:
@@ -34,6 +32,9 @@ def builtin_prompt(persona: str) -> str:
     profile = PERSONA_BY_NAME.get(persona)
     if profile is None:
         raise ValueError(f"unknown persona {persona}")
+    # The review library (with pandas) loads here, not when the server starts.
+    from hedge_fund.signals import ALPHA_MODEL_REGISTRY, LLMAgent
+
     agent_cls = ALPHA_MODEL_REGISTRY[persona]
     if not issubclass(agent_cls, LLMAgent):
         raise ValueError(f"{persona} is not an LLM persona")
