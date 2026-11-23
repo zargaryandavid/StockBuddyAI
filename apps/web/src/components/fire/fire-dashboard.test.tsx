@@ -81,6 +81,19 @@ describe("FireDashboard", () => {
     expect(within(form).getByLabelText("Balance")).toBeTruthy();
   });
 
+  it("offers pension savings, and no Roth IRA or 529, to someone in Armenia", async () => {
+    render(
+      <FireDashboard portfolioValue={0} cash={0} reports={[]} today="2026-11-03" startWith="pension" country="AM" />,
+    );
+    const fields = await screen.findAllByDisplayValue("Pension savings");
+    const picker = fields.find((field) => field.tagName === "SELECT") as HTMLSelectElement;
+    const options = [...picker.options].map((option) => option.value);
+    expect(options).toContain("pension");
+    expect(options).toContain("cd");
+    expect(options).not.toContain("roth_ira");
+    expect(options).not.toContain("college_529");
+  });
+
   it("sets a Roth IRA contribution as a % of salary and checks it against the yearly limit", async () => {
     render(
       <FireDashboard portfolioValue={0} cash={0} reports={[]} today="2026-11-03" startWith="roth_contribution" />,

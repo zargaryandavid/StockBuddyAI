@@ -94,7 +94,8 @@ import {
   signedPercent,
 } from "@/lib/portfolio-metrics";
 import { translate, type Translate } from "@/lib/i18n/core";
-import { useT } from "@/lib/i18n/client";
+import { effectiveCountry } from "@/lib/country";
+import { useI18n, useT } from "@/lib/i18n/client";
 import { createClient } from "@/lib/supabase/client";
 import { defaultBook, type BookSettings, type Role } from "@/lib/workspace";
 
@@ -243,6 +244,7 @@ export function Dashboard({
   const [fireStart, setFireStart] = useState<FireStart | null>(null);
   const [showAiPrompt, setShowAiPrompt] = useState(false);
   const [displayName, setDisplayName] = useState<string | null>(null);
+  const [savedCountry, setSavedCountry] = useState<string | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const needsProfile = activeTab === "fire" || activeTab === "today" || showProfile;
   const [profileLoaded, setProfileLoaded] = useState(false);
@@ -256,6 +258,7 @@ export function Dashboard({
         if (!active) return;
         setDateOfBirth(profile?.date_of_birth ?? null);
         setDisplayName(profile?.display_name ?? null);
+        setSavedCountry(profile?.country ?? null);
         setProfileLoaded(true);
       })
       // Without a profile the FIRE page simply hides ages.
@@ -272,7 +275,14 @@ export function Dashboard({
     });
     setDateOfBirth(saved?.date_of_birth ?? null);
     setDisplayName(saved?.display_name ?? null);
+    setSavedCountry(saved?.country ?? null);
   }
+  // Until the person picks a country, Armenian language or a dram portfolio suggests Armenia.
+  const { locale } = useI18n();
+  const country = effectiveCountry(savedCountry, {
+    locale,
+    currency: portfolios.some((portfolio) => portfolio.base_currency === "AMD") ? "AMD" : undefined,
+  });
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
   const [reminderFor, setReminderFor] = useState<{
@@ -1394,6 +1404,8 @@ export function Dashboard({
       {showProfile && (
         <ProfileDialog
           dateOfBirth={dateOfBirth}
+          country={savedCountry}
+          suggestedCountry={country}
           displayName={displayName}
           portfolios={portfolios.map((portfolio) => ({ id: portfolio.id, name: portfolio.name }))}
           currentPortfolioId={selectedId || null}
@@ -1447,6 +1459,7 @@ export function Dashboard({
             book={book}
             today={today}
             dateOfBirth={dateOfBirth}
+            country={country}
             onOpen={openFromToday}
           />
         </section>
@@ -1484,6 +1497,7 @@ export function Dashboard({
           <FireDashboard
             key={fireStart ?? "fire"}
             startWith={fireStart}
+            country={country}
             portfolioValue={metrics.totalValue}
             cash={totalCash}
             reports={positions
@@ -1914,7 +1928,7 @@ export function Dashboard({
                               </div>
                             </div>
                             <input aria-label={t("Quantity {number}", { number: index + 1 })} type="number" min="0" step="any" value={position.shares} onChange={(event) => updatePosition(index, { shares: Number(event.target.value.replace(/^0+(?=\d)/, "")) })} />
-                            <input aria-label={t("Purchase price {number}", { number: index + 1 })} type="number" min="0" step="0.01" placeholder="—" value={position.purchase_price ?? ""} onChange={(event) => updatePosition(index, { purchase_price: event.target.value === "" ? null : Number(event.target.value) })} />
+                            <input aria-label={t("Purchase price {number}", { number: index + 1 })} type="number" min="0" step="any" placeholder="—" value={position.purchase_price ?? ""} onChange={(event) => updatePosition(index, { purchase_price: event.target.value === "" ? null : Number(event.target.value) })} />
                             <span className="financial-cell" role="cell">{position.price == null ? <span className="data-state"><CircleAlert size={14} /> {t("Missing price")}</span> : <FlashValue value={position.price}>{money(position.price, baseCurrency)}</FlashValue>}</span>
                             <span className="financial-cell" role="cell" title={t("Price ÷ trailing 12-month EPS (SEC filings)")}>{position.is_etf_index ? t("N/A") : position.pe_ratio == null ? "—" : position.pe_ratio.toFixed(1)}</span>
                             <span className="financial-cell report-date-col" role="cell" title={position.report_source || t("Report source unavailable")}>
@@ -2476,7 +2490,7 @@ export function Dashboard({
                         aria-label={t("New stock purchase price")}
                         type="number"
                         min="0"
-                        step="0.01"
+                        step="any"
                         placeholder={t("Optional")}
                         value={draftPosition.purchase_price ?? ""}
                         onChange={(event) =>

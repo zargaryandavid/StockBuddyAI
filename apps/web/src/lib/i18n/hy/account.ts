@@ -84,6 +84,12 @@ const account: Record<string, string> = {
   Close: "Փակել",
   "Shown on pages you share": "Ցուցադրվում է ձեր կիսված էջերում",
   "Date of birth": "Ծննդյան ամսաթիվ",
+  "Country you live in": "Երկիրը, որտեղ ապրում եք",
+  "United States": "ԱՄՆ",
+  "Armenia": "Հայաստան",
+  "Another country": "Այլ երկիր",
+  "Your money to-do list and account types follow it, e.g. a Roth IRA in the US or pension savings in Armenia.":
+    "Ձեր ֆինանսական անելիքների ցանկն ու հաշիվների տեսակները հարմարվում են դրան, օրինակ՝ Roth IRA ԱՄՆ-ում կամ կենսաթոշակային խնայողություն Հայաստանում։",
   "You are {age}. Your age is calculated from this date and updates on its own.":
     "Դուք {age} տարեկան եք։ Ձեր տարիքը հաշվարկվում է այս ամսաթվից և թարմացվում է ինքնաշխատ։",
   "Used to show your current age and the age you reach FIRE. Leave it blank to hide ages.":

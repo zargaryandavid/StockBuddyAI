@@ -27,6 +27,7 @@ import type { BookSettings } from "@/lib/workspace";
 
 import { ageOn } from "@/lib/age";
 import { babySteps } from "@/lib/baby-steps";
+import type { Country } from "@/lib/country";
 
 import { HoldingsHeatmap } from "./holdings-heatmap";
 import { MoneyChecklist } from "./money-checklist";
@@ -68,6 +69,7 @@ export function TodayPage({
   book,
   today,
   dateOfBirth = null,
+  country = "US",
   onOpen,
 }: {
   /** The person's name from their profile, for the greeting. */
@@ -80,6 +82,8 @@ export function TodayPage({
   today: string;
   /** From the profile: the Roth IRA limit is higher from age 50. */
   dateOfBirth?: string | null;
+  /** Decides which money steps fit: a Roth IRA and 529 in the US, pension savings elsewhere. */
+  country?: Country;
   onOpen: (destination: TodayDestination, account?: FireStart) => void;
 }) {
   const t = useT();
@@ -296,9 +300,10 @@ export function TodayPage({
             stocks: investments - totalCash,
             bonds: plan.bondBalances,
             age: ageOn(dateOfBirth, today),
+            country,
           })
         : null,
-    [ready, entries, today, rates, currency, investments, totalCash, plan.bondBalances, dateOfBirth],
+    [ready, entries, today, rates, currency, investments, totalCash, plan.bondBalances, dateOfBirth, country],
   );
   const unpriced = [...new Set(snapshots.flatMap((snapshot) => snapshot.unpriced))];
   const progress = plan.fireNumber ? Math.min(1, plan.currentAssets / plan.fireNumber) : null;
@@ -681,7 +686,7 @@ export function TodayPage({
         </article>
       </div>
 
-      <MoneyChecklist steps={moneySteps} currency={currency} hidden={hidden} onOpen={onOpen} />
+      <MoneyChecklist steps={moneySteps} currency={currency} hidden={hidden} country={country} onOpen={onOpen} />
     </section>
   );
 }

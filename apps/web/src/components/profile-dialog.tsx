@@ -7,9 +7,10 @@ import { ShareButtons } from "@/components/share-buttons";
 import { api } from "@/lib/api";
 import { ageOn } from "@/lib/age";
 import { copyText } from "@/lib/copy";
+import { COUNTRIES, type Country } from "@/lib/country";
 import { useT } from "@/lib/i18n/client";
 
-export type ProfileValues = { date_of_birth: string | null; display_name: string | null };
+export type ProfileValues = { date_of_birth: string | null; display_name: string | null; country?: string | null };
 
 type ShareLink = { token: string; kind: "today" | "fire" | "portfolio"; portfolio_id: string | null };
 
@@ -21,6 +22,8 @@ export function shareUrl(token: string) {
 export function ProfileDialog({
   dateOfBirth,
   displayName = null,
+  country = null,
+  suggestedCountry = "US",
   today,
   portfolios = [],
   currentPortfolioId = null,
@@ -31,6 +34,10 @@ export function ProfileDialog({
 }: {
   dateOfBirth: string | null;
   displayName?: string | null;
+  /** The country saved in the profile; null until the person picks one. */
+  country?: string | null;
+  /** Shown preselected while nothing is saved (from the language or a dram portfolio). */
+  suggestedCountry?: Country;
   today: string;
   portfolios?: { id: string; name: string }[];
   /** The portfolio whose value a FIRE link counts as current assets. */
@@ -45,6 +52,7 @@ export function ProfileDialog({
   const t = useT();
   const [name, setName] = useState(displayName ?? "");
   const [value, setValue] = useState(dateOfBirth ?? "");
+  const [place, setPlace] = useState<string>(country ?? suggestedCountry);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const age = ageOn(value || null, today);
@@ -69,7 +77,7 @@ export function ProfileDialog({
     setSaving(true);
     setError(null);
     try {
-      await onSave({ date_of_birth: value || null, display_name: name.trim() || null });
+      await onSave({ date_of_birth: value || null, display_name: name.trim() || null, country: place });
       onClose();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not save your profile");
@@ -125,6 +133,17 @@ export function ProfileDialog({
               ? t("You are {age}. Your age is calculated from this date and updates on its own.", { age })
               : t("Used to show your current age and the age you reach FIRE. Leave it blank to hide ages.")}
           </p>
+          <label>
+            {t("Country you live in")}
+            <select value={place} onChange={(event) => setPlace(event.target.value)}>
+              {COUNTRIES.map((option) => (
+                <option key={option.code} value={option.code}>
+                  {t(option.label)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="muted">{t("Your money to-do list and account types follow it, e.g. a Roth IRA in the US or pension savings in Armenia.")}</p>
           {error && (
             <p className="alert" role="alert">
               {t(error)}

@@ -348,7 +348,7 @@ class Repository:
             "GET",
             "user_profiles",
             token=token,
-            params={"select": "date_of_birth,display_name", "limit": "1"},
+            params={"select": "date_of_birth,display_name,country", "limit": "1"},
         )
         return rows[0] if rows else None
 
@@ -367,7 +367,8 @@ class Repository:
             },
             prefer="resolution=merge-duplicates,return=representation",
         )
-        return {"date_of_birth": rows[0].get("date_of_birth")}
+        saved = rows[0]
+        return {key: saved.get(key) for key in ("date_of_birth", "display_name", "country")}
 
     async def list_portfolios(self, token: str) -> list[dict[str, Any]]:
         return await self.db.rest(

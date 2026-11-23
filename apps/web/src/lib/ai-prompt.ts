@@ -1,5 +1,6 @@
 import type { Portfolio } from "@/lib/api";
 import { babySteps } from "@/lib/baby-steps";
+import type { Country } from "@/lib/country";
 import { isFund } from "@/lib/analytics";
 import {
   FREQUENCIES,
@@ -52,6 +53,8 @@ export type PromptData = {
   today: string;
   currency: string;
   age: number | null;
+  /** Which money steps fit (Roth IRA and 529 in the US, pension savings elsewhere). */
+  country?: Country;
   portfolios: Portfolio[];
   quotes: Map<string, Quote>;
   rates: FxRates;
@@ -103,7 +106,7 @@ function frequencyLabel(key: string) {
 function entryIcon(entry: FireEntry) {
   if (entry.kind === "expense") return categoryFor("expense", entry.category).into ? "🔁" : "⬇️";
   return (
-    { savings: "🏦", cd: "🏦", bond: "📜", roth_ira: "🛡️", college_529: "🎓", rent_income: "🏠" }[entry.category] ?? "⬆️"
+    { savings: "🏦", cd: "🏦", bond: "📜", roth_ira: "🛡️", pension: "🛡️", college_529: "🎓", rent_income: "🏠" }[entry.category] ?? "⬆️"
   );
 }
 
@@ -348,6 +351,7 @@ export function buildAiPrompt(data: PromptData, options: PromptOptions): string 
       stocks: holdingsValue,
       bonds: plan.bondBalances,
       age: data.age,
+      country: data.country,
     });
     push("## ✅ My money to-do list (baby steps)", "");
     for (const step of steps) {
@@ -356,6 +360,8 @@ export function buildAiPrompt(data: PromptData, options: PromptOptions): string 
         push(`- ${mark} Emergency fund: ${format(step.have)} in savings and CDs = ${step.months.toFixed(1)} months of expenses (+30%); target 3–6 months.`);
       else if (step.key === "roth")
         push(`- ${mark} 🛡️ Roth IRA: ${step.accounts ? `balance ${format(step.have)}, ` : "no account yet, "}contributions planned for ${step.year}: ${format(step.contributions)} of the ${format(step.limit, "USD")} limit.`);
+      else if (step.key === "pension")
+        push(`- ${mark} 🛡️ Retirement (pension) savings: ${step.accounts ? `balance ${format(step.have)}` : "no pension account entered yet"}${step.contributions ? `, contributions planned for this year: ${format(step.contributions)}` : ""}.`);
       else if (step.key === "invest")
         push(`- ${mark} Stocks and bonds: stocks ${format(step.stocks)}, bonds ${format(step.bonds)}.`);
       else push(`- ${mark} 🎓 529 education account: ${step.accounts ? format(step.have) : "none"}.`);

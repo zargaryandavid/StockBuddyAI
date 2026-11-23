@@ -525,6 +525,7 @@ async def get_profile(
     return {
         "date_of_birth": saved.get("date_of_birth"),
         "display_name": saved.get("display_name"),
+        "country": saved.get("country"),
     }
 
 

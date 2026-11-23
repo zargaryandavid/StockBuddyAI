@@ -496,7 +496,7 @@ export function RecordDialog({
             </label>
             <label>
               {t("Price per share ({currency})", { currency })}
-              <input type="number" min="0" step="0.01" value={price} onChange={(event) => setPrice(event.target.value)} />
+              <input type="number" min="0" step="any" value={price} onChange={(event) => setPrice(event.target.value)} />
             </label>
           </div>
           <label>

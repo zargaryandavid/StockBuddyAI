@@ -35,7 +35,7 @@ def run(repository, method, path, **kwargs):
 
 def test_profile_without_a_date_of_birth_reads_as_empty():
     response = run(ProfileRepository(), "get", "/api/profile")
-    assert response.json() == {"date_of_birth": None, "display_name": None}
+    assert response.json() == {"date_of_birth": None, "display_name": None, "country": None}
 
 
 def test_profile_saves_a_date_of_birth_and_rejects_future_dates():
@@ -48,3 +48,10 @@ def test_profile_saves_a_date_of_birth_and_rejects_future_dates():
     assert saved.json()["date_of_birth"] == "1987-05-10"
     assert repository.written[0] == USER_ID
     assert rejected.status_code == 422
+
+
+def test_profile_keeps_a_two_letter_country():
+    repository = ProfileRepository()
+    saved = run(repository, "put", "/api/profile", json={"country": "AM"})
+    assert saved.status_code == 200 and saved.json()["country"] == "AM"
+    assert run(repository, "put", "/api/profile", json={"country": "Armenia"}).status_code == 422

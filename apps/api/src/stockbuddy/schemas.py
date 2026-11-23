@@ -355,6 +355,8 @@ class FireSettingsInput(BaseModel):
 class ProfileInput(BaseModel):
     date_of_birth: date | None = None
     display_name: str | None = Field(default=None, max_length=80)
+    # Two-letter country code; ZZ for a country the app has no special steps for.
+    country: str | None = Field(default=None, pattern=r"^[A-Z]{2}$")
 
     @field_validator("display_name")
     @classmethod

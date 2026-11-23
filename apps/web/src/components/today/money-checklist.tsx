@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ArrowRight, CheckCircle2, Circle, Info, ListChecks } from "lucide-react";
 
 import type { BabyStep } from "@/lib/baby-steps";
+import type { Country } from "@/lib/country";
 import { useT } from "@/lib/i18n/client";
 import { money } from "@/lib/portfolio-metrics";
 import { HIDDEN_AMOUNT } from "@/lib/privacy";
@@ -17,12 +18,14 @@ export function MoneyChecklist({
   steps,
   currency,
   hidden,
+  country = "US",
   onOpen,
 }: {
   /** Null while loading. */
   steps: BabyStep[] | null;
   currency: string;
   hidden: boolean;
+  country?: Country;
   onOpen: (destination: TodayDestination, account?: FireStart) => void;
 }) {
   const t = useT();
@@ -70,7 +73,7 @@ export function MoneyChecklist({
                       low: whole(step.month * 3),
                       high: whole(step.month * 6),
                     })
-                  : t("3–6 months of your expenses + 30%, in savings accounts or CDs. Add your expenses in FIRE first.");
+                  : t("3–6 months of your expenses + 30%, in savings accounts or deposits. Add your expenses in FIRE first.");
               meta = m(step.have);
               action = step.done ? null : { label: t("Add savings in FIRE"), go: () => onOpen("fire") };
             } else if (step.key === "roth") {
@@ -93,6 +96,21 @@ export function MoneyChecklist({
                 : step.done
                   ? null
                   : { label: t("Add a contribution"), go: () => onOpen("fire", "roth_contribution") };
+            } else if (step.key === "pension") {
+              title = t("Retirement savings");
+              hint = [
+                t("Build savings for retirement in a pension fund or retirement account. Add its balance and any regular contributions."),
+                country === "AM"
+                  ? t("In Armenia, part of your salary goes to a funded pension; you can see its balance with your pension fund manager.")
+                  : "",
+                step.contributions ? t("Contributions this year: {amount}.", { amount: m(step.contributions) }) : "",
+              ]
+                .filter(Boolean)
+                .join(" ");
+              meta = step.accounts ? m(step.have) : t("No account yet");
+              action = step.accounts
+                ? null
+                : { label: t("Add your pension balance"), go: () => onOpen("fire", "pension") };
             } else if (step.key === "invest") {
               title = t("Stocks and bonds");
               hint = t("Stocks {stocks} · Bonds {bonds}", {

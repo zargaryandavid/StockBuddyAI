@@ -47,7 +47,7 @@ describe("babySteps", () => {
       bonds: 0,
       age: 38,
     });
-    const [emergency, roth, invest, college] = steps;
+    const [emergency, roth, invest] = steps;
     // $2,000 a month + 30% = $2,600; $10,000 saved is about 3.8 months, so done.
     expect(emergency).toMatchObject({ key: "emergency", done: true, have: 10000, month: 2600 });
     expect(emergency.key === "emergency" && emergency.months).toBeCloseTo(3.85, 2);
@@ -55,7 +55,40 @@ describe("babySteps", () => {
     // step isn't done yet.
     expect(roth).toMatchObject({ key: "roth", done: false, have: 8000, accounts: 1, contributions: 0, limit: 7500, year: 2026 });
     expect(invest).toMatchObject({ key: "invest", done: false, stocks: 50000, bonds: 0 });
-    expect(college).toMatchObject({ key: "college", done: false, accounts: 0 });
+    // No 529 account and no education costs: no education goal, so no 529 step.
+    expect(steps).toHaveLength(3);
+  });
+
+  it("shows the 529 step to a US person with education costs", () => {
+    const steps = babySteps({
+      entries: [entry({ kind: "expense", category: "education", amount: 300 })],
+      today,
+      stocks: 0,
+      bonds: 0,
+      age: 38,
+    });
+    expect(steps.map((step) => step.key)).toEqual(["emergency", "roth", "invest", "college"]);
+    expect(steps[3]).toMatchObject({ done: false, accounts: 0 });
+  });
+
+  it("gives Armenia pension savings instead of a Roth IRA, and no 529", () => {
+    const steps = babySteps({
+      entries: [
+        entry({ kind: "expense", category: "rent", amount: 500, currency: "USD" }),
+        entry({ name: "Deposit", category: "cd", principal: 3000 }),
+        entry({ name: "Pension fund", category: "pension", principal: 4200 }),
+        entry({ kind: "expense", category: "pension_contribution", amount: 100, starts_on: "2026-01-10" }),
+        entry({ kind: "expense", category: "education", amount: 200 }),
+      ],
+      today,
+      stocks: 0,
+      bonds: 0,
+      age: 38,
+      country: "AM",
+    });
+    expect(steps.map((step) => step.key)).toEqual(["emergency", "pension", "invest"]);
+    expect(steps[0]).toMatchObject({ have: 3000 }); // deposits count toward the emergency fund
+    expect(steps[1]).toMatchObject({ done: true, have: 4200, accounts: 1, contributions: 1200 });
   });
 
   it("is not done without expenses, a big enough Roth, or a funded 529", () => {

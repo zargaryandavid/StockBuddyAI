@@ -457,6 +457,24 @@ describe("Dashboard navigation", () => {
     ).toEqual(["AAPL", "MSFT"]);
   });
 
+  it("accepts an average purchase price with many decimals, as buys and sells leave it", async () => {
+    vi.mocked(api)
+      .mockResolvedValueOnce([
+        {
+          id: "portfolio-1",
+          name: "Averaged",
+          cash: 0,
+          portfolio_positions: [{ ticker: "SPCX", shares: 52, purchase_price: 147.420769, display_order: 0 }],
+        },
+      ])
+      .mockResolvedValueOnce(batch({ ticker: "SPCX", name: "Space Co", price: 133.35, sector: "Industrials" }));
+    render(<Dashboard initialTab="portfolio" email="owner@example.com" today="2026-10-23" />);
+    await screen.findAllByText("Space Co");
+    const price = screen.getByRole("spinbutton", { name: "Purchase price 1" }) as HTMLInputElement;
+    expect(price.value).toBe("147.420769");
+    expect(price.checkValidity()).toBe(true);
+  });
+
   it("sorts every requested holding column in both directions", async () => {
     vi.mocked(api)
       .mockResolvedValueOnce([

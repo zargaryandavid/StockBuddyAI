@@ -66,6 +66,7 @@ import {
 } from "@/lib/fire";
 import { ageOn } from "@/lib/age";
 import { iraLimit } from "@/lib/baby-steps";
+import { US_ONLY_CATEGORIES, type Country } from "@/lib/country";
 import { useT } from "@/lib/i18n/client";
 import { translator, type Translate } from "@/lib/i18n/core";
 import { cleanNumberInput } from "@/lib/inputs";
@@ -293,7 +294,7 @@ function frequencyLabel(frequency: FireFrequency, t: Translate) {
 }
 
 /** What to start adding when FIRE opens from Today's to-do list. */
-export type FireStart = "roth_ira" | "college_529" | "roth_contribution";
+export type FireStart = "roth_ira" | "college_529" | "roth_contribution" | "pension" | "pension_contribution";
 
 export function FireDashboard({
   portfolioValue,
@@ -305,6 +306,7 @@ export function FireDashboard({
   onEditProfile,
   onSeeGrowth,
   startWith = null,
+  country = "US",
 }: {
   portfolioValue: number;
   cash: number;
@@ -318,6 +320,8 @@ export function FireDashboard({
   onSeeGrowth?: (start: GrowthStart) => void;
   /** Opens a new income of this category straight away (e.g. a Roth IRA from Today's to-do list). */
   startWith?: FireStart | null;
+  /** Where the person lives: US-only account types (Roth IRA, 529) are offered only there. */
+  country?: Country;
 }) {
   const t = useT();
   const [entries, setEntries] = useState<FireEntry[]>([]);
@@ -328,7 +332,7 @@ export function FireDashboard({
   const [error, setError] = useState<string | null>(null);
   // A new account opened from Today starts filled in: its name, a yearly 7% expected return.
   const [draft, setDraft] = useState<Draft | null>(() =>
-    startWith === "roth_contribution"
+    startWith === "roth_contribution" || startWith === "pension_contribution"
       ? {
           ...newDraft("expense", today, currency),
           category: startWith,
@@ -1095,6 +1099,7 @@ export function FireDashboard({
             .filter((entry) => entry.kind === "income" && entry.category === "salary")
             .reduce((sum, entry) => sum + monthlyAmount(entry, today, rates, draft.currency), 0)}
           iraYearLimit={iraLimit(Number(today.slice(0, 4)), ageOn(dateOfBirth, today))}
+          country={country}
           saving={saving}
           error={dialogError}
           onChange={(next) => {
@@ -1633,6 +1638,7 @@ function EntryDialog({
   assets,
   monthlySalary = 0,
   iraYearLimit = null,
+  country = "US",
   saving,
   error,
   onChange,
@@ -1645,6 +1651,7 @@ function EntryDialog({
   monthlySalary?: number;
   /** This year's IRA limit for this person, to compare a Roth contribution with. */
   iraYearLimit?: { limit: number; year: number } | null;
+  country?: Country;
   saving: boolean;
   error: string | null;
   onChange: (draft: Draft) => void;
@@ -1652,7 +1659,10 @@ function EntryDialog({
   onSave: () => void;
 }) {
   const t = useT();
-  const categories = draft.kind === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  // A Roth IRA or 529 only exists in the US; one already entered stays editable.
+  const categories = (draft.kind === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).filter(
+    (item) => country === "US" || !US_ONLY_CATEGORIES.has(item.key) || item.key === draft.category,
+  );
   const category = categoryFor(draft.kind, draft.category);
   const set = (patch: Partial<Draft>) => onChange({ ...draft, ...patch });
   const principal = draftPrincipal(draft);

@@ -166,7 +166,7 @@ const today: Record<string, string> = {
   "Emergency fund": "Արտակարգ իրավիճակների ֆոնդ",
   "{months} months saved · aim for {low}–{high} (3–6 months of expenses + 30%)":
     "Խնայված է {months} ամսվա չափ · նպատակը՝ {low}–{high} (3–6 ամսվա ծախս + 30%)",
-  "3–6 months of your expenses + 30%, in savings accounts or CDs. Add your expenses in FIRE first.":
+  "3–6 months of your expenses + 30%, in savings accounts or deposits. Add your expenses in FIRE first.":
     "Ձեր 3–6 ամսվա ծախսը + 30%՝ խնայողական հաշիվներում կամ ավանդներում։ Նախ ավելացրեք ձեր ծախսերը FIRE բաժնում։",
   "Put in up to {limit} for {year} ({older} if you're 50 or older), from your pay. It grows and comes out tax-free in retirement.":
     "{year} թվականի համար կարող եք ձեր աշխատավարձից դնել մինչև {limit} ({older}, եթե 50 տարեկան կամ ավելի եք)։ Գումարն աճում է և թոշակի ժամանակ դուրս է գալիս առանց հարկի։",
@@ -179,6 +179,13 @@ const today: Record<string, string> = {
   "Update in FIRE": "Թարմացնել FIRE-ում",
   "Add savings in FIRE": "Ավելացնել խնայողություն FIRE-ում",
   "Add your Roth IRA": "Ավելացնել ձեր Roth IRA-ն",
+  "Retirement savings": "Կենսաթոշակային խնայողություն",
+  "Build savings for retirement in a pension fund or retirement account. Add its balance and any regular contributions.":
+    "Խնայեք կենսաթոշակի համար կենսաթոշակային ֆոնդում կամ հաշվում։ Ավելացրեք դրա մնացորդը և պարբերական վճարումները։",
+  "In Armenia, part of your salary goes to a funded pension; you can see its balance with your pension fund manager.":
+    "Հայաստանում աշխատավարձի մի մասը փոխանցվում է կուտակային կենսաթոշակային ֆոնդ․ մնացորդը կարող եք տեսնել ձեր ֆոնդի կառավարչի մոտ։",
+  "Contributions this year: {amount}.": "Այս տարվա վճարումները՝ {amount}։",
+  "Add your pension balance": "Ավելացնել կենսաթոշակային մնացորդը",
   "Stocks and bonds": "Բաժնետոմսեր և պարտատոմսեր",
   "Stocks {stocks} · Bonds {bonds}": "Բաժնետոմսեր՝ {stocks} · Պարտատոմսեր՝ {bonds}",
   none: "չկա",

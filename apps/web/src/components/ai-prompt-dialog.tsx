@@ -15,6 +15,7 @@ import {
 } from "@/lib/ai-prompt";
 import { copyText } from "@/lib/copy";
 import type { FireAsset, FireEntry, FireSettings, FxRates } from "@/lib/fire";
+import { effectiveCountry } from "@/lib/country";
 import { useI18n } from "@/lib/i18n/client";
 import type { NetWorthPoint, Quote } from "@/lib/today";
 import type { BookSettings } from "@/lib/workspace";
@@ -53,7 +54,7 @@ async function loadData(portfolios: Portfolio[], book: BookSettings, today: stri
     api<FireSettings>("/api/fire/settings").catch(() => null),
     api<NetWorthPoint[]>("/api/net-worth").catch(() => []),
     api<{ list: string; text: string; done: boolean }[]>("/api/wishes").catch(() => []),
-    api<{ date_of_birth: string | null }>("/api/profile").catch(() => null),
+    api<{ date_of_birth: string | null; country?: string | null }>("/api/profile").catch(() => null),
     ...[...byCurrency.entries()]
       .filter(([, set]) => set.size)
       .map(([code, set]) =>
@@ -92,6 +93,9 @@ async function loadData(portfolios: Portfolio[], book: BookSettings, today: stri
     today,
     currency,
     age: ageOn(profile?.date_of_birth ?? null, today),
+    country: effectiveCountry(profile?.country, {
+      currency: portfolios.some((portfolio) => portfolio.base_currency === "AMD") ? "AMD" : currency,
+    }),
     portfolios,
     quotes,
     rates,

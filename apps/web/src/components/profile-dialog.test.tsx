@@ -38,8 +38,18 @@ describe("ProfileDialog", () => {
     expect(screen.getByText(/You are 39\./)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Save profile" }));
 
-    await waitFor(() => expect(onSave).toHaveBeenCalledWith({ date_of_birth: "1987-05-10", display_name: "Davit" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith({ date_of_birth: "1987-05-10", display_name: "Davit", country: "US" }));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("suggests a country until one is saved, and saves the one picked", async () => {
+    const onSave = vi.fn(async () => undefined);
+    render(<ProfileDialog dateOfBirth={null} suggestedCountry="AM" today="2026-10-24" onSave={onSave} onClose={vi.fn()} />);
+    const country = screen.getByLabelText("Country you live in") as HTMLSelectElement;
+    expect(country.value).toBe("AM");
+    fireEvent.change(country, { target: { value: "ZZ" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save profile" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ country: "ZZ" })));
   });
 
   it("rejects a future date without saving", () => {

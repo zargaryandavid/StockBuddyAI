@@ -138,11 +138,13 @@ export const INCOME_CATEGORIES: FireCategory[] = [
   { key: "salary", label: "Salary", icon: "briefcase" },
   { key: "rent_income", label: "Rental income", icon: "building-2", rental: true },
   { key: "savings", label: "Savings account", icon: "piggy-bank", yields: "balance" },
-  { key: "cd", label: "CD", icon: "landmark", yields: "balance" },
+  { key: "cd", label: "Deposit / CD", icon: "landmark", yields: "balance" },
   { key: "bond", label: "Bond", icon: "scroll-text", yields: "face" },
   // Balance accounts whose "yield" is the expected yearly return.
   { key: "roth_ira", label: "Roth IRA", icon: "shield-check", yields: "balance", growth: true },
   { key: "college_529", label: "529 education savings", icon: "graduation-cap", yields: "balance", growth: true },
+  // A pension fund or other retirement account outside the US (Armenia's funded pension).
+  { key: "pension", label: "Pension savings", icon: "shield-check", yields: "balance", growth: true },
   { key: "dividends", label: "Dividends", icon: "chart-line" },
   { key: "bonus", label: "Bonus", icon: "gift" },
   { key: "freelance", label: "Freelance", icon: "laptop" },
@@ -166,6 +168,7 @@ export const EXPENSE_CATEGORIES: FireCategory[] = [
   { key: "fun", label: "Fun", icon: "party-popper" },
   { key: "investment", label: "Investment", icon: "trending-up" },
   { key: "roth_contribution", label: "Roth IRA contribution", icon: "shield-check", into: "roth_ira" },
+  { key: "pension_contribution", label: "Pension contribution", icon: "shield-check", into: "pension" },
   { key: "saving", label: "Saving", icon: "piggy-bank" },
   { key: "other", label: "Other expense", icon: "ellipsis" },
 ];
@@ -878,7 +881,7 @@ export function bondHoldings(
 
 /** Expense categories counted as needs in the 50/30/20 budget; saving categories are savings. */
 const NEEDS = new Set(["rent", "bills", "food", "transport", "insurance", "health", "lease", "finance", "tax", "education", "home"]);
-const SAVINGS = new Set(["investment", "saving", "roth_contribution"]);
+const SAVINGS = new Set(["investment", "saving", "roth_contribution", "pension_contribution"]);
 
 export type BudgetSplit = {
   income: number;
