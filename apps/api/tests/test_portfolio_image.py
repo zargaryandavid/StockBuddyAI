@@ -74,6 +74,7 @@ def test_extracts_and_normalizes_positions_for_review():
     ]
     assert client.request["url"] == "https://api.openai.com/v1/responses"
     assert client.request["json"]["model"] == "gpt-test"
+    assert client.request["json"]["store"] is False  # OpenAI doesn't keep the screenshot
     assert "data:image/png;base64," in client.request["json"]["input"][0]["content"][1]["image_url"]
 
 

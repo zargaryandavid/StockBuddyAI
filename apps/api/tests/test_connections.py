@@ -72,6 +72,35 @@ def test_admin_values_are_encrypted_win_over_env_and_can_be_cleared():
     assert service.effective().anthropic_api_key == "sk-ant-from-env-1234"
 
 
+def test_a_separate_encryption_key_takes_over_and_old_values_move_to_it():
+    db = FakeDb()
+    # Saved before CONNECTIONS_ENCRYPTION_KEY existed: locked with the service role key.
+    asyncio.run(
+        ConnectionsService(base_settings(), db).save("anthropic", {"api_key": "sk-ant-old-1111"})
+    )
+    old_token = db.rows[("anthropic", "api_key")]
+
+    separate = base_settings(connections_encryption_key="a-long-separate-secret")
+    service = ConnectionsService(separate, db)
+    asyncio.run(service.load())
+    assert service.effective().anthropic_api_key == "sk-ant-old-1111"
+    assert db.rows[("anthropic", "api_key")] != old_token  # re-encrypted on load
+
+    # Now the service role key alone can no longer read it.
+    other_db_key = ConnectionsService(base_settings(supabase_service_role_key="leaked"), db)
+    asyncio.run(other_db_key.load())
+    assert other_db_key.unreadable == {"anthropic.api_key"}
+    leaked_only = ConnectionsService(base_settings(), db)
+    asyncio.run(leaked_only.load())
+    assert leaked_only.unreadable == {"anthropic.api_key"}
+
+    # New saves use the separate key, and a restart reads them back.
+    asyncio.run(service.save("anthropic", {"api_key": "sk-ant-new-2222"}))
+    restarted = ConnectionsService(separate, db)
+    asyncio.run(restarted.load())
+    assert restarted.effective().anthropic_api_key == "sk-ant-new-2222"
+
+
 def test_description_never_contains_secrets_and_names_the_source():
     db = FakeDb()
     service = ConnectionsService(base_settings(), db)

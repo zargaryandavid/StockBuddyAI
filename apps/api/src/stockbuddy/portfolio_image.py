@@ -41,6 +41,8 @@ class PortfolioImageExtractor:
             headers={"Authorization": f"Bearer {self.api_key}"},
             json={
                 "model": self.model,
+                # Don't let OpenAI keep the screenshot; brokerage screens show balances.
+                "store": False,
                 "input": [
                     {
                         "role": "user",

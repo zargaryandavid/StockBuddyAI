@@ -18,7 +18,7 @@ from typing import Any, Literal
 
 import anthropic
 import httpx
-from cryptography.fernet import Fernet, InvalidToken
+from cryptography.fernet import Fernet, InvalidToken, MultiFernet
 
 from stockbuddy.config import Settings
 
@@ -165,12 +165,34 @@ class ConnectionSetupError(ValueError):
     pass
 
 
-def _fernet(settings: Settings) -> Fernet:
-    secret = settings.connections_encryption_key or settings.supabase_service_role_key
-    if not secret:
-        raise ConnectionSetupError("Set SUPABASE_SERVICE_ROLE_KEY to store connection settings")
+def _key(secret: str) -> Fernet:
     digest = hashlib.sha256(b"stockbuddy-connections:" + secret.encode()).digest()
     return Fernet(base64.urlsafe_b64encode(digest))
+
+
+def _fernet(settings: Settings) -> MultiFernet:
+    """Encrypts with CONNECTIONS_ENCRYPTION_KEY when it is set, so a leaked database key alone
+    can't unlock the saved secrets. Values saved before it was set (with a key derived from the
+    service role key) still decrypt, and `load` re-encrypts them with the new key."""
+    keys = [
+        _key(secret)
+        for secret in (settings.connections_encryption_key, settings.supabase_service_role_key)
+        if secret
+    ]
+    if not keys:
+        raise ConnectionSetupError("Set SUPABASE_SERVICE_ROLE_KEY to store connection settings")
+    return MultiFernet(keys)
+
+
+def _needs_new_key(settings: Settings, token: str) -> bool:
+    """True when a separate key is set but this value is still locked with the old one."""
+    if not settings.connections_encryption_key:
+        return False
+    try:
+        _key(settings.connections_encryption_key).decrypt(token.encode())
+    except InvalidToken:
+        return True
+    return False
 
 
 def _hint(value: str) -> str:
@@ -224,13 +246,35 @@ class ConnectionsService:
         unreadable: set[str] = set()
         fernet = _fernet(self.base) if rows else None
         for row in rows or []:
+            token = row["value_encrypted"]
             try:
-                value = fernet.decrypt(row["value_encrypted"].encode()).decode()
+                value = fernet.decrypt(token.encode()).decode()
             except (InvalidToken, ValueError):
                 unreadable.add(f"{row['connection']}.{row['field']}")
                 continue
             saved.setdefault(row["connection"], {})[row["field"]] = value
+            if _needs_new_key(self.base, token):
+                await self._reencrypt(row["connection"], row["field"], value, fernet)
         self.saved, self.unreadable = saved, unreadable
+
+    async def _reencrypt(
+        self, connection_id: str, key: str, text: str, fernet: MultiFernet
+    ) -> None:
+        try:
+            await self.db.rest(
+                "POST",
+                "app_connections",
+                params={"on_conflict": "connection,field"},
+                json={
+                    "connection": connection_id,
+                    "field": key,
+                    "value_encrypted": fernet.encrypt(text.encode()).decode(),
+                    "updated_at": datetime.now(UTC).isoformat(),
+                },
+                prefer="resolution=merge-duplicates,return=minimal",
+            )
+        except Exception:  # left on the old key; tried again on the next load
+            return
 
     def effective(self) -> Settings:
         """`.env` settings with the admin's saved values on top."""
