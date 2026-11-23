@@ -85,6 +85,12 @@ const account: Record<string, string> = {
   "Shown on pages you share": "Ցուցադրվում է ձեր կիսված էջերում",
   "Date of birth": "Ծննդյան ամսաթիվ",
   "Country you live in": "Երկիրը, որտեղ ապրում եք",
+  "Join like-minded people": "Միացեք համախոհներին",
+  "Our Telegram group": "Մեր Telegram խումբը",
+  "Open in Telegram": "Բացել Telegram-ում",
+  "Share ideas and questions with other investors building their wealth.":
+    "Կիսվեք գաղափարներով և հարցերով այլ ներդրողների հետ, ովքեր նույնպես կառուցում են իրենց բարեկեցությունը։",
+  "QR code for the MyPortfolioBuddy Telegram group": "MyPortfolioBuddy Telegram խմբի QR կոդ",
   "United States": "ԱՄՆ",
   "Armenia": "Հայաստան",
   "Another country": "Այլ երկիր",

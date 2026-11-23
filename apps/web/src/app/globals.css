@@ -4116,3 +4116,13 @@ input.allocation-typed { width: 5.5rem; text-align: right; }
 .transactions-row-actions button:hover:not(:disabled), .transactions-row-actions button:focus-visible { border-color: var(--navy); color: var(--navy); opacity: 1; }
 .transactions-row-actions button:last-child:hover:not(:disabled) { border-color: var(--danger); color: var(--danger); }
 .transactions-row-actions button:disabled { opacity: 0.35; cursor: default; }
+
+/* Top-right invitation to the Telegram group, on every signed-in page */
+.community-bar { position: relative; display: flex; justify-content: flex-end; margin: 0.9rem 0 -0.4rem; z-index: 30; }
+.community-button { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 2.25rem; padding: 0.35rem 0.85rem; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--navy); font-weight: 600; font-size: var(--text-sm); cursor: pointer; }
+.community-button:hover, .community-button[aria-expanded="true"] { border-color: var(--navy); }
+.community-card { position: absolute; top: calc(100% + 0.5rem); right: 0; width: min(18rem, calc(100vw - 2rem)); display: grid; justify-items: center; gap: 0.6rem; padding: 1rem; border: 1px solid var(--line); border-radius: 12px; background: #fff; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16); text-align: center; }
+.community-card p { margin: 0; font-size: var(--text-sm); }
+.community-card img { width: 180px; height: auto; border-radius: 10px; }
+.community-card .button { display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none; }
+@media (max-width: 900px) { .community-bar { margin-top: 0.6rem; } }

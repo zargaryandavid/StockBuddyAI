@@ -23,6 +23,7 @@ import { EducationPage } from "@/components/education/education-page";
 import { AssetsPage } from "@/components/fire/assets-page";
 import { WishlistPage } from "@/components/wishlist/wishlist-page";
 import { AiPromptDialog } from "@/components/ai-prompt-dialog";
+import { CommunityLink } from "@/components/community-link";
 import { FutureAllocation } from "@/components/future-allocation";
 import { PORTFOLIO_CURRENCIES } from "@/lib/currencies";
 import { ProfileDialog, type ProfileValues } from "@/components/profile-dialog";
@@ -1385,6 +1386,7 @@ export function Dashboard({
           </Link>
         )}
       </AppHeader>
+      <CommunityLink />
 
       {tradeFor && (
         <RecordDialog
