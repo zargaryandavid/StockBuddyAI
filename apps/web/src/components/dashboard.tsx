@@ -99,6 +99,9 @@ import { useI18n, useT } from "@/lib/i18n/client";
 import { createClient } from "@/lib/supabase/client";
 import { defaultBook, type BookSettings, type Role } from "@/lib/workspace";
 
+/** Ask Buddy (AI stock reviews) is switched off for now; set to true to bring it back. */
+const ASK_BUDDY_ENABLED = false;
+
 type MainTab = "today" | "test" | "growth" | "allocation" | "portfolio" | "fire" | "assets" | "wishlist" | "education" | "support";
 type PortfolioView = "current" | "transactions" | "analytics";
 type ImportMode = "manual" | "csv" | "picture";
@@ -171,7 +174,9 @@ export function Dashboard({
   useEffect(() => {
     tRef.current = t;
   }, [t]);
-  const [activeTab, setActiveTab] = useState<MainTab>(initialTab);
+  const [activeTab, setActiveTab] = useState<MainTab>(
+    initialTab === "test" && !ASK_BUDDY_ENABLED ? "portfolio" : initialTab,
+  );
   const [portfolioView, setPortfolioView] = useState<PortfolioView>("current");
   const [importMode, setImportMode] = useState<ImportMode | null>(null);
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
@@ -1285,15 +1290,17 @@ export function Dashboard({
             <History size={15} aria-hidden="true" />
             {t("Transactions")}
           </button>
-          <button
-            type="button"
-            className={activeTab === "test" ? "active" : ""}
-            aria-current={activeTab === "test" ? "page" : undefined}
-            onClick={() => guardUnsaved(() => setActiveTab("test"), { fromEditorOnly: true })}
-          >
-            <Bot size={15} aria-hidden="true" />
-            {t("Ask Buddy")}
-          </button>
+          {ASK_BUDDY_ENABLED && (
+            <button
+              type="button"
+              className={activeTab === "test" ? "active" : ""}
+              aria-current={activeTab === "test" ? "page" : undefined}
+              onClick={() => guardUnsaved(() => setActiveTab("test"), { fromEditorOnly: true })}
+            >
+              <Bot size={15} aria-hidden="true" />
+              {t("Ask Buddy")}
+            </button>
+          )}
           <button
             type="button"
             className={activeTab === "growth" ? "active" : ""}
@@ -1985,7 +1992,9 @@ export function Dashboard({
                               </button>
                               {actionRow === index && (
                                 <div className="actions-menu" style={{ top: actionSpot.top, right: actionSpot.right }}>
-                                  <button type="button" onClick={() => { setSelectedId(editingId); setActiveTab("test"); }}>{t("Analyze position")}</button>
+                                  {ASK_BUDDY_ENABLED && (
+                                    <button type="button" onClick={() => { setSelectedId(editingId); setActiveTab("test"); }}>{t("Analyze position")}</button>
+                                  )}
                                   <button
                                     type="button"
                                     onClick={() => {

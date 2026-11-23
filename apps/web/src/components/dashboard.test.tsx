@@ -69,7 +69,6 @@ describe("Dashboard navigation", () => {
       "Portfolio",
       "Analytics",
       "Transactions",
-      "Ask Buddy",
       "Growth calculator",
       "Future allocation",
       "Assets",
@@ -83,7 +82,6 @@ describe("Dashboard navigation", () => {
     expect(within(tools).getAllByRole("button").map((item) => item.textContent)).toEqual([
       "Analytics",
       "Transactions",
-      "Ask Buddy",
       "Growth calculator",
       "Future allocation",
     ]);
@@ -97,9 +95,11 @@ describe("Dashboard navigation", () => {
     fireEvent.click(settings);
     expect(screen.getByRole("button", { name: "Portfolio" }).getAttribute("aria-current")).toBe("page");
 
-    fireEvent.click(within(tools).getByRole("button", { name: "Ask Buddy" }));
-    expect(within(tools).getByRole("button", { name: "Ask Buddy" }).getAttribute("aria-current")).toBe("page");
+    fireEvent.click(within(tools).getByRole("button", { name: "Growth calculator" }));
+    expect(within(tools).getByRole("button", { name: "Growth calculator" }).getAttribute("aria-current")).toBe("page");
     expect(screen.getByRole("button", { name: "Portfolio" }).getAttribute("aria-current")).toBeNull();
+    // Ask Buddy is switched off.
+    expect(within(nav).queryByRole("button", { name: "Ask Buddy" })).toBeNull();
   });
 
   it("switches between a simple portfolio editor and the test screen", async () => {
@@ -143,9 +143,7 @@ describe("Dashboard navigation", () => {
     fireEvent.click(screen.getByRole("button", { name: "+ Add position" }));
     expect(screen.getByRole("dialog", { name: "Add position" })).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: "Ask Buddy" }));
-
-    expect(screen.getByRole("heading", { name: "Ask Buddy" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Ask Buddy" })).toBeNull();
     expect(screen.queryByText("Know why you still own it.")).toBeNull();
     expect(screen.queryByRole("link", { name: "Admin" })).toBeNull();
   });
@@ -621,14 +619,15 @@ describe("Dashboard navigation", () => {
     expect(statusVisibility.getAttribute("aria-pressed")).toBe("true");
 
     fireEvent.click(screen.getByRole("button", { name: "Actions for NVDA" }));
-    expect(screen.getByRole("button", { name: "Analyze position" })).toBeTruthy();
+    // Ask Buddy is switched off, so its "Analyze position" shortcut is hidden too.
+    expect(screen.queryByRole("button", { name: "Analyze position" })).toBeNull();
     expect(screen.getByRole("button", { name: "Add transaction" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Remove position" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Edit Position" })).toBeNull();
     expect(screen.queryByRole("button", { name: "View Details" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Add Note" })).toBeNull();
     fireEvent.pointerDown(document.body);
-    expect(screen.queryByRole("button", { name: "Analyze position" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add transaction" })).toBeNull();
 
     const expandNvda = screen.getByRole("button", { name: "Expand NVDA" });
     expect(expandNvda.closest('[role="row"]')?.className).toContain("gain-up");
