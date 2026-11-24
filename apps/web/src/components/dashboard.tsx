@@ -1872,6 +1872,11 @@ export function Dashboard({
                       {t("MyPortfolioBuddy status")}
                     </button>
                   </div>
+                  {targetsNote && (
+                    <p className="targets-note" role="note">
+                      {t("1Y forecasts aren't connected yet: an admin adds a free Financial Modeling Prep key in Admin → Connections, then analysts' targets appear here.")}
+                    </p>
+                  )}
                   <div
                     className={`holdings-table${showReturns ? "" : " hide-returns"}${showLifecycle ? "" : " hide-lifecycle"}${showMyPortfolioBuddyStatus ? "" : " hide-stockbuddy-status"}`}
                     role="table"

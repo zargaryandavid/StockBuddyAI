@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Quote } from "@/lib/today";
 
-import { allocationSummary, type AllocationItem } from "./allocation";
+import { allocationSummary, industryOf, type AllocationItem } from "./allocation";
 
 const item = (overrides: Partial<AllocationItem>): AllocationItem => ({
   label: "",
@@ -60,5 +60,23 @@ describe("allocationSummary", () => {
     expect(summary.usd).toBeNull();
     expect(summary.rows[0].shares).toBeNull();
     expect(summary.rows[1]).toMatchObject({ price: null, return1y: null, returnSource: null });
+  });
+});
+
+describe("industryOf", () => {
+  it("gives a company's sector and a readable industry, and a fund's category", () => {
+    expect(industryOf({ sector: "Industrials", industry: "ELECTRICAL INDUSTRIAL APPARATUS, NEC" })).toEqual({
+      sector: "Industrials",
+      industry: "Electrical industrial apparatus, nec",
+    });
+    expect(industryOf({ sector: "Information Technology", industry: "SERVICES-PREPACKAGED SOFTWARE" }).industry).toBe(
+      "Services, prepackaged software",
+    );
+    expect(industryOf({ is_etf_index: true, sector: "Not Applicable", investment_category: "Broad Market" })).toEqual({
+      sector: "Fund",
+      industry: "Broad Market",
+    });
+    expect(industryOf({ sector: "Unknown", industry: null })).toEqual({ sector: null, industry: null });
+    expect(industryOf(undefined)).toEqual({ sector: null, industry: null });
   });
 });

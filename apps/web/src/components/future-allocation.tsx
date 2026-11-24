@@ -103,6 +103,26 @@ export function FutureAllocation({ today = new Date().toISOString().slice(0, 10)
     };
   }, [settled]);
 
+  // Analysts' 1-year price targets (the consensus TradingView shows), via Financial Modeling Prep.
+  const [targets, setTargets] = useState<Record<string, { target: number } | null>>({});
+  const [targetsNote, setTargetsNote] = useState<string | null>(null);
+  useEffect(() => {
+    if (!settled) return;
+    let active = true;
+    api<{ configured: boolean; message?: string; targets: Record<string, { target: number } | null> }>(
+      `/api/securities/targets?tickers=${encodeURIComponent(settled.split(",").slice(0, 40).join(","))}`,
+    )
+      .then((answer) => {
+        if (!active || !answer) return;
+        setTargets((current) => ({ ...current, ...(answer.targets ?? {}) }));
+        setTargetsNote(answer.configured ? null : answer.message ?? null);
+      })
+      .catch(() => undefined); // the column simply stays empty
+    return () => {
+      active = false;
+    };
+  }, [settled]);
+
   const currency = plan?.currency ?? "USD";
   const usdPerUnit = usdRates[currency] ?? null;
   useEffect(() => {
@@ -204,15 +224,21 @@ export function FutureAllocation({ today = new Date().toISOString().slice(0, 10)
           </div>
         </div>
 
+        {targetsNote && (
+          <p className="targets-note" role="note">
+            {t("1Y forecasts aren't connected yet: an admin adds a free Financial Modeling Prep key in Admin → Connections, then analysts' targets appear here.")}
+          </p>
+        )}
         <div className="allocation-table" role="table" aria-label={t("Watchlist")}>
           <div className="allocation-row allocation-head" role="row">
-            <span role="columnheader">{t("Allocation")}</span>
             <span role="columnheader">{t("Investment")}</span>
+            <span role="columnheader">{t("Industry")}</span>
             <span role="columnheader">{t("Share or amount")}</span>
             <span role="columnheader">{t("Amount")}</span>
             <span role="columnheader">{t("≈ USD")}</span>
             <span role="columnheader">{t("Shares at today's price")}</span>
             <span role="columnheader">{t("Last 1 year")}</span>
+            <span role="columnheader" title={t("Analysts' average 1-year price target (Financial Modeling Prep). An estimate, not a promise.")}>{t("1Y forecast")}</span>
             <span role="columnheader">
               <span className="sr-only">{t("Actions")}</span>
             </span>
@@ -223,15 +249,6 @@ export function FutureAllocation({ today = new Date().toISOString().slice(0, 10)
             const missing = symbol && notFound.has(symbol);
             return (
               <div className="allocation-row" role="row" key={index}>
-                <span role="cell">
-                  <input
-                    value={item.label}
-                    maxLength={60}
-                    placeholder={t("e.g. International stocks")}
-                    aria-label={t("Allocation")}
-                    onChange={(event) => setItem(index, { label: event.target.value })}
-                  />
-                </span>
                 <span role="cell" className="allocation-investment">
                   <input
                     className="allocation-ticker"
@@ -254,6 +271,16 @@ export function FutureAllocation({ today = new Date().toISOString().slice(0, 10)
                       aria-label={t("Name")}
                       onChange={(event) => setItem(index, { name: event.target.value })}
                     />
+                  )}
+                </span>
+                <span role="cell" className="allocation-industry" title={[row.sector, row.industry].filter(Boolean).join(" · ") || undefined}>
+                  {row.sector || row.industry ? (
+                    <>
+                      <strong>{row.sector ? t(row.sector) : t(row.industry ?? "")}</strong>
+                      {row.sector && row.industry && <small className="muted">{t(row.industry)}</small>}
+                    </>
+                  ) : (
+                    <span className="muted">—</span>
                   )}
                 </span>
                 <span role="cell" className="allocation-value">
@@ -311,6 +338,27 @@ export function FutureAllocation({ today = new Date().toISOString().slice(0, 10)
                     />
                   )}
                 </span>
+                {(() => {
+                  const target = item.ticker ? targets[item.ticker.toUpperCase()]?.target ?? null : null;
+                  const gain = target != null && row.price ? (target / row.price - 1) * 100 : null;
+                  const title = targetsNote
+                    ? t(targetsNote)
+                    : target == null
+                      ? t("No analyst target for this holding")
+                      : t("Analysts' average 1-year price target (Financial Modeling Prep). An estimate, not a promise.");
+                  return (
+                    <span role="cell" className="allocation-num allocation-forecast" title={item.ticker ? title : undefined}>
+                      {target == null || gain == null ? (
+                        <span className="muted">—</span>
+                      ) : (
+                        <>
+                          <small>{usd(target)}</small>
+                          <strong className={gain >= 0 ? "positive" : "negative"}>{signedPct(gain)}</strong>
+                        </>
+                      )}
+                    </span>
+                  );
+                })()}
                 <span role="cell" className="allocation-actions">
                   <button type="button" aria-label={t("Move up")} disabled={index === 0} onClick={() => move(index, -1)}>
                     <ArrowUp size={14} aria-hidden="true" />
@@ -347,6 +395,7 @@ export function FutureAllocation({ today = new Date().toISOString().slice(0, 10)
             <span role="cell" className="allocation-num">
               <strong title={t("weighted")}>{signedPct(summary.weightedReturn)}</strong>
             </span>
+            <span role="cell" />
             <span role="cell" />
           </div>
         </div>

@@ -23,8 +23,9 @@ describe("FutureAllocation", () => {
       }
       if (path.startsWith("/api/fx")) return { rate: 1 / 380 };
       if (path === "/api/securities/resolve-batch") {
-        return [{ query: "VXUS", data: { ticker: "VXUS", company_name: "Vanguard Total International Stock ETF", price: 70, growth_1y: 18.6, growth_1m: 1.2, growth_6m: 9.4, is_etf_index: true } }];
+        return [{ query: "VXUS", data: { ticker: "VXUS", company_name: "Vanguard Total International Stock ETF", price: 70, growth_1y: 18.6, growth_1m: 1.2, growth_6m: 9.4, is_etf_index: true, investment_category: "International" } }];
       }
+      if (path.startsWith("/api/securities/targets")) return { configured: true, targets: { VXUS: { target: 77, high: null, low: null } } };
       if (path === "/api/allocation-plan" && init?.method === "PUT") return JSON.parse(String(init.body));
       return null;
     });
@@ -34,6 +35,14 @@ describe("FutureAllocation", () => {
     // 33% of 54M AMD = 17.82M AMD ≈ $46,895 ≈ 669.9 shares at $70.
     expect(screen.getAllByText("AMD 17,820,000")).toHaveLength(2); // the row and the total
     expect(screen.getByText("669.92")).toBeTruthy();
+    // The Allocation label column is gone; Industry shows the fund's category instead.
+    expect(screen.queryByRole("columnheader", { name: "Allocation" })).toBeNull();
+    expect(screen.getByRole("columnheader", { name: "Industry" })).toBeTruthy();
+    expect(screen.getByTitle("Fund · International")).toBeTruthy();
+    // 1Y forecast: analysts' $77 target is +10.0% from today's $70.
+    expect(screen.getByRole("columnheader", { name: "1Y forecast" })).toBeTruthy();
+    const forecast = (await screen.findByText("$77")).closest("[role=cell]") as HTMLElement;
+    expect(forecast.textContent).toContain("+10.0%");
     expect(screen.getByTitle("669 whole at $70")).toBeTruthy();
     expect(screen.getAllByText("+18.6%").length).toBeGreaterThan(0);
     expect(screen.getByTitle("1M +1.2% · 6M +9.4%")).toBeTruthy();
@@ -47,5 +56,27 @@ describe("FutureAllocation", () => {
     const body = calls.find(([path, method]) => path === "/api/allocation-plan" && method === "PUT")?.[2] as { items: { name: string }[] };
     expect(body.items.map((item) => item.name)).toEqual(["", "Armenian bonds"]);
     expect(await screen.findByRole("button", { name: "Saved" })).toBeTruthy();
+  });
+});
+
+describe("FutureAllocation forecasts", () => {
+  afterEach(() => {
+    cleanup();
+    apiMock.mockReset();
+  });
+
+  it("says forecasts aren't connected instead of leaving silent dashes", async () => {
+    apiMock.mockImplementation(async (path: string, init?: RequestInit) => {
+      if (path === "/api/allocation-plan" && !init) {
+        return { budget: 1000, currency: "USD", items: [{ label: "", ticker: "VRT", name: "", mode: "pct", value: 50, expected_return_pct: null }] };
+      }
+      if (path.startsWith("/api/securities/targets")) return { configured: false, message: "Add a key", targets: {} };
+      return null;
+    });
+    render(<FutureAllocation />);
+    expect(await screen.findByRole("note", {}, { timeout: 3000 })).toHaveProperty(
+      "textContent",
+      expect.stringContaining("1Y forecasts aren't connected yet"),
+    );
   });
 });

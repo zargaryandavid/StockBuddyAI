@@ -482,6 +482,7 @@ describe("Dashboard navigation", () => {
     expect(targetCell.getAttribute("title")).toMatch(/Analysts' average 1-year price target/);
     const valueCell = screen.getByText("$2,500.00").closest("[role=cell]") as HTMLElement;
     expect(valueCell.textContent).toContain("+$500.00");
+    expect(screen.queryByRole("note")).toBeNull(); // forecasts are connected, so no setup note
     // A fund has no analyst target, so both cells show a dash.
     expect(screen.getAllByTitle("No analyst target for this holding")[0].textContent).toBe("—");
   });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import { api } from "@/lib/api";
@@ -18,9 +18,8 @@ type RangeKey = (typeof RANGES)[number]["key"];
 /** Distinct, colour-blind-friendly line colours; they repeat after ten symbols. */
 const COLORS = ["#2563eb", "#dc2626", "#16a34a", "#d97706", "#7c3aed", "#0891b2", "#db2777", "#65a30d", "#475569", "#b45309"];
 
-const WIDTH = 720;
-const HEIGHT = 260;
-const PAD = { top: 12, right: 12, bottom: 24, left: 44 };
+const HEIGHT = 280;
+const PAD = { top: 14, right: 16, bottom: 28, left: 56 };
 
 export type ChartSeries = { ticker: string; color: string; points: { date: string; close: number; pct: number }[] };
 
@@ -43,6 +42,12 @@ function startFor(days: number, today: string) {
   return start.toISOString().slice(0, 10);
 }
 
+/** "2026-05-26" → "May 26, 2026". */
+function shortDate(day: string) {
+  const date = new Date(`${day}T00:00:00Z`);
+  return Number.isNaN(date.getTime()) ? day : date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+}
+
 function signed(value: number) {
   return `${value > 0 ? "+" : value < 0 ? "−" : ""}${Math.abs(value).toFixed(1)}%`;
 }
@@ -56,6 +61,19 @@ export function WatchlistChart({ tickers, today }: { tickers: string[]; today: s
   const [range, setRange] = useState<RangeKey>("1Y");
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [hover, setHover] = useState<number | null>(null);
+  // Drawn at the card's real width, so labels stay a normal reading size on any screen.
+  const frame = useRef<HTMLDivElement>(null);
+  const [WIDTH, setWidth] = useState(720);
+  useEffect(() => {
+    const element = frame.current;
+    if (!element) return;
+    const measure = () => setWidth(Math.max(280, Math.round(element.clientWidth)));
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  });
   const symbols = useMemo(() => [...new Set(tickers.map((ticker) => ticker.trim().toUpperCase()).filter(Boolean))].slice(0, 40), [tickers]);
   const days = RANGES.find((item) => item.key === range)?.days ?? 366;
   const from = startFor(days, today);
@@ -145,8 +163,10 @@ export function WatchlistChart({ tickers, today }: { tickers: string[]; today: s
       ) : !shown.length ? (
         <p className="muted">{t("Tick a symbol to see its price moves.")}</p>
       ) : (
-        <div className="watchlist-chart-frame">
+        <div className="watchlist-chart-frame" ref={frame}>
           <svg
+            width={WIDTH}
+            height={HEIGHT}
             viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
             role="img"
             aria-label={t("Price moves for {symbols}", { symbols: shown.map((item) => `${item.ticker} ${signed(item.points.at(-1)?.pct ?? 0)}`).join(", ") })}
@@ -159,19 +179,21 @@ export function WatchlistChart({ tickers, today }: { tickers: string[]; today: s
             }}
             onMouseLeave={() => setHover(null)}
           >
-            {[high, (high + low) / 2, low].map((value) => (
+            {[high, 0, low]
+              .filter((value, index, all) => index !== 1 || (Math.abs(y(value) - y(all[0])) > 18 && Math.abs(y(value) - y(all[2])) > 18))
+              .map((value) => (
               <g key={value}>
                 <line x1={PAD.left} x2={WIDTH - PAD.right} y1={y(value)} y2={y(value)} className="watchlist-grid" />
-                <text x={PAD.left - 6} y={y(value) + 4} textAnchor="end" className="watchlist-axis">
-                  {signed(value)}
+                <text x={PAD.left - 8} y={y(value) + 4} textAnchor="end" className="watchlist-axis">
+                  {value === 0 ? "0%" : signed(value)}
                 </text>
               </g>
-            ))}
+              ))}
             <line x1={PAD.left} x2={WIDTH - PAD.right} y1={y(0)} y2={y(0)} className="watchlist-zero" />
             {axis && (
               <>
-                <text x={PAD.left} y={HEIGHT - 6} className="watchlist-axis">{axis.points[0].date}</text>
-                <text x={WIDTH - PAD.right} y={HEIGHT - 6} textAnchor="end" className="watchlist-axis">{axis.points.at(-1)?.date}</text>
+                <text x={PAD.left} y={HEIGHT - 8} className="watchlist-axis">{shortDate(axis.points[0].date)}</text>
+                <text x={WIDTH - PAD.right} y={HEIGHT - 8} textAnchor="end" className="watchlist-axis">{shortDate(axis.points.at(-1)?.date ?? "")}</text>
               </>
             )}
             {shown.map((item) => (
@@ -179,7 +201,7 @@ export function WatchlistChart({ tickers, today }: { tickers: string[]; today: s
                 key={item.ticker}
                 fill="none"
                 stroke={item.color}
-                strokeWidth={2}
+                strokeWidth={1.75}
                 strokeLinejoin="round"
                 points={item.points.map((point, index) => `${x(index, item.points.length).toFixed(1)},${y(point.pct).toFixed(1)}`).join(" ")}
               />

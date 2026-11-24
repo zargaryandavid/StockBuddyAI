@@ -204,6 +204,9 @@ const portfolio: Record<string, string> = {
   "1Y": "1 տ",
   "1Y target": "1 տ թիրախ",
   "1Y value": "1 տ արժեք",
+  "1Y forecast": "1 տ կանխատեսում",
+  "1Y forecasts aren't connected yet: an admin adds a free Financial Modeling Prep key in Admin → Connections, then analysts' targets appear here.":
+    "1-տարվա կանխատեսումները դեռ միացված չեն․ ադմինը պետք է ավելացնի Financial Modeling Prep-ի անվճար բանալին Ադմին → Միացումներ բաժնում, որից հետո այստեղ կերևան վերլուծաբանների թիրախները։",
   "Analysts' average 1-year price target (Financial Modeling Prep). An estimate, not a promise.":
     "Վերլուծաբանների միջին 1-տարվա թիրախային գինը (Financial Modeling Prep)։ Գնահատական է, ոչ թե երաշխիք։",
   "No analyst target for this holding": "Այս ակտիվի համար վերլուծաբանների թիրախ չկա",

@@ -32,6 +32,9 @@ export type AllocationRow = {
   return1y: number | null;
   return1m: number | null;
   return6m: number | null;
+  /** Sector and industry for a company, or the fund's category; null until looked up. */
+  sector: string | null;
+  industry: string | null;
   /** What the row's return figure is based on. */
   returnSource: "market" | "typed" | null;
   name: string | null;
@@ -82,6 +85,7 @@ export function allocationSummary(plan: AllocationPlan, quotes: Map<string, Quot
       returnSource: item.ticker ? (market == null ? null : "market") : typed == null ? null : "typed",
       name: item.ticker ? (quote?.company_name ?? quote?.name ?? null) : item.name || null,
       fund: Boolean(quote?.is_etf_index),
+      ...industryOf(quote),
     };
   });
   const allocated = rows.reduce((sum, row) => sum + row.amount, 0);
@@ -95,4 +99,21 @@ export function allocationSummary(plan: AllocationPlan, quotes: Map<string, Quot
     usd: usdPerUnit == null ? null : allocated * usdPerUnit,
     weightedReturn: weight > 0 ? weighted.reduce((sum, row) => sum + (row.return1y as number) * row.amount, 0) / weight : null,
   };
+}
+
+const PLACEHOLDER_SECTORS = new Set(["", "Unknown", "Not Applicable", "Other"]);
+
+/** "SERVICES-PREPACKAGED SOFTWARE" → "Services, prepackaged software", as SEC names read better. */
+function readableIndustry(name: string) {
+  const text = name.trim().toLowerCase().replace(/\s*-\s*/g, ", ").replace(/\s+/g, " ");
+  return text ? text[0].toUpperCase() + text.slice(1) : "";
+}
+
+/** Sector and industry for a stock; for a fund, "Fund" and its category (e.g. Broad Market). */
+export function industryOf(quote: { is_etf_index?: boolean | null; sector?: string | null; industry?: string | null; investment_category?: string | null } | undefined) {
+  if (!quote) return { sector: null, industry: null };
+  if (quote.is_etf_index) return { sector: "Fund", industry: quote.investment_category ?? null };
+  const sector = quote.sector && !PLACEHOLDER_SECTORS.has(quote.sector) ? quote.sector : null;
+  const industry = quote.industry ? readableIndustry(quote.industry) : null;
+  return { sector, industry };
 }
