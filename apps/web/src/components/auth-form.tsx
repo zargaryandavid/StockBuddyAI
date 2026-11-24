@@ -72,6 +72,11 @@ export function AuthForm({ notice, join = false }: { notice?: string; join?: boo
       fail(weak);
       return;
     }
+    if (mode === "signup" && credentials.password !== String(data.get("confirm") ?? "")) {
+      setBusy(false);
+      fail("The two passwords don't match. Type the same password in both boxes.");
+      return;
+    }
     if (mode === "signup" && !data.get("consent")) {
       setBusy(false);
       fail("Please agree to the Terms and Privacy Policy to create an account.");
@@ -121,7 +126,24 @@ export function AuthForm({ notice, join = false }: { notice?: string; join?: boo
     router.refresh();
   }
 
+  const heading =
+    mode === "signup"
+      ? {
+          eyebrow: "Early access",
+          title: "Create your account",
+          lead: "Free to start. Track your portfolio and plan your financial freedom; your data stays private to your account.",
+        }
+      : mode === "reset"
+        ? { eyebrow: "Private workspace", title: "Reset your password", lead: "Enter your email and we'll send you a link to choose a new password." }
+        : { eyebrow: "Private workspace", title: "Sign in to your book", lead: "Early access. Your data stays private to your account." };
+
   return (
+    <>
+    <div className="auth-heading">
+      <p className="eyebrow">{t(heading.eyebrow)}</p>
+      <h2>{t(heading.title)}</h2>
+      <p className="muted">{t(heading.lead)}</p>
+    </div>
     <form onSubmit={submit} className="auth-form">
       <label>
         {t("Email")}
@@ -157,6 +179,18 @@ export function AuthForm({ notice, join = false }: { notice?: string; join?: boo
         <small id="signup-password-rules" className="muted password-rules">
           {t("At least 10 characters, with letters and numbers.")}
         </small>
+      )}
+      {mode === "signup" && (
+        <label>
+          {t("Confirm password")}
+          <input
+            name="confirm"
+            type={showPassword ? "text" : "password"}
+            autoComplete="new-password"
+            minLength={MIN_PASSWORD_LENGTH}
+            required
+          />
+        </label>
       )}
       {mode === "signin" && (
         <button
@@ -225,6 +259,7 @@ export function AuthForm({ notice, join = false }: { notice?: string; join?: boo
             : t("Back to sign in")}
       </button>
     </form>
+    </>
   );
 }
 

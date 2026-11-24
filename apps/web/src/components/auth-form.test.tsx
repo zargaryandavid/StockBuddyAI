@@ -49,7 +49,30 @@ describe("AuthForm email confirmation", () => {
   function fillIn(email: string) {
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: email } });
     fireEvent.change(screen.getByLabelText("Password"), { target: { value: "long-password-1" } });
+    const confirm = screen.queryByLabelText("Confirm password");
+    if (confirm) fireEvent.change(confirm, { target: { value: "long-password-1" } });
   }
+
+  it("shows a Create account heading and asks for the password twice when signing up", async () => {
+    auth.signUp.mockClear();
+    render(<AuthForm />);
+    expect(screen.getByRole("heading", { name: "Sign in to your book" })).toBeTruthy();
+    expect(screen.queryByLabelText("Confirm password")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Need an account? Sign up" }));
+    expect(screen.getByRole("heading", { name: "Create your account" })).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "new@example.com" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "long-password-1" } });
+    fireEvent.change(screen.getByLabelText("Confirm password"), { target: { value: "long-password-2" } });
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Create account" }));
+    expect(await screen.findByText("The two passwords don't match. Type the same password in both boxes.")).toBeTruthy();
+    expect(auth.signUp).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Already registered? Sign in" }));
+    fireEvent.click(screen.getByRole("button", { name: "Forgot password?" }));
+    expect(screen.getByRole("heading", { name: "Reset your password" })).toBeTruthy();
+  });
 
   it("refuses a weak new password before asking the server", async () => {
     auth.signUp.mockClear();
@@ -57,6 +80,7 @@ describe("AuthForm email confirmation", () => {
     fireEvent.click(screen.getByRole("button", { name: /Sign up/ }));
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "new@example.com" } });
     fireEvent.change(screen.getByLabelText("Password"), { target: { value: "onlyletters" } });
+    fireEvent.change(screen.getByLabelText("Confirm password"), { target: { value: "onlyletters" } });
     fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.click(screen.getByRole("button", { name: "Create account" }));
     expect(await screen.findByText("Use both letters and numbers.")).toBeTruthy();
@@ -131,6 +155,7 @@ describe("AuthForm terms and password reset", () => {
     expect(screen.getByRole("link", { name: "Privacy Policy" }).getAttribute("href")).toBe("/privacy");
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "new@example.com" } });
     fireEvent.change(screen.getByLabelText("Password"), { target: { value: "long-password-1" } });
+    fireEvent.change(screen.getByLabelText("Confirm password"), { target: { value: "long-password-1" } });
     fireEvent.submit(screen.getByRole("button", { name: "Create account" }).closest("form") as HTMLFormElement);
     expect(await screen.findByText(/Please agree to the Terms and Privacy Policy/)).toBeTruthy();
     expect(auth.signUp).not.toHaveBeenCalled();

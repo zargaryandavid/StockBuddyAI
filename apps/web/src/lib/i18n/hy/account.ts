@@ -9,6 +9,15 @@ const account: Record<string, string> = {
   "Transparent analytics": "Թափանցիկ վերլուծություն",
   "Private workspace": "Անձնական աշխատանքային տարածք",
   "Sign in to your book": "Մուտք գործեք ձեր հաշիվ",
+  "Create your account": "Ստեղծեք ձեր հաշիվը",
+  "Free to start. Track your portfolio and plan your financial freedom; your data stays private to your account.":
+    "Սկսելն անվճար է։ Հետևեք ձեր պորտֆելին և պլանավորեք ֆինանսական ազատությունը․ ձեր տվյալները հասանելի են միայն ձեզ։",
+  "Reset your password": "Վերականգնեք գաղտնաբառը",
+  "Enter your email and we'll send you a link to choose a new password.":
+    "Մուտքագրեք ձեր էլ. հասցեն, և մենք կուղարկենք հղում՝ նոր գաղտնաբառ ընտրելու համար։",
+  "Confirm password": "Կրկնեք գաղտնաբառը",
+  "The two passwords don't match. Type the same password in both boxes.":
+    "Գաղտնաբառերը չեն համընկնում։ Երկու դաշտում էլ մուտքագրեք նույն գաղտնաբառը։",
   "Early access. Your data stays private to your account.": "Վաղ հասանելիություն։ Ձեր տվյալները տեսանելի են միայն ձեզ։",
 
   // Sign in, sign up, password reset (auth-form.tsx)

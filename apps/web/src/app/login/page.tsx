@@ -75,11 +75,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
         </div>
       </section>
       <section className="login-panel">
-        <div>
-          <p className="eyebrow">{t("Private workspace")}</p>
-          <h2>{t("Sign in to your book")}</h2>
-          <p className="muted">{t("Early access. Your data stays private to your account.")}</p>
-        </div>
+        {/* The heading lives in the form: it changes between sign in, create account and reset. */}
         <Suspense fallback={<AuthForm />}>
           <FormWithNotice searchParams={searchParams} />
         </Suspense>
