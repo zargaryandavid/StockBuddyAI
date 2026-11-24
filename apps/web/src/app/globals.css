@@ -3321,6 +3321,7 @@ textarea {
 .form-message.info { margin: 0.25rem 0 0; padding: 0.75rem 0.9rem; border: 1px solid; border-radius: 10px; font-size: 0.9375rem; font-weight: 600; line-height: 1.45; }
 .form-message.error { color: #9f1d1d; background: #fdecec; border-color: #f3b4b4; }
 .form-message.info { color: #1e3a8a; background: #eaf1ff; border-color: #b6ccf5; }
+.form-message.spam-hint { margin: -0.4rem 0 0; color: #7a4b00; font-size: 0.8125rem; line-height: 1.45; }
 
 /* Sign-in panel in US-dollar green: deep note green with a lighter green glow */
 .login-copy {
@@ -4130,3 +4131,21 @@ input.allocation-typed { width: 5.5rem; text-align: right; }
 .community-card img { width: 180px; height: auto; border-radius: 10px; }
 .community-card .button { display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none; }
 @media (max-width: 900px) { .community-bar { margin-top: 0.6rem; } }
+
+/* Watchlist: price moves of every symbol, tick to show one or compare several */
+.watchlist-chart { margin-bottom: 1rem; }
+.watchlist-chart-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 0.75rem; }
+.watchlist-chart-head h2 { margin: 0 0 0.2rem; }
+.watchlist-chart-head p { margin: 0; }
+.watchlist-chart-picks { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.9rem; margin: 0.9rem 0 0.6rem; }
+.watchlist-chart-pick { display: inline-flex; align-items: center; gap: 0.35rem; font-size: var(--text-sm); cursor: pointer; }
+.watchlist-chart-pick .positive, .watchlist-chart-pick .negative { font-variant-numeric: tabular-nums; }
+.watchlist-swatch { display: inline-block; width: 0.75rem; height: 0.2rem; border-radius: 2px; vertical-align: middle; }
+.watchlist-chart-frame { position: relative; }
+.watchlist-chart-frame svg { display: block; width: 100%; height: auto; }
+.watchlist-grid { stroke: var(--line); stroke-width: 1; }
+.watchlist-zero { stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 4 3; }
+.watchlist-cursor { stroke: #64748b; stroke-width: 1; }
+.watchlist-axis { fill: var(--muted); font-size: 11px; }
+.watchlist-tooltip { position: absolute; top: 0.5rem; left: 3.2rem; display: grid; gap: 0.15rem; padding: 0.45rem 0.6rem; border: 1px solid var(--line); border-radius: 8px; background: rgba(255, 255, 255, 0.95); font-size: 0.75rem; font-variant-numeric: tabular-nums; pointer-events: none; }
+.watchlist-tooltip .watchlist-swatch { margin-right: 0.3rem; }

@@ -16,6 +16,8 @@ const account: Record<string, string> = {
   "Enter your email and we'll send you a link to choose a new password.":
     "Մուտքագրեք ձեր էլ. հասցեն, և մենք կուղարկենք հղում՝ նոր գաղտնաբառ ընտրելու համար։",
   "Confirm password": "Կրկնեք գաղտնաբառը",
+  "Don't see it in a minute? Check your Spam or Junk folder, and mark it as Not spam so the next one arrives in your inbox.":
+    "Չե՞ք տեսնում մեկ րոպեում։ Ստուգեք «Սպամ» կամ «Junk» թղթապանակը և նշեք նամակը որպես «Ոչ սպամ», որպեսզի հաջորդը գա մուտքային արկղ։",
   "The two passwords don't match. Type the same password in both boxes.":
     "Գաղտնաբառերը չեն համընկնում։ Երկու դաշտում էլ մուտքագրեք նույն գաղտնաբառը։",
   "Early access. Your data stays private to your account.": "Վաղ հասանելիություն։ Ձեր տվյալները տեսանելի են միայն ձեզ։",

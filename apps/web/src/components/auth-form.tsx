@@ -28,6 +28,8 @@ export function AuthForm({ notice, join = false }: { notice?: string; join?: boo
   const setMessage = (text: string, vars?: Vars) => setMessageState({ text, vars });
   // Problems (wrong password, missing consent…) show in a red box; confirmations in a blue one.
   const [isError, setIsError] = useState(false);
+  // After we email a link: a reminder that it may land in Spam or Junk.
+  const [emailSent, setEmailSent] = useState(false);
   const fail = (text: string, vars?: Vars) => {
     setIsError(true);
     setMessage(text, vars);
@@ -35,6 +37,11 @@ export function AuthForm({ notice, join = false }: { notice?: string; join?: boo
   const inform = (text: string, vars?: Vars) => {
     setIsError(false);
     setMessage(text, vars);
+    setEmailSent(false);
+  };
+  const informSent = (text: string, vars?: Vars) => {
+    inform(text, vars);
+    setEmailSent(true);
   };
   // Set when the account still needs its email confirmed, so a new link can be sent.
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
@@ -51,7 +58,7 @@ export function AuthForm({ notice, join = false }: { notice?: string; join?: boo
     setBusy(false);
     setResent(!error);
     if (error) fail(error.message);
-    else inform("A new confirmation link was sent to {email}.", { email: pendingEmail });
+    else informSent("A new confirmation link was sent to {email}.", { email: pendingEmail });
   }
   const [showPassword, setShowPassword] = useState(false);
 
@@ -90,7 +97,7 @@ export function AuthForm({ notice, join = false }: { notice?: string; join?: boo
       setBusy(false);
       // The same answer whether or not the account exists, so emails can't be probed.
       if (error) fail(error.status !== 429 ? error.message : "Too many requests. Wait a minute and try again.");
-      else inform("If an account exists for {email}, we sent a link to reset the password.", { email: credentials.email });
+      else informSent("If an account exists for {email}, we sent a link to reset the password.", { email: credentials.email });
       return;
     }
     const result =
@@ -107,7 +114,7 @@ export function AuthForm({ notice, join = false }: { notice?: string; join?: boo
     if (result.error) {
       if (result.error.code === "email_not_confirmed") {
         setPendingEmail(credentials.email);
-        inform("Confirm your email first: open the link we sent to {email}.", { email: credentials.email });
+        informSent("Confirm your email first: open the link we sent to {email}.", { email: credentials.email });
         return;
       }
       fail(result.error.message);
@@ -115,7 +122,7 @@ export function AuthForm({ notice, join = false }: { notice?: string; join?: boo
     }
     if (mode === "signup" && !result.data.session) {
       setPendingEmail(credentials.email);
-      inform("Almost done. We sent a confirmation link to {email}; open it to finish creating your account.", {
+      informSent("Almost done. We sent a confirmation link to {email}; open it to finish creating your account.", {
         email: credentials.email,
       });
       return;
@@ -233,6 +240,11 @@ export function AuthForm({ notice, join = false }: { notice?: string; join?: boo
       {message.text && (
         <p className={`form-message ${isError ? "error" : "info"}`} role={isError ? "alert" : "status"}>
           {t(message.text, message.vars)}
+        </p>
+      )}
+      {message.text && !isError && emailSent && (
+        <p className="form-message spam-hint">
+          {t("Don't see it in a minute? Check your Spam or Junk folder, and mark it as Not spam so the next one arrives in your inbox.")}
         </p>
       )}
       {pendingEmail && !resent && (

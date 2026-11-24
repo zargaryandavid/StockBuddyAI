@@ -28,6 +28,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ValidationError
 
 from stockbuddy.allocation import router as allocation_router
+from stockbuddy.analyst_targets import AnalystTargets, TargetsUnavailable
 from stockbuddy.books import router as books_router
 from stockbuddy.config import get_settings
 from stockbuddy.connections import ConnectionSetupError, ConnectionsService
@@ -170,6 +171,7 @@ async def apply_connections(app: FastAPI) -> None:
         ),
         YahooPriceClient(),
     )
+    app.state.targets = AnalystTargets(settings.fmp_api_key, MarketCache(settings))
     app.state.reminders = ReminderService(settings, repository)
     app.state.shares = ShareService(repository, app.state.market)
     await _close_wish_client(app)
@@ -1056,6 +1058,35 @@ async def resolve_securities(
                 return {"query": query, "error": "Market data is unavailable right now"}
 
     return await asyncio.gather(*(one(query) for query in queries))
+
+
+@app.get("/api/securities/targets")
+async def analyst_targets(
+    request: Request,
+    _user_id: Annotated[UUID, Depends(current_user)],
+    tickers: Annotated[str, Query(min_length=1, max_length=600)],
+):
+    """Analysts' 1-year price target per ticker (null without coverage), kept for a day."""
+    try:
+        symbols = sorted(
+            {
+                PositionInput(ticker=item, shares=0).ticker
+                for item in tickers.split(",")
+                if item.strip()
+            }
+        )
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail="One of the tickers is not valid") from exc
+    if not symbols or len(symbols) > MAX_HISTORY_TICKERS:
+        raise HTTPException(
+            status_code=422, detail=f"Ask for between 1 and {MAX_HISTORY_TICKERS} tickers"
+        )
+    service = request.app.state.targets
+    try:
+        found = await asyncio.to_thread(service.get_many, symbols)
+    except TargetsUnavailable as exc:
+        return {"configured": False, "message": str(exc), "targets": {}}
+    return {"configured": True, "targets": found}
 
 
 @app.get("/api/prices/history")

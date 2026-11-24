@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     hedge_fund_llm_model: str = "gpt-6-sol"
     openai_api_key: str = ""
     anthropic_api_key: str = ""
+    # Financial Modeling Prep: Wall Street analysts' 1-year price targets.
+    fmp_api_key: str = ""
     # Encrypts secrets saved in Admin -> Connections; defaults to one derived from the
     # service role key.
     connections_encryption_key: str = ""

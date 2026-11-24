@@ -115,6 +115,8 @@ type SortKey =
   | "growth_1m"
   | "growth_6m"
   | "growth_1y"
+  | "target"
+  | "target_value"
   | "day"
   | "phase"
   | "status";
@@ -184,6 +186,9 @@ export function Dashboard({
   const [selectedId, setSelectedId] = useState("");
   const [editingId, setEditingId] = useState("");
   const [positions, setPositions] = useState<Position[]>([]);
+  // Analysts' 1-year price targets per ticker (FMP), and why none show when there is no key.
+  const [targets, setTargets] = useState<Record<string, { target: number } | null>>({});
+  const [targetsNote, setTargetsNote] = useState<string | null>(null);
   const [draftPosition, setDraftPosition] = useState<Position>({
     ticker: "",
     shares: 0,
@@ -605,6 +610,8 @@ export function Dashboard({
           right.position.growth_1y ?? right.position.growth ?? null,
         ],
         day: [left.metric.dayAmount, right.metric.dayAmount],
+        target: [targetUpside(left.position, targets), targetUpside(right.position, targets)],
+        target_value: [targetValue(left.position, targets), targetValue(right.position, targets)],
         phase: [
           left.position.lifecycle_phase ?? "Not Analyzed",
           right.position.lifecycle_phase ?? "Not Analyzed",
@@ -631,8 +638,34 @@ export function Dashboard({
     sortDirection,
     sortKey,
     t,
+    targets,
     today,
   ]);
+
+  // Analysts' 1-year targets for the holdings, looked up once the symbols settle.
+  const targetTickers = useMemo(
+    () => [...new Set(positions.map((position) => position.ticker.trim().toUpperCase()).filter(Boolean))].sort().slice(0, 40).join(","),
+    [positions],
+  );
+  useEffect(() => {
+    if (!targetTickers || activeTab !== "portfolio") return;
+    let active = true;
+    const timer = window.setTimeout(() => {
+      api<{ configured: boolean; message?: string; targets: Record<string, { target: number } | null> }>(
+        `/api/securities/targets?tickers=${encodeURIComponent(targetTickers)}`,
+      )
+        .then((answer) => {
+          if (!active || !answer) return;
+          setTargets(answer.targets ?? {});
+          setTargetsNote(answer.configured ? null : answer.message ?? null);
+        })
+        .catch(() => undefined); // the columns simply stay empty
+    }, 600);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [targetTickers, activeTab]);
 
   const resolvePosition = useCallback(
     async (position: Position): Promise<Position> => {
@@ -1318,7 +1351,7 @@ export function Dashboard({
             onClick={() => guardUnsaved(() => setActiveTab("allocation"), { fromEditorOnly: true })}
           >
             <PieChart size={15} aria-hidden="true" />
-            {t("Future allocation")}
+            {t("Watchlist")}
           </button>
         </div>
         <button
@@ -1483,7 +1516,7 @@ export function Dashboard({
         </section>
       ) : activeTab === "allocation" ? (
         <section className="simple-page allocation-shell">
-          <FutureAllocation />
+          <FutureAllocation today={today} />
         </section>
       ) : activeTab === "wishlist" ? (
         <section className="simple-page wishlist-shell">
@@ -1865,6 +1898,8 @@ export function Dashboard({
                       <SortButton className="return-col" label={t("6M")} active={sortKey === "growth_6m"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("growth_6m")} />
                       <SortButton className="return-col" label={t("1Y")} active={sortKey === "growth_1y"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("growth_1y")} />
                       <SortButton className="return-col" label={t("Day")} active={sortKey === "day"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("day")} />
+                      <SortButton className="return-col" label={t("1Y target")} active={sortKey === "target"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("target")} />
+                      <SortButton className="return-col" label={t("1Y value")} active={sortKey === "target_value"} direction={sortDirection} defaultDirection="desc" onClick={() => sortPositions("target_value")} />
                       <SortButton className="lifecycle-col" label={t("Lifecycle phase")} active={sortKey === "phase"} direction={sortDirection} defaultDirection="asc" onClick={() => sortPositions("phase")} />
                       <SortButton className="status-col" label={t("MyPortfolioBuddy status")} active={sortKey === "status"} direction={sortDirection} defaultDirection="asc" onClick={() => sortPositions("status")} />
                       {/* The ⋯ menu column is too narrow for a visible word in every language. */}
@@ -1963,6 +1998,22 @@ export function Dashboard({
                             <span className={`financial-cell return-col ${(metric.dayAmount ?? 0) >= 0 ? "positive" : "negative"}`} role="cell" title={t("Day change")}>
                               {metric.dayAmount == null ? "—" : <StackedChange amount={signedMoney(metric.dayAmount, baseCurrency)} percent={signedPercent(metric.dayPercent)} />}
                             </span>
+                            {(() => {
+                              const target = targets[position.ticker.trim().toUpperCase()]?.target ?? null;
+                              const gain = targetUpside(position, targets);
+                              const projected = targetValue(position, targets);
+                              const note = targetsNote ? t(targetsNote) : t("Analysts' average 1-year price target (Financial Modeling Prep). An estimate, not a promise.");
+                              return (
+                                <>
+                                  <span className={`financial-cell return-col ${(gain ?? 0) >= 0 ? "positive" : "negative"}`} role="cell" title={target == null && !targetsNote ? t("No analyst target for this holding") : note}>
+                                    {target == null || gain == null ? "—" : <StackedChange amount={money(target, baseCurrency)} percent={signedPercent(gain)} />}
+                                  </span>
+                                  <span className={`financial-cell return-col ${(gain ?? 0) >= 0 ? "positive" : "negative"}`} role="cell" title={t("Shares × analysts' 1-year target")}>
+                                    {projected == null || metric.marketValue == null ? "—" : <StackedChange amount={money(projected, baseCurrency)} percent={signedMoney(projected - metric.marketValue, baseCurrency)} />}
+                                  </span>
+                                </>
+                              );
+                            })()}
                             <button type="button" className="phase-badge lifecycle-col" title={t("Open lifecycle evidence")} onClick={() => toggleExpanded(setExpandedRows, index)}>{t(position.lifecycle_phase || "Not Analyzed")}</button>
                             <button type="button" className={`status-badge status-col status-${status.status.toLowerCase().replaceAll(" ", "-")}`} title={status.warnings.map((warning) => t(warning)).join(" ") || t("No active warnings")} onClick={() => toggleExpanded(setExpandedRows, index)}>
                               {status.warnings.length > 0 && <Info size={13} />}
@@ -2760,6 +2811,22 @@ function StackedChange({ amount, percent }: { amount: string; percent: string })
   );
 }
 
+type Targets = Record<string, { target: number } | null>;
+
+/** % from today's price to analysts' 1-year target; null without a price or a target. */
+function targetUpside(position: Position, targets: Targets): number | null {
+  const target = targets[position.ticker.trim().toUpperCase()]?.target;
+  const price = Number(position.price);
+  return target && price > 0 ? (target / price - 1) * 100 : null;
+}
+
+/** What the shares would be worth at analysts' 1-year target. */
+function targetValue(position: Position, targets: Targets): number | null {
+  const target = targets[position.ticker.trim().toUpperCase()]?.target;
+  const shares = Number(position.shares);
+  return target && shares > 0 ? target * shares : null;
+}
+
 function holdingColumns({
   returns,
   lifecycle,
@@ -2786,6 +2853,8 @@ function holdingColumns({
       "minmax(44px, 0.5fr)",
       "minmax(44px, 0.5fr)",
       "minmax(78px, 0.9fr)",
+      "minmax(78px, 0.9fr)",
+      "minmax(86px, 1fr)",
     );
   }
   if (lifecycle) tracks.push("minmax(84px, 0.8fr)");

@@ -99,6 +99,8 @@ describe("AuthForm email confirmation", () => {
     const sent = await screen.findByText(/We sent a confirmation link to new@example.com/);
     // Shown in the blue notice box, so it isn't missed.
     expect(sent.className).toContain("info");
+    // Confirmation emails can land in Spam (Supabase's shared sender), so say where to look.
+    expect(screen.getByText(/Check your Spam or Junk folder/)).toBeTruthy();
     expect(sent.getAttribute("role")).toBe("status");
     expect(auth.signUp).toHaveBeenCalledWith({
       email: "new@example.com",

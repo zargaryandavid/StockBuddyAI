@@ -11,6 +11,8 @@ import { useT } from "@/lib/i18n/client";
 import { money } from "@/lib/portfolio-metrics";
 import type { Quote } from "@/lib/today";
 
+import { WatchlistChart } from "@/components/watchlist-chart";
+
 type ResolveResult = { query: string; data?: Quote; error?: string };
 
 const emptyItem = (): AllocationItem => ({ label: "", ticker: "", name: "", mode: "pct", value: 0, expected_return_pct: null });
@@ -25,7 +27,7 @@ function signedPct(value: number | null, digits = 1) {
  * Plan where future money goes: a budget split across stocks, funds and other investments,
  * with what each amount buys at today's price and how each moved over the last year.
  */
-export function FutureAllocation() {
+export function FutureAllocation({ today = new Date().toISOString().slice(0, 10) }: { today?: string } = {}) {
   const t = useT();
   const [plan, setPlan] = useState<AllocationPlan | null>(null);
   const [saved, setSaved] = useState("");
@@ -122,7 +124,7 @@ export function FutureAllocation() {
   if (!plan || !summary) {
     return (
       <section className="future-allocation">
-        <h1>{t("Future allocation")}</h1>
+        <h1>{t("Watchlist")}</h1>
         <p className="muted">
           <Loader2 size={15} className="spinning" aria-hidden="true" /> {t("Loading your plan…")}
         </p>
@@ -162,7 +164,7 @@ export function FutureAllocation() {
     <section className="future-allocation" aria-labelledby="allocation-title">
       <div className="page-heading">
         <div>
-          <h1 id="allocation-title">{t("Future allocation")}</h1>
+          <h1 id="allocation-title">{t("Watchlist")}</h1>
           <p className="page-subtitle">
             {t("Plan where your next money goes. Type a symbol and a share or amount: you see what it buys at today's price and how it moved over the last year.")}
           </p>
@@ -172,6 +174,8 @@ export function FutureAllocation() {
           {dirty ? t("Save plan") : t("Saved")}
         </button>
       </div>
+
+      <WatchlistChart tickers={plan.items.map((item) => item.ticker)} today={today} />
 
       <article className="panel allocation-panel">
         <div className="allocation-budget">
@@ -200,7 +204,7 @@ export function FutureAllocation() {
           </div>
         </div>
 
-        <div className="allocation-table" role="table" aria-label={t("Future allocation")}>
+        <div className="allocation-table" role="table" aria-label={t("Watchlist")}>
           <div className="allocation-row allocation-head" role="row">
             <span role="columnheader">{t("Allocation")}</span>
             <span role="columnheader">{t("Investment")}</span>

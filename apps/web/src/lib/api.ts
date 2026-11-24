@@ -82,6 +82,7 @@ const MARKET_DATA = [
   "/api/fx",
   "/api/securities/resolve-batch",
   "/api/funds/holdings",
+  "/api/securities/targets",
 ];
 const PAGE_TTL_MS = 60_000;
 const MARKET_TTL_MS = 5 * 60_000;

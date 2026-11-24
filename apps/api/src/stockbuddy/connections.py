@@ -132,6 +132,21 @@ CONNECTIONS: tuple[Connection, ...] = (
         ),
     ),
     Connection(
+        "fmp",
+        "Analyst forecasts (Financial Modeling Prep)",
+        "Wall Street analysts' 1-year price targets for the 1Y target and 1Y value columns.",
+        (
+            Field(
+                "api_key",
+                "API key",
+                "fmp_api_key",
+                "secret",
+                "",
+                "Free at financialmodelingprep.com → Dashboard → API key.",
+            ),
+        ),
+    ),
+    Connection(
         "sec",
         "SEC EDGAR",
         "Company names, sectors, and report dates. The SEC asks for a contact email.",
@@ -443,6 +458,24 @@ async def _test_openai(settings: Settings, context: dict[str, Any]) -> str:
     return f"Key works. {model} is available."
 
 
+async def _test_fmp(settings: Settings, context: dict[str, Any]) -> str:
+    if not settings.fmp_api_key:
+        raise ConnectionSetupError("No API key is set.")
+    from stockbuddy.analyst_targets import FMP_TARGETS_URL, parse_consensus
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        response = await client.get(
+            FMP_TARGETS_URL, params={"symbol": "AAPL", "apikey": settings.fmp_api_key}
+        )
+    if response.status_code in (401, 403):
+        raise ConnectionSetupError("Financial Modeling Prep rejected the API key.")
+    response.raise_for_status()
+    found = parse_consensus(response.json())
+    if not found:
+        raise ConnectionSetupError("The key works, but no analyst target came back for AAPL.")
+    return f"Key works. Analysts' 1-year target for AAPL: ${found['target']:,.2f}."
+
+
 def _smtp_login(settings: Settings) -> None:
     with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as smtp:
         if settings.smtp_starttls:
@@ -541,6 +574,7 @@ async def _test_storage(settings: Settings, context: dict[str, Any]) -> str:
 _TESTS = {
     "anthropic": _test_anthropic,
     "openai": _test_openai,
+    "fmp": _test_fmp,
     "email": _test_email,
     "stripe": _test_stripe,
     "sec": _test_sec,

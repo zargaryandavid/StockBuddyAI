@@ -223,6 +223,7 @@ def test_only_admins_reach_connections_and_saving_applies_at_once(monkeypatch):
             "openai",
             "email",
             "stripe",
+            "fmp",
             "sec",
             "market",
             "storage",

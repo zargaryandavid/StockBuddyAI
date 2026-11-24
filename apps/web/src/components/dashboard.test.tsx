@@ -70,7 +70,7 @@ describe("Dashboard navigation", () => {
       "Analytics",
       "Transactions",
       "Growth calculator",
-      "Future allocation",
+      "Watchlist",
       "Assets",
       "Wishlist",
       "Education",
@@ -83,7 +83,7 @@ describe("Dashboard navigation", () => {
       "Analytics",
       "Transactions",
       "Growth calculator",
-      "Future allocation",
+      "Watchlist",
     ]);
     expect(screen.getByRole("button", { name: "Portfolio" }).getAttribute("aria-current")).toBe("page");
 
@@ -453,6 +453,37 @@ describe("Dashboard navigation", () => {
         .getAllByRole("textbox", { name: /Ticker/ })
         .map((input) => (input as HTMLInputElement).value),
     ).toEqual(["AAPL", "MSFT"]);
+  });
+
+  it("shows analysts' 1-year target per stock and what each position would be worth", async () => {
+    vi.mocked(api).mockImplementation(async (path: string) => {
+      if (path === "/api/portfolios") {
+        return [{ id: "p1", name: "Targets", cash: 0, portfolio_positions: [
+          { ticker: "AAPL", shares: 10, purchase_price: 150, display_order: 0 },
+          { ticker: "VOO", shares: 2, purchase_price: 400, display_order: 1 },
+        ] }];
+      }
+      if (path === "/api/securities/resolve-batch") {
+        return batch({ ticker: "AAPL", name: "Apple", price: 200, sector: "Technology" }, { ticker: "VOO", name: "Vanguard S&P 500", price: 500, sector: "Funds", is_etf_index: true });
+      }
+      if (path.startsWith("/api/securities/targets")) {
+        expect(path).toBe("/api/securities/targets?tickers=AAPL%2CVOO");
+        return { configured: true, targets: { AAPL: { target: 250, high: 300, low: 180 }, VOO: null } };
+      }
+      return null;
+    });
+    render(<Dashboard initialTab="portfolio" email="owner@example.com" today="2026-10-23" />);
+    await screen.findAllByText("Apple");
+    expect(screen.getByRole("button", { name: "Sort 1Y target largest to smallest" })).toBeTruthy();
+
+    // AAPL: target $250 is +25.0% from $200; 10 shares → $2,500, +$500 over today's $2,000.
+    const targetCell = (await screen.findByText("$250.00", {}, { timeout: 3000 })).closest("[role=cell]") as HTMLElement;
+    expect(targetCell.textContent).toContain("+25.0%");
+    expect(targetCell.getAttribute("title")).toMatch(/Analysts' average 1-year price target/);
+    const valueCell = screen.getByText("$2,500.00").closest("[role=cell]") as HTMLElement;
+    expect(valueCell.textContent).toContain("+$500.00");
+    // A fund has no analyst target, so both cells show a dash.
+    expect(screen.getAllByTitle("No analyst target for this holding")[0].textContent).toBe("—");
   });
 
   it("accepts an average purchase price with many decimals, as buys and sells leave it", async () => {
