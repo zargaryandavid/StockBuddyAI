@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     # service role key.
     connections_encryption_key: str = ""
     openai_vision_model: str = "gpt-6-sol"
+    # Researches analysts' price targets on the web for stocks FMP doesn't cover.
+    openai_research_model: str = "gpt-6-sol"
     # Vercel's disk is read-only except /tmp, which is wiped between instances.
     sec_cache_dir: str = Field(
         default_factory=lambda: "/tmp/stockbuddy/sec" if os.environ.get("VERCEL") else ".cache/sec"

@@ -187,7 +187,7 @@ export function Dashboard({
   const [editingId, setEditingId] = useState("");
   const [positions, setPositions] = useState<Position[]>([]);
   // Analysts' 1-year price targets per ticker (FMP), and why none show when there is no key.
-  const [targets, setTargets] = useState<Record<string, { target: number } | null>>({});
+  const [targets, setTargets] = useState<Record<string, { target: number; approximate?: boolean; source?: string; as_of?: string } | null>>({});
   const [targetsNote, setTargetsNote] = useState<string | null>(null);
   const [draftPosition, setDraftPosition] = useState<Position>({
     ticker: "",
@@ -651,7 +651,7 @@ export function Dashboard({
     if (!targetTickers || activeTab !== "portfolio") return;
     let active = true;
     const timer = window.setTimeout(() => {
-      api<{ configured: boolean; message?: string; targets: Record<string, { target: number } | null> }>(
+      api<{ configured: boolean; message?: string; targets: Record<string, { target: number; approximate?: boolean; source?: string; as_of?: string } | null> }>(
         `/api/securities/targets?tickers=${encodeURIComponent(targetTickers)}`,
       )
         .then((answer) => {
@@ -2004,14 +2004,19 @@ export function Dashboard({
                               {metric.dayAmount == null ? "—" : <StackedChange amount={signedMoney(metric.dayAmount, baseCurrency)} percent={signedPercent(metric.dayPercent)} />}
                             </span>
                             {(() => {
-                              const target = targets[position.ticker.trim().toUpperCase()]?.target ?? null;
+                              const found = targets[position.ticker.trim().toUpperCase()] ?? null;
+                              const target = found?.target ?? null;
                               const gain = targetUpside(position, targets);
                               const projected = targetValue(position, targets);
-                              const note = targetsNote ? t(targetsNote) : t("Analysts' average 1-year price target (Financial Modeling Prep). An estimate, not a promise.");
+                              const note = targetsNote
+                                ? t(targetsNote)
+                                : found?.approximate
+                                  ? t("Approximate analysts' consensus from {source}, {date}. An estimate, not a promise.", { source: found.source ?? "", date: found.as_of ?? "" })
+                                  : t("Analysts' average 1-year price target (Financial Modeling Prep). An estimate, not a promise.");
                               return (
                                 <>
                                   <span className={`financial-cell return-col ${(gain ?? 0) >= 0 ? "positive" : "negative"}`} role="cell" title={target == null && !targetsNote ? t("No analyst target for this holding") : note}>
-                                    {target == null || gain == null ? "—" : <StackedChange amount={money(target, baseCurrency)} percent={signedPercent(gain)} />}
+                                    {target == null || gain == null ? "—" : <StackedChange amount={`${found?.approximate ? "≈ " : ""}${money(target, baseCurrency)}`} percent={signedPercent(gain)} />}
                                   </span>
                                   <span className={`financial-cell return-col ${(gain ?? 0) >= 0 ? "positive" : "negative"}`} role="cell" title={t("Shares × analysts' 1-year target")}>
                                     {projected == null || metric.marketValue == null ? "—" : <StackedChange amount={money(projected, baseCurrency)} percent={signedMoney(projected - metric.marketValue, baseCurrency)} />}
@@ -2816,7 +2821,7 @@ function StackedChange({ amount, percent }: { amount: string; percent: string })
   );
 }
 
-type Targets = Record<string, { target: number } | null>;
+type Targets = Record<string, { target: number; approximate?: boolean; source?: string; as_of?: string } | null>;
 
 /** % from today's price to analysts' 1-year target; null without a price or a target. */
 function targetUpside(position: Position, targets: Targets): number | null {

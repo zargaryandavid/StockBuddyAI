@@ -65,6 +65,23 @@ describe("FutureAllocation forecasts", () => {
     apiMock.mockReset();
   });
 
+  it("marks a hand-entered target as approximate, with its source and date", async () => {
+    apiMock.mockImplementation(async (path: string, init?: RequestInit) => {
+      if (path === "/api/allocation-plan" && !init) {
+        return { budget: 1000, currency: "USD", items: [{ label: "", ticker: "VRT", name: "", mode: "pct", value: 50, expected_return_pct: null }] };
+      }
+      if (path === "/api/securities/resolve-batch") return [{ query: "VRT", data: { ticker: "VRT", company_name: "Vertiv", price: 162 } }];
+      if (path.startsWith("/api/securities/targets")) {
+        return { configured: true, targets: { VRT: { target: 324, approximate: true, source: "Benzinga", as_of: "Aug 2026" } } };
+      }
+      return null;
+    });
+    render(<FutureAllocation />);
+    const cell = (await screen.findByText("≈ $324", {}, { timeout: 3000 })).closest("[role=cell]") as HTMLElement;
+    expect(cell.textContent).toContain("+100.0%");
+    expect(cell.getAttribute("title")).toBe("Approximate analysts' consensus from Benzinga, Aug 2026. An estimate, not a promise.");
+  });
+
   it("says forecasts aren't connected instead of leaving silent dashes", async () => {
     apiMock.mockImplementation(async (path: string, init?: RequestInit) => {
       if (path === "/api/allocation-plan" && !init) {

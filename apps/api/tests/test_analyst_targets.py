@@ -102,3 +102,25 @@ def test_endpoint_returns_targets_or_says_a_key_is_needed():
     }
     missing = run(FakeTargets("Add a key"), "/api/securities/targets?tickers=AAPL")
     assert missing.json() == {"configured": False, "message": "Add a key", "targets": {}}
+
+
+def test_hand_entered_targets_fill_symbols_fmp_does_not_cover():
+    client, _ = fmp(
+        {"VRT": (402, "Premium Query Parameter"), "AAPL": (200, [{"targetConsensus": 250}])}
+    )
+    cache = FakeCache()
+    cache.rows["target_manual:VRT"] = {
+        "v": {"target": 324, "source": "Benzinga", "as_of": "2026-08"}
+    }
+    found = AnalystTargets("key", cache, client).get_many(["VRT", "AAPL"])
+    assert found["AAPL"]["target"] == 250.0 and "approximate" not in found["AAPL"]
+    assert found["VRT"] == {
+        "target": 324.0,
+        "high": None,
+        "low": None,
+        "approximate": True,
+        "source": "Benzinga",
+        "as_of": "2026-08",
+    }
+    # Without a key, hand-entered targets still show.
+    assert AnalystTargets("", cache).get_many(["VRT"])["VRT"]["approximate"] is True

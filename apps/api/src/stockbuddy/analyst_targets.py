@@ -9,16 +9,25 @@ Funds and companies without analyst coverage have no target and are remembered a
 from __future__ import annotations
 
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import httpx
 
 from stockbuddy.market_cache import COMPANY_TTL_SECONDS, MarketCache
+from stockbuddy.target_research import ResearchFailed, TargetResearch
 
 logger = logging.getLogger(__name__)
 
 FMP_TARGETS_URL = "https://financialmodelingprep.com/stable/price-target-consensus"
+# Hand-entered consensus targets (from public analyst reports) for symbols FMP's plan doesn't
+# cover; each says where and when it came from, and is used for up to half a year.
+MANUAL_TTL_SECONDS = 183 * 24 * 3_600
+# Targets researched on the web by OpenAI are kept a week, shared by every client.
+RESEARCH_TTL_SECONDS = 7 * 24 * 3_600
+# After a failed research request (no credits, outage), wait before trying again.
+RESEARCH_BACKOFF_SECONDS = 10 * 60
 
 
 class TargetsUnavailable(RuntimeError):
@@ -50,15 +59,21 @@ def parse_consensus(payload: Any) -> dict[str, float] | None:
 
 class AnalystTargets:
     def __init__(
-        self, api_key: str, cache: MarketCache, client: httpx.Client | None = None
+        self,
+        api_key: str,
+        cache: MarketCache,
+        client: httpx.Client | None = None,
+        research: TargetResearch | None = None,
     ) -> None:
         self.api_key = api_key
         self.cache = cache
+        self.research = research
         self._client = client or httpx.Client(timeout=10)
+        self._research_failed_at = 0.0
 
     @property
     def configured(self) -> bool:
-        return bool(self.api_key)
+        return bool(self.api_key) or self.research is not None
 
     def get_many(self, tickers: list[str]) -> dict[str, dict[str, float] | None]:
         symbols = sorted({ticker.strip().upper() for ticker in tickers if ticker.strip()})
@@ -72,8 +87,9 @@ class AnalystTargets:
             for symbol in symbols
             if f"target:{symbol}" in stored
         }
-        missing = [symbol for symbol in symbols if symbol not in found]
-        if missing and not self.configured:
+        missing = [symbol for symbol in symbols if symbol not in found] if self.api_key else []
+        manual = self._manual(symbols)
+        if not self.configured and not manual and len(found) < len(symbols):
             raise TargetsUnavailable("Add a Financial Modeling Prep key in Admin → Connections.")
         if missing:
             with ThreadPoolExecutor(max_workers=6) as pool:
@@ -86,7 +102,70 @@ class AnalystTargets:
             found.update(
                 {symbol: (None if value == "error" else value) for symbol, value in fetched.items()}
             )
-        return {symbol: found.get(symbol) for symbol in symbols}
+        # FMP's own number wins; a hand-entered approximate one, then web research, fill gaps.
+        result = {symbol: found.get(symbol) or manual.get(symbol) for symbol in symbols}
+        gaps = [symbol for symbol in symbols if result[symbol] is None]
+        if gaps:
+            result.update(self._researched(gaps))
+        return result
+
+    def _researched(self, symbols: list[str]) -> dict[str, dict[str, Any] | None]:
+        """Web-researched targets: from the week's cache, else asked of OpenAI now."""
+        stored = self.cache.get_many(
+            [f"target_ai:{symbol}" for symbol in symbols], ttl=RESEARCH_TTL_SECONDS
+        )
+        known = {
+            symbol: stored[f"target_ai:{symbol}"].get("v")
+            for symbol in symbols
+            if f"target_ai:{symbol}" in stored
+        }
+        ask = [symbol for symbol in symbols if symbol not in known]
+        cooling = time.monotonic() - self._research_failed_at < RESEARCH_BACKOFF_SECONDS
+        if ask and self.research is not None and not cooling:
+            try:
+                answers = self.research.research(ask)
+            except ResearchFailed as exc:
+                logger.warning("Target research failed: %s", exc)
+                self._research_failed_at = time.monotonic()
+            else:
+                # "No coverage" (funds, tiny companies) is remembered too, so it isn't re-asked.
+                self.cache.put_many(
+                    {f"target_ai:{symbol}": {"v": value} for symbol, value in answers.items()}
+                )
+                known.update(answers)
+        return {
+            symbol: (
+                {
+                    "target": float(value["target"]),
+                    "high": None,
+                    "low": None,
+                    "approximate": True,
+                    "source": f"web research: {value.get('source') or 'public sources'}",
+                    "as_of": str(value.get("as_of") or ""),
+                }
+                if isinstance(value, dict) and _number(value.get("target"))
+                else None
+            )
+            for symbol, value in known.items()
+        }
+
+    def _manual(self, symbols: list[str]) -> dict[str, dict[str, Any]]:
+        stored = self.cache.get_many(
+            [f"target_manual:{symbol}" for symbol in symbols], ttl=MANUAL_TTL_SECONDS
+        )
+        found: dict[str, dict[str, Any]] = {}
+        for symbol in symbols:
+            value = (stored.get(f"target_manual:{symbol}") or {}).get("v")
+            if isinstance(value, dict) and _number(value.get("target")):
+                found[symbol] = {
+                    "target": float(value["target"]),
+                    "high": None,
+                    "low": None,
+                    "approximate": True,
+                    "source": str(value.get("source") or "public analyst reports"),
+                    "as_of": str(value.get("as_of") or ""),
+                }
+        return found
 
     def _fetch(self, symbol: str) -> dict[str, float] | None | str:
         try:

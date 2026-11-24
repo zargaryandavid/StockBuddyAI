@@ -67,6 +67,7 @@ from stockbuddy.schemas import (
 )
 from stockbuddy.sharing import ShareService, new_token
 from stockbuddy.supabase import Account, SupabaseError, SupabaseGateway
+from stockbuddy.target_research import TargetResearch
 from stockbuddy.wishes import WishMatcher
 
 logger = logging.getLogger(__name__)
@@ -171,7 +172,15 @@ async def apply_connections(app: FastAPI) -> None:
         ),
         YahooPriceClient(),
     )
-    app.state.targets = AnalystTargets(settings.fmp_api_key, MarketCache(settings))
+    app.state.targets = AnalystTargets(
+        settings.fmp_api_key,
+        MarketCache(settings),
+        research=(
+            TargetResearch(settings.openai_api_key, settings.openai_research_model)
+            if settings.openai_api_key
+            else None
+        ),
+    )
     app.state.reminders = ReminderService(settings, repository)
     app.state.shares = ShareService(repository, app.state.market)
     await _close_wish_client(app)

@@ -104,12 +104,12 @@ export function FutureAllocation({ today = new Date().toISOString().slice(0, 10)
   }, [settled]);
 
   // Analysts' 1-year price targets (the consensus TradingView shows), via Financial Modeling Prep.
-  const [targets, setTargets] = useState<Record<string, { target: number } | null>>({});
+  const [targets, setTargets] = useState<Record<string, { target: number; approximate?: boolean; source?: string; as_of?: string } | null>>({});
   const [targetsNote, setTargetsNote] = useState<string | null>(null);
   useEffect(() => {
     if (!settled) return;
     let active = true;
-    api<{ configured: boolean; message?: string; targets: Record<string, { target: number } | null> }>(
+    api<{ configured: boolean; message?: string; targets: Record<string, { target: number; approximate?: boolean; source?: string; as_of?: string } | null> }>(
       `/api/securities/targets?tickers=${encodeURIComponent(settled.split(",").slice(0, 40).join(","))}`,
     )
       .then((answer) => {
@@ -339,20 +339,23 @@ export function FutureAllocation({ today = new Date().toISOString().slice(0, 10)
                   )}
                 </span>
                 {(() => {
-                  const target = item.ticker ? targets[item.ticker.toUpperCase()]?.target ?? null : null;
+                  const found = item.ticker ? targets[item.ticker.toUpperCase()] ?? null : null;
+                  const target = found?.target ?? null;
                   const gain = target != null && row.price ? (target / row.price - 1) * 100 : null;
                   const title = targetsNote
                     ? t(targetsNote)
                     : target == null
                       ? t("No analyst target for this holding")
-                      : t("Analysts' average 1-year price target (Financial Modeling Prep). An estimate, not a promise.");
+                      : found?.approximate
+                        ? t("Approximate analysts' consensus from {source}, {date}. An estimate, not a promise.", { source: found.source ?? "", date: found.as_of ?? "" })
+                        : t("Analysts' average 1-year price target (Financial Modeling Prep). An estimate, not a promise.");
                   return (
                     <span role="cell" className="allocation-num allocation-forecast" title={item.ticker ? title : undefined}>
                       {target == null || gain == null ? (
                         <span className="muted">—</span>
                       ) : (
                         <>
-                          <small>{usd(target)}</small>
+                          <small>{found?.approximate ? "≈ " : ""}{usd(target)}</small>
                           <strong className={gain >= 0 ? "positive" : "negative"}>{signedPct(gain)}</strong>
                         </>
                       )}
