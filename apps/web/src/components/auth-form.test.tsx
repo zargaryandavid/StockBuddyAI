@@ -72,7 +72,10 @@ describe("AuthForm email confirmation", () => {
     fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.click(screen.getByRole("button", { name: "Create account" }));
 
-    expect(await screen.findByText(/We sent a confirmation link to new@example.com/)).toBeTruthy();
+    const sent = await screen.findByText(/We sent a confirmation link to new@example.com/);
+    // Shown in the blue notice box, so it isn't missed.
+    expect(sent.className).toContain("info");
+    expect(sent.getAttribute("role")).toBe("status");
     expect(auth.signUp).toHaveBeenCalledWith({
       email: "new@example.com",
       password: "long-password-1",

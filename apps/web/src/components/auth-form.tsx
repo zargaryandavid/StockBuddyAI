@@ -26,7 +26,7 @@ export function AuthForm({ notice, join = false }: { notice?: string; join?: boo
   const [opening, setOpening] = useState(false);
   const [message, setMessageState] = useState<Message>({ text: notice ?? "" });
   const setMessage = (text: string, vars?: Vars) => setMessageState({ text, vars });
-  // Problems (wrong password, missing consent…) show in red; confirmations stay grey.
+  // Problems (wrong password, missing consent…) show in a red box; confirmations in a blue one.
   const [isError, setIsError] = useState(false);
   const fail = (text: string, vars?: Vars) => {
     setIsError(true);
@@ -197,7 +197,7 @@ export function AuthForm({ notice, join = false }: { notice?: string; join?: boo
         </label>
       )}
       {message.text && (
-        <p className={`form-message${isError ? " error" : ""}`} role={isError ? "alert" : "status"}>
+        <p className={`form-message ${isError ? "error" : "info"}`} role={isError ? "alert" : "status"}>
           {t(message.text, message.vars)}
         </p>
       )}

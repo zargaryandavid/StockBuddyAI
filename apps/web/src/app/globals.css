@@ -3316,7 +3316,11 @@ textarea {
 }
 
 /* Sign-in problems (wrong password…) in red */
-.form-message.error { color: var(--danger); font-weight: 600; }
+/* Sign-in messages stand out: red box for problems, blue box for "check your email" and other news. */
+.form-message.error,
+.form-message.info { margin: 0.25rem 0 0; padding: 0.75rem 0.9rem; border: 1px solid; border-radius: 10px; font-size: 0.9375rem; font-weight: 600; line-height: 1.45; }
+.form-message.error { color: #9f1d1d; background: #fdecec; border-color: #f3b4b4; }
+.form-message.info { color: #1e3a8a; background: #eaf1ff; border-color: #b6ccf5; }
 
 /* Sign-in panel in US-dollar green: deep note green with a lighter green glow */
 .login-copy {

@@ -16,7 +16,10 @@ describe("CommunityLink", () => {
 
     const card = screen.getByRole("dialog", { name: "Our Telegram group" });
     expect(card).toBeTruthy();
-    expect(screen.getByAltText("QR code for the MyPortfolioBuddy Telegram group")).toBeTruthy();
+    // The plain file, not the image resizer, which returns 404 on Vercel here.
+    expect(screen.getByAltText("QR code for the MyPortfolioBuddy Telegram group").getAttribute("src")).toBe(
+      "/telegram-group-qr.png",
+    );
     const link = screen.getByRole("link", { name: /Open in Telegram/ });
     expect(link.getAttribute("href")).toBe("https://t.me/+0PupBvTmIJcwOWEy");
     expect(link.getAttribute("target")).toBe("_blank");

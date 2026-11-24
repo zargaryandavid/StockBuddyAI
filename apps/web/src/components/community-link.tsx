@@ -52,6 +52,9 @@ export function CommunityLink() {
             alt={t("QR code for the MyPortfolioBuddy Telegram group")}
             width={180}
             height={180}
+            // Served as is: Vercel's image resizer isn't reachable on this setup (404), and the
+            // file is only 7 KB.
+            unoptimized
           />
           <a className="button primary" href={COMMUNITY_URL} target="_blank" rel="noopener noreferrer">
             <Send size={15} aria-hidden="true" />
