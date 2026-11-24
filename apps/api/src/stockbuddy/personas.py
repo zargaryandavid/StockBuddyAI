@@ -42,7 +42,10 @@ def builtin_prompt(persona: str) -> str:
 
 
 def builtin_prompts() -> dict[str, str]:
-    return {persona.persona: builtin_prompt(persona.persona) for persona in PERSONAS}
+    """The built-in prompts without loading the review library (see personas_builtin)."""
+    from stockbuddy.personas_builtin import BUILTIN_PROMPTS
+
+    return {persona.persona: BUILTIN_PROMPTS[persona.persona] for persona in PERSONAS}
 
 
 def prompt_is_usable(prompt: str) -> bool:
