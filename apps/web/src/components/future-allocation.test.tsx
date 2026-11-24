@@ -45,7 +45,7 @@ describe("FutureAllocation", () => {
     expect(forecast.textContent).toContain("+10.0%");
     expect(screen.getByTitle("669 whole at $70")).toBeTruthy();
     expect(screen.getAllByText("+18.6%").length).toBeGreaterThan(0);
-    expect(screen.getByTitle("1M +1.2% · 6M +9.4%")).toBeTruthy();
+    expect(screen.getByTitle("1M +1.2% · 6M +9.4% · 1Y +18.6%")).toBeTruthy();
     expect(screen.getByText(/AMD 36,180,000 not allocated yet/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Add investment" }));
@@ -95,5 +95,31 @@ describe("FutureAllocation forecasts", () => {
       "textContent",
       expect.stringContaining("1Y forecasts aren't connected yet"),
     );
+  });
+});
+
+describe("FutureAllocation period", () => {
+  afterEach(() => {
+    cleanup();
+    apiMock.mockReset();
+  });
+
+  it("follows the chart's period: 6M shows Last 6 months with the chart's 6-month change", async () => {
+    apiMock.mockImplementation(async (path: string, init?: RequestInit) => {
+      if (path === "/api/allocation-plan" && !init) {
+        return { budget: 1000, currency: "USD", items: [{ label: "", ticker: "VRT", name: "", mode: "pct", value: 50, expected_return_pct: null }] };
+      }
+      if (path === "/api/securities/resolve-batch") return [{ query: "VRT", data: { ticker: "VRT", company_name: "Vertiv", price: 160, growth_1y: 2.9, growth_6m: -20, growth_1m: 1 } }];
+      if (path.startsWith("/api/prices/history")) {
+        return { VRT: [{ date: "2026-05-25", close: 200 }, { date: "2026-11-24", close: 150 }] };
+      }
+      return null;
+    });
+    render(<FutureAllocation today="2026-11-24" />);
+    expect(await screen.findByRole("columnheader", { name: "Last 1 year" })).toBeTruthy();
+    fireEvent.click(await screen.findByRole("button", { name: "6M" }));
+    expect(screen.getByRole("columnheader", { name: "Last 6 months" })).toBeTruthy();
+    // The column shows the chart's own number: 200 → 150 is −25.0%.
+    await waitFor(() => expect(screen.getAllByText("−25.0%").length).toBeGreaterThan(1));
   });
 });

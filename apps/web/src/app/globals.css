@@ -4157,3 +4157,6 @@ input.allocation-typed { width: 5.5rem; text-align: right; }
 
 /* Shown while analysts' 1-year forecasts have no data source yet */
 .targets-note { margin: 0 0 0.6rem; padding: 0.55rem 0.8rem; border: 1px solid #f1d49a; border-radius: 8px; background: #fff8e8; color: #7a4b00; font-size: var(--text-sm); }
+
+/* A stock's 1-year target being researched for the first time */
+.analyzing { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--muted); font-size: var(--text-xs); white-space: nowrap; }

@@ -205,6 +205,13 @@ const portfolio: Record<string, string> = {
   "1Y target": "1 տ թիրախ",
   "1Y value": "1 տ արժեք",
   "1Y forecast": "1 տ կանխատեսում",
+  "Last 1 month": "Վերջին 1 ամիս",
+  "Last 6 months": "Վերջին 6 ամիս",
+  "Last 5 years": "Վերջին 5 տարի",
+  "1M {m} · 6M {s} · 1Y {y}": "1 ամ {m} · 6 ամ {s} · 1 տ {y}",
+  "Analyzing…": "Վերլուծվում է…",
+  "Researching analysts' 1-year target for this stock. It's saved for everyone, so it shows instantly next time.":
+    "Որոնում ենք այս բաժնետոմսի վերլուծաբանների 1-տարվա թիրախը։ Այն պահպանվում է բոլորի համար, ուստի հաջորդ անգամ կերևա անմիջապես։",
   "Approximate analysts' consensus from {source}, {date}. An estimate, not a promise.":
     "Վերլուծաբանների մոտավոր համաձայնեցված թիրախը՝ {source}, {date}։ Գնահատական է, ոչ թե երաշխիք։",
   "1Y forecasts aren't connected yet: an admin adds a free Financial Modeling Prep key in Admin → Connections, then analysts' targets appear here.":

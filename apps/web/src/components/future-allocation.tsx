@@ -8,10 +8,18 @@ import { api } from "@/lib/api";
 import { allocationSummary, type AllocationItem, type AllocationPlan } from "@/lib/allocation";
 import { PORTFOLIO_CURRENCIES } from "@/lib/currencies";
 import { useT } from "@/lib/i18n/client";
+import { loadTargets, type Targets } from "@/lib/targets";
 import { money } from "@/lib/portfolio-metrics";
 import type { Quote } from "@/lib/today";
 
-import { WatchlistChart } from "@/components/watchlist-chart";
+import { WatchlistChart, type RangeKey } from "@/components/watchlist-chart";
+
+const PERIOD_LABEL: Record<RangeKey, string> = {
+  "1M": "Last 1 month",
+  "6M": "Last 6 months",
+  "1Y": "Last 1 year",
+  "5Y": "Last 5 years",
+};
 
 type ResolveResult = { query: string; data?: Quote; error?: string };
 
@@ -104,20 +112,21 @@ export function FutureAllocation({ today = new Date().toISOString().slice(0, 10)
   }, [settled]);
 
   // Analysts' 1-year price targets (the consensus TradingView shows), via Financial Modeling Prep.
-  const [targets, setTargets] = useState<Record<string, { target: number; approximate?: boolean; source?: string; as_of?: string } | null>>({});
+  const [targets, setTargets] = useState<Targets>({});
   const [targetsNote, setTargetsNote] = useState<string | null>(null);
+  const [analyzingTargets, setAnalyzingTargets] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (!settled) return;
     let active = true;
-    api<{ configured: boolean; message?: string; targets: Record<string, { target: number; approximate?: boolean; source?: string; as_of?: string } | null> }>(
-      `/api/securities/targets?tickers=${encodeURIComponent(settled.split(",").slice(0, 40).join(","))}`,
-    )
-      .then((answer) => {
-        if (!active || !answer) return;
-        setTargets((current) => ({ ...current, ...(answer.targets ?? {}) }));
-        setTargetsNote(answer.configured ? null : answer.message ?? null);
-      })
-      .catch(() => undefined); // the column simply stays empty
+    loadTargets(
+      settled.split(","),
+      (state) => {
+        setTargets((current) => ({ ...current, ...state.targets }));
+        setAnalyzingTargets(state.analyzing);
+        setTargetsNote(state.note);
+      },
+      () => active,
+    ).catch(() => undefined); // the column simply stays empty
     return () => {
       active = false;
     };
@@ -140,6 +149,18 @@ export function FutureAllocation({ today = new Date().toISOString().slice(0, 10)
 
   const summary = useMemo(() => (plan ? allocationSummary(plan, quotes, usdPerUnit) : null), [plan, quotes, usdPerUnit]);
   const dirty = plan != null && JSON.stringify(plan) !== saved;
+  // The chart's period also sets the change column, so both always show the same numbers.
+  const [range, setRange] = useState<RangeKey>("1Y");
+  const [rangeChanges, setRangeChanges] = useState<Record<string, number>>({});
+  const periodChange = (row: { item: AllocationItem; return1m: number | null; return6m: number | null; return1y: number | null }) => {
+    if (!row.item.ticker) return row.return1y; // your own estimate for a non-stock row
+    const fromChart = rangeChanges[row.item.ticker.toUpperCase()];
+    if (fromChart != null) return fromChart;
+    return range === "1M" ? row.return1m : range === "6M" ? row.return6m : range === "1Y" ? row.return1y : null;
+  };
+  const weightedRows = (summary?.rows ?? []).filter((row) => row.amount > 0 && periodChange(row) != null);
+  const weightedTotal = weightedRows.reduce((sum, row) => sum + row.amount, 0);
+  const weightedChange = weightedTotal > 0 ? weightedRows.reduce((sum, row) => sum + (periodChange(row) as number) * row.amount, 0) / weightedTotal : null;
 
   if (!plan || !summary) {
     return (
@@ -195,7 +216,13 @@ export function FutureAllocation({ today = new Date().toISOString().slice(0, 10)
         </button>
       </div>
 
-      <WatchlistChart tickers={plan.items.map((item) => item.ticker)} today={today} />
+      <WatchlistChart
+        tickers={plan.items.map((item) => item.ticker)}
+        today={today}
+        range={range}
+        onRange={setRange}
+        onChanges={setRangeChanges}
+      />
 
       <article className="panel allocation-panel">
         <div className="allocation-budget">
@@ -237,7 +264,7 @@ export function FutureAllocation({ today = new Date().toISOString().slice(0, 10)
             <span role="columnheader">{t("Amount")}</span>
             <span role="columnheader">{t("≈ USD")}</span>
             <span role="columnheader">{t("Shares at today's price")}</span>
-            <span role="columnheader">{t("Last 1 year")}</span>
+            <span role="columnheader">{t(PERIOD_LABEL[range])}</span>
             <span role="columnheader" title={t("Analysts' average 1-year price target (Financial Modeling Prep). An estimate, not a promise.")}>{t("1Y forecast")}</span>
             <span role="columnheader">
               <span className="sr-only">{t("Actions")}</span>
@@ -322,9 +349,14 @@ export function FutureAllocation({ today = new Date().toISOString().slice(0, 10)
                 </span>
                 <span role="cell" className="allocation-num">
                   {item.ticker ? (
-                    <span title={t("1M {m} · 6M {s}", { m: signedPct(row.return1m), s: signedPct(row.return6m) })}>
-                      <strong className={row.return1y == null ? "" : row.return1y >= 0 ? "positive" : "negative"}>{signedPct(row.return1y)}</strong>
-                    </span>
+                    (() => {
+                      const change = periodChange(row);
+                      return (
+                        <span title={t("1M {m} · 6M {s} · 1Y {y}", { m: signedPct(row.return1m), s: signedPct(row.return6m), y: signedPct(row.return1y) })}>
+                          <strong className={change == null ? "" : change >= 0 ? "positive" : "negative"}>{signedPct(change)}</strong>
+                        </span>
+                      );
+                    })()
                   ) : (
                     <input
                       className="allocation-typed"
@@ -351,7 +383,11 @@ export function FutureAllocation({ today = new Date().toISOString().slice(0, 10)
                         : t("Analysts' average 1-year price target (Financial Modeling Prep). An estimate, not a promise.");
                   return (
                     <span role="cell" className="allocation-num allocation-forecast" title={item.ticker ? title : undefined}>
-                      {target == null || gain == null ? (
+                      {target == null && analyzingTargets.has(item.ticker.toUpperCase()) ? (
+                        <span className="analyzing" title={t("Researching analysts' 1-year target for this stock. It's saved for everyone, so it shows instantly next time.")}>
+                          <Loader2 size={12} className="spinning" aria-hidden="true" /> {t("Analyzing…")}
+                        </span>
+                      ) : target == null || gain == null ? (
                         <span className="muted">—</span>
                       ) : (
                         <>
@@ -396,7 +432,7 @@ export function FutureAllocation({ today = new Date().toISOString().slice(0, 10)
             </span>
             <span role="cell" />
             <span role="cell" className="allocation-num">
-              <strong title={t("weighted")}>{signedPct(summary.weightedReturn)}</strong>
+              <strong title={t("weighted")}>{signedPct(weightedChange)}</strong>
             </span>
             <span role="cell" />
             <span role="cell" />
