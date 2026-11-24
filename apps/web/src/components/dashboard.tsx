@@ -97,6 +97,7 @@ import {
 import { translate, type Translate } from "@/lib/i18n/core";
 import { effectiveCountry } from "@/lib/country";
 import { useI18n, useT } from "@/lib/i18n/client";
+import { loadTargets, type Targets } from "@/lib/targets";
 import { createClient } from "@/lib/supabase/client";
 import { defaultBook, type BookSettings, type Role } from "@/lib/workspace";
 
@@ -187,8 +188,10 @@ export function Dashboard({
   const [editingId, setEditingId] = useState("");
   const [positions, setPositions] = useState<Position[]>([]);
   // Analysts' 1-year price targets per ticker (FMP), and why none show when there is no key.
-  const [targets, setTargets] = useState<Record<string, { target: number; approximate?: boolean; source?: string; as_of?: string } | null>>({});
+  const [targets, setTargets] = useState<Targets>({});
   const [targetsNote, setTargetsNote] = useState<string | null>(null);
+  // Stocks whose 1-year target is being researched right now ("Analyzing…").
+  const [analyzingTargets, setAnalyzingTargets] = useState<Set<string>>(new Set());
   const [draftPosition, setDraftPosition] = useState<Position>({
     ticker: "",
     shares: 0,
@@ -651,15 +654,15 @@ export function Dashboard({
     if (!targetTickers || activeTab !== "portfolio") return;
     let active = true;
     const timer = window.setTimeout(() => {
-      api<{ configured: boolean; message?: string; targets: Record<string, { target: number; approximate?: boolean; source?: string; as_of?: string } | null> }>(
-        `/api/securities/targets?tickers=${encodeURIComponent(targetTickers)}`,
-      )
-        .then((answer) => {
-          if (!active || !answer) return;
-          setTargets(answer.targets ?? {});
-          setTargetsNote(answer.configured ? null : answer.message ?? null);
-        })
-        .catch(() => undefined); // the columns simply stay empty
+      loadTargets(
+        targetTickers.split(","),
+        (state) => {
+          setTargets(state.targets);
+          setAnalyzingTargets(state.analyzing);
+          setTargetsNote(state.note);
+        },
+        () => active,
+      ).catch(() => undefined); // the columns simply stay empty
     }, 600);
     return () => {
       active = false;
@@ -2006,6 +2009,7 @@ export function Dashboard({
                             {(() => {
                               const found = targets[position.ticker.trim().toUpperCase()] ?? null;
                               const target = found?.target ?? null;
+                              const researching = target == null && analyzingTargets.has(position.ticker.trim().toUpperCase());
                               const gain = targetUpside(position, targets);
                               const projected = targetValue(position, targets);
                               const note = targetsNote
@@ -2016,10 +2020,10 @@ export function Dashboard({
                               return (
                                 <>
                                   <span className={`financial-cell return-col ${(gain ?? 0) >= 0 ? "positive" : "negative"}`} role="cell" title={target == null && !targetsNote ? t("No analyst target for this holding") : note}>
-                                    {target == null || gain == null ? "—" : <StackedChange amount={`${found?.approximate ? "≈ " : ""}${money(target, baseCurrency)}`} percent={signedPercent(gain)} />}
+                                    {researching ? <Analyzing /> : target == null || gain == null ? "—" : <StackedChange amount={`${found?.approximate ? "≈ " : ""}${money(target, baseCurrency)}`} percent={signedPercent(gain)} />}
                                   </span>
                                   <span className={`financial-cell return-col ${(gain ?? 0) >= 0 ? "positive" : "negative"}`} role="cell" title={t("Shares × analysts' 1-year target")}>
-                                    {projected == null || metric.marketValue == null ? "—" : <StackedChange amount={money(projected, baseCurrency)} percent={signedMoney(projected - metric.marketValue, baseCurrency)} />}
+                                    {researching ? <Analyzing /> : projected == null || metric.marketValue == null ? "—" : <StackedChange amount={money(projected, baseCurrency)} percent={signedMoney(projected - metric.marketValue, baseCurrency)} />}
                                   </span>
                                 </>
                               );
@@ -2821,7 +2825,16 @@ function StackedChange({ amount, percent }: { amount: string; percent: string })
   );
 }
 
-type Targets = Record<string, { target: number; approximate?: boolean; source?: string; as_of?: string } | null>;
+/** Shown while a stock's 1-year target is being researched for the first time. */
+function Analyzing() {
+  const t = useT();
+  return (
+    <span className="analyzing" title={t("Researching analysts' 1-year target for this stock. It's saved for everyone, so it shows instantly next time.")}>
+      <Loader2 size={12} className="spinning" aria-hidden="true" /> {t("Analyzing…")}
+    </span>
+  );
+}
+
 
 /** % from today's price to analysts' 1-year target; null without a price or a target. */
 function targetUpside(position: Position, targets: Targets): number | null {

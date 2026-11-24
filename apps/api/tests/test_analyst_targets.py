@@ -9,14 +9,24 @@ from stockbuddy.main import app, current_user
 
 
 class FakeCache:
+    """market_cache in memory; `ages` can make an entry look old (seconds)."""
+
     def __init__(self):
         self.rows = {}
+        self.ages = {}
+
+    def get_rows(self, keys):
+        return {key: (self.rows[key], self.ages.get(key, 0)) for key in keys if key in self.rows}
 
     def get_many(self, keys, ttl=0):
-        return {key: self.rows[key] for key in keys if key in self.rows}
+        return {
+            key: value for key, (value, age) in self.get_rows(keys).items() if age < (ttl or 1e12)
+        }
 
     def put_many(self, entries):
         self.rows.update(entries)
+        for key in entries:
+            self.ages.pop(key, None)
 
 
 def fmp(answers):
@@ -75,10 +85,12 @@ class FakeTargets:
     def __init__(self, error=None):
         self.error = error
 
-    def get_many(self, symbols):
+    def lookup(self, symbols):
         if self.error:
             raise TargetsUnavailable(self.error)
-        return {symbol: {"target": 100.0, "high": None, "low": None} for symbol in symbols}
+        return {symbol: {"target": 100.0, "high": None, "low": None} for symbol in symbols}, [
+            "MSFT"
+        ]
 
 
 def run(service, path):
@@ -99,9 +111,15 @@ def test_endpoint_returns_targets_or_says_a_key_is_needed():
             "AAPL": {"target": 100.0, "high": None, "low": None},
             "MSFT": {"target": 100.0, "high": None, "low": None},
         },
+        "analyzing": ["MSFT"],
     }
     missing = run(FakeTargets("Add a key"), "/api/securities/targets?tickers=AAPL")
-    assert missing.json() == {"configured": False, "message": "Add a key", "targets": {}}
+    assert missing.json() == {
+        "configured": False,
+        "message": "Add a key",
+        "targets": {},
+        "analyzing": [],
+    }
 
 
 def test_hand_entered_targets_fill_symbols_fmp_does_not_cover():

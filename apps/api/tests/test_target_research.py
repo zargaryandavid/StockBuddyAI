@@ -8,14 +8,24 @@ from stockbuddy.target_research import ResearchFailed, TargetResearch, parse_res
 
 
 class FakeCache:
+    """market_cache in memory; `ages` can make an entry look old (seconds)."""
+
     def __init__(self):
         self.rows = {}
+        self.ages = {}
+
+    def get_rows(self, keys):
+        return {key: (self.rows[key], self.ages.get(key, 0)) for key in keys if key in self.rows}
 
     def get_many(self, keys, ttl=0):
-        return {key: self.rows[key] for key in keys if key in self.rows}
+        return {
+            key: value for key, (value, age) in self.get_rows(keys).items() if age < (ttl or 1e12)
+        }
 
     def put_many(self, entries):
         self.rows.update(entries)
+        for key in entries:
+            self.ages.pop(key, None)
 
 
 def test_keeps_only_asked_symbols_with_real_targets():
@@ -68,25 +78,48 @@ class FakeResearch:
         }
 
 
-def test_stocks_fmp_skips_are_researched_once_then_shared_for_a_week():
-    def plan_limited(request):
-        return httpx.Response(402, text="Premium Query Parameter")
+def plan_limited_fmp():
+    return httpx.Client(
+        transport=httpx.MockTransport(lambda r: httpx.Response(402, text="Premium"))
+    )
 
+
+def test_new_stock_shows_analyzing_then_everyone_gets_it_instantly():
     cache, research = FakeCache(), FakeResearch()
-    fmp = httpx.Client(transport=httpx.MockTransport(plan_limited))
-    first = AnalystTargets("key", cache, fmp, research).get_many(["XYZ", "VOO"])
-    assert first["XYZ"]["approximate"] is True
-    assert first["XYZ"]["source"] == "web research: news"
-    assert first["VOO"] is None
-    again = AnalystTargets("key", cache, fmp, research).get_many(["XYZ", "VOO"])
-    assert again["XYZ"]["target"] == 50.0
-    assert research.calls == [["VOO", "XYZ"]]  # VOO's "no coverage" was remembered too
+    service = AnalystTargets("key", cache, plan_limited_fmp(), research)
+    found, analyzing = service.lookup(["XYZ", "VOO"])
+    assert found == {"XYZ": None, "VOO": None} and analyzing == ["VOO", "XYZ"]
+
+    done = service.research_now(analyzing)
+    assert done["XYZ"]["source"] == "web research: news" and done["VOO"] is None
+
+    # Another client asking later gets both instantly, with nothing left to analyse.
+    other = AnalystTargets("key", cache, plan_limited_fmp(), research)
+    found, analyzing = other.lookup(["XYZ", "VOO"])
+    assert found["XYZ"]["target"] == 50.0 and found["VOO"] is None and analyzing == []
+    assert research.calls == [["VOO", "XYZ"]]
 
 
-def test_a_failed_research_pauses_retries_instead_of_slowing_every_page():
-    cache, research = FakeCache(), FakeResearch(fail=True)
+def test_a_month_old_target_still_shows_while_it_is_refreshed():
+    cache, research = FakeCache(), FakeResearch()
+    cache.rows["target_ai:XYZ"] = {"v": {"target": 40.0, "source": "old", "as_of": "Oct"}}
+    cache.ages["target_ai:XYZ"] = 31 * 24 * 3600
     service = AnalystTargets("", cache, research=research)
-    assert service.get_many(["XYZ"]) == {"XYZ": None}
-    assert service.get_many(["XYZ"]) == {"XYZ": None}
-    assert len(research.calls) == 1
-    assert cache.rows == {}
+    found, analyzing = service.lookup(["XYZ"])
+    assert found["XYZ"]["target"] == 40.0 and analyzing == ["XYZ"]
+    assert service.research_now(["XYZ"])["XYZ"]["target"] == 50.0
+
+
+def test_one_research_at_a_time_and_a_pause_after_failure():
+    cache, research = FakeCache(), FakeResearch()
+    cache.rows["target_ai_lock:XYZ"] = {"v": True}  # another request is on it
+    assert AnalystTargets("", cache, research=research).research_now(["XYZ"]) == {}
+    assert research.calls == []
+
+    failing = FakeResearch(fail=True)
+    service = AnalystTargets("", FakeCache(), research=failing)
+    with pytest.raises(ResearchFailed):
+        service.research_now(["ABC"])
+    with pytest.raises(ResearchFailed):
+        service.research_now(["ABC"])
+    assert len(failing.calls) == 1

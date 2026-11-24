@@ -67,7 +67,7 @@ from stockbuddy.schemas import (
 )
 from stockbuddy.sharing import ShareService, new_token
 from stockbuddy.supabase import Account, SupabaseError, SupabaseGateway
-from stockbuddy.target_research import TargetResearch
+from stockbuddy.target_research import ResearchFailed, TargetResearch
 from stockbuddy.wishes import WishMatcher
 
 logger = logging.getLogger(__name__)
@@ -1092,10 +1092,39 @@ async def analyst_targets(
         )
     service = request.app.state.targets
     try:
-        found = await asyncio.to_thread(service.get_many, symbols)
+        found, analyzing = await asyncio.to_thread(service.lookup, symbols)
     except TargetsUnavailable as exc:
-        return {"configured": False, "message": str(exc), "targets": {}}
-    return {"configured": True, "targets": found}
+        return {"configured": False, "message": str(exc), "targets": {}, "analyzing": []}
+    # "analyzing": not researched yet (or a month old); the page asks for them next.
+    return {"configured": True, "targets": found, "analyzing": analyzing}
+
+
+class TargetResearchRequest(BaseModel):
+    tickers: list[str]
+
+
+@app.post("/api/securities/targets/research")
+async def research_targets(
+    body: TargetResearchRequest,
+    request: Request,
+    _user_id: Annotated[UUID, Depends(current_user)],
+):
+    """Researches analysts' targets for up to 10 stocks and saves them for every client."""
+    try:
+        symbols = sorted(
+            {PositionInput(ticker=item, shares=0).ticker for item in body.tickers if item.strip()}
+        )
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail="One of the tickers is not valid") from exc
+    if not symbols or len(symbols) > MAX_HISTORY_TICKERS:
+        raise HTTPException(status_code=422, detail="Ask for between 1 and 40 tickers")
+    try:
+        found = await asyncio.to_thread(request.app.state.targets.research_now, symbols)
+    except ResearchFailed as exc:
+        raise HTTPException(
+            status_code=503, detail="Forecast research is unavailable right now"
+        ) from exc
+    return {"targets": found}
 
 
 @app.get("/api/prices/history")

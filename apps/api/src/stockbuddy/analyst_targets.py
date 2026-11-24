@@ -16,7 +16,7 @@ from typing import Any
 import httpx
 
 from stockbuddy.market_cache import COMPANY_TTL_SECONDS, MarketCache
-from stockbuddy.target_research import ResearchFailed, TargetResearch
+from stockbuddy.target_research import MAX_SYMBOLS_PER_REQUEST, ResearchFailed, TargetResearch
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +24,10 @@ FMP_TARGETS_URL = "https://financialmodelingprep.com/stable/price-target-consens
 # Hand-entered consensus targets (from public analyst reports) for symbols FMP's plan doesn't
 # cover; each says where and when it came from, and is used for up to half a year.
 MANUAL_TTL_SECONDS = 183 * 24 * 3_600
-# Targets researched on the web by OpenAI are kept a week, shared by every client.
-RESEARCH_TTL_SECONDS = 7 * 24 * 3_600
+# Targets researched on the web by OpenAI, shared by every client.
+RESEARCH_TTL_SECONDS = 30 * 24 * 3_600  # refreshed once a month
+# While one request researches a symbol, others don't start the same research.
+LOCK_SECONDS = 10 * 60
 # After a failed research request (no credits, outage), wait before trying again.
 RESEARCH_BACKOFF_SECONDS = 10 * 60
 
@@ -75,14 +77,28 @@ class AnalystTargets:
     def configured(self) -> bool:
         return bool(self.api_key) or self.research is not None
 
-    def get_many(self, tickers: list[str]) -> dict[str, dict[str, float] | None]:
+    def get_many(self, tickers: list[str]) -> dict[str, dict[str, Any] | None]:
+        """Targets, researching any still missing right away (used by tests and scripts)."""
+        found, analyzing = self.lookup(tickers)
+        if analyzing:
+            found.update(
+                {k: v for k, v in self.research_now(analyzing).items() if v or k not in found}
+            )
+        return found
+
+    def lookup(self, tickers: list[str]) -> tuple[dict[str, dict[str, Any] | None], list[str]]:
+        """What's known now, instantly, and which symbols still need (re)researching.
+
+        Researched targets are shared by every client: one person's stock, analysed once,
+        shows straight away for the next. A month-old one still shows while it is refreshed.
+        """
         symbols = sorted({ticker.strip().upper() for ticker in tickers if ticker.strip()})
         if not symbols:
-            return {}
+            return {}, []
         stored = self.cache.get_many(
             [f"target:{symbol}" for symbol in symbols], ttl=COMPANY_TTL_SECONDS
         )
-        found: dict[str, dict[str, float] | None] = {
+        found: dict[str, dict[str, Any] | None] = {
             symbol: stored[f"target:{symbol}"].get("v")
             for symbol in symbols
             if f"target:{symbol}" in stored
@@ -105,49 +121,55 @@ class AnalystTargets:
         # FMP's own number wins; a hand-entered approximate one, then web research, fill gaps.
         result = {symbol: found.get(symbol) or manual.get(symbol) for symbol in symbols}
         gaps = [symbol for symbol in symbols if result[symbol] is None]
+        analyzing: list[str] = []
         if gaps:
-            result.update(self._researched(gaps))
-        return result
+            rows = self.cache.get_rows([f"target_ai:{symbol}" for symbol in gaps])
+            for symbol in gaps:
+                row = rows.get(f"target_ai:{symbol}")
+                if row is not None:
+                    result[symbol] = _researched_target(row[0].get("v"))
+                if self.research is not None and (row is None or row[1] >= RESEARCH_TTL_SECONDS):
+                    analyzing.append(symbol)
+        return result, analyzing
 
-    def _researched(self, symbols: list[str]) -> dict[str, dict[str, Any] | None]:
-        """Web-researched targets: from the week's cache, else asked of OpenAI now."""
-        stored = self.cache.get_many(
-            [f"target_ai:{symbol}" for symbol in symbols], ttl=RESEARCH_TTL_SECONDS
+    def research_now(self, tickers: list[str]) -> dict[str, dict[str, Any] | None]:
+        """Researches up to 10 symbols on the web and saves them for every client.
+
+        A symbol another request is already researching (locked for 10 minutes), or one
+        researched within the month, is not asked again.
+        """
+        symbols = sorted({ticker.strip().upper() for ticker in tickers if ticker.strip()})
+        if not symbols or self.research is None:
+            return {}
+        if time.monotonic() - self._research_failed_at < RESEARCH_BACKOFF_SECONDS:
+            raise ResearchFailed("Research is paused after a recent failure")
+        rows = self.cache.get_rows(
+            [f"target_ai:{s}" for s in symbols] + [f"target_ai_lock:{s}" for s in symbols]
         )
-        known = {
-            symbol: stored[f"target_ai:{symbol}"].get("v")
-            for symbol in symbols
-            if f"target_ai:{symbol}" in stored
+        done = {
+            s: _researched_target(rows[f"target_ai:{s}"][0].get("v"))
+            for s in symbols
+            if f"target_ai:{s}" in rows and rows[f"target_ai:{s}"][1] < RESEARCH_TTL_SECONDS
         }
-        ask = [symbol for symbol in symbols if symbol not in known]
-        cooling = time.monotonic() - self._research_failed_at < RESEARCH_BACKOFF_SECONDS
-        if ask and self.research is not None and not cooling:
+        ask = [
+            s
+            for s in symbols
+            if s not in done
+            and not (
+                f"target_ai_lock:{s}" in rows and rows[f"target_ai_lock:{s}"][1] < LOCK_SECONDS
+            )
+        ][:MAX_SYMBOLS_PER_REQUEST]
+        if ask:
+            self.cache.put_many({f"target_ai_lock:{s}": {"v": True} for s in ask})
             try:
                 answers = self.research.research(ask)
-            except ResearchFailed as exc:
-                logger.warning("Target research failed: %s", exc)
+            except ResearchFailed:
                 self._research_failed_at = time.monotonic()
-            else:
-                # "No coverage" (funds, tiny companies) is remembered too, so it isn't re-asked.
-                self.cache.put_many(
-                    {f"target_ai:{symbol}": {"v": value} for symbol, value in answers.items()}
-                )
-                known.update(answers)
-        return {
-            symbol: (
-                {
-                    "target": float(value["target"]),
-                    "high": None,
-                    "low": None,
-                    "approximate": True,
-                    "source": f"web research: {value.get('source') or 'public sources'}",
-                    "as_of": str(value.get("as_of") or ""),
-                }
-                if isinstance(value, dict) and _number(value.get("target"))
-                else None
-            )
-            for symbol, value in known.items()
-        }
+                raise
+            # "No coverage" (funds, tiny companies) is remembered too, so it isn't re-asked.
+            self.cache.put_many({f"target_ai:{s}": {"v": value} for s, value in answers.items()})
+            done.update({s: _researched_target(value) for s, value in answers.items()})
+        return done
 
     def _manual(self, symbols: list[str]) -> dict[str, dict[str, Any]]:
         stored = self.cache.get_many(
@@ -193,3 +215,17 @@ class AnalystTargets:
             return parse_consensus(response.json())
         except ValueError:
             return "error"
+
+
+def _researched_target(value: Any) -> dict[str, Any] | None:
+    """A stored research answer in the shape the pages show; None for "no coverage"."""
+    if not isinstance(value, dict) or not _number(value.get("target")):
+        return None
+    return {
+        "target": float(value["target"]),
+        "high": None,
+        "low": None,
+        "approximate": True,
+        "source": f"web research: {value.get('source') or 'public sources'}",
+        "as_of": str(value.get("as_of") or ""),
+    }

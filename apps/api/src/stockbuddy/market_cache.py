@@ -38,6 +38,10 @@ class MarketCache:
 
     def get_many(self, keys: list[str], ttl: float = COMPANY_TTL_SECONDS) -> dict[str, Any]:
         """The fresh entries among keys, as {key: value}; nothing when the table can't be read."""
+        return {key: value for key, (value, age) in self.get_rows(keys).items() if age < ttl}
+
+    def get_rows(self, keys: list[str]) -> dict[str, tuple[Any, float]]:
+        """Every stored entry among keys, as {key: (value, age in seconds)}, however old."""
         if not self.enabled or not keys:
             return {}
         quoted = ",".join('"' + key.replace("\\", "\\\\").replace('"', '\\"') + '"' for key in keys)
@@ -52,12 +56,11 @@ class MarketCache:
             logger.warning("Market cache read failed: %s", exc)
             return {}
         now = datetime.now(UTC)
-        fresh: dict[str, Any] = {}
+        rows: dict[str, tuple[Any, float]] = {}
         for row in response.json():
             fetched = datetime.fromisoformat(str(row["fetched_at"]).replace("Z", "+00:00"))
-            if (now - fetched).total_seconds() < ttl:
-                fresh[row["key"]] = row["value"]
-        return fresh
+            rows[row["key"]] = (row["value"], (now - fetched).total_seconds())
+        return rows
 
     def put_many(self, entries: dict[str, Any]) -> None:
         if not self.enabled or not entries:
