@@ -94,6 +94,8 @@ export function TodayPage({
   const [assets, setAssets] = useState<FireAsset[] | null>(null);
   const [settings, setSettings] = useState<FireSettings>(FIRE_DEFAULTS);
   const [rates, setRates] = useState<FxRates>({});
+  // Which currencies the rates above were loaded for, so nothing is totalled before they arrive.
+  const [ratesFor, setRatesFor] = useState("");
   const [quotes, setQuotes] = useState<Map<string, Quote> | null>(null);
   const [history, setHistory] = useState<NetWorthPoint[]>([]);
   const [cashHelpOpen, setCashHelpOpen] = useState(false);
@@ -162,6 +164,7 @@ export function TodayPage({
       const next: FxRates = {};
       for (const result of results) if (result.status === "fulfilled") next[result.value[0]] = result.value[1];
       setRates(next);
+      setRatesFor(`${foreign}|${currency}`);
     });
     return () => {
       active = false;
@@ -234,13 +237,16 @@ export function TodayPage({
   const savings = plan.savingsBalances + plan.bondBalances;
   const otherAssets = plan.heldAssets.reduce((sum, item) => sum + item.value, 0);
   const netWorth = investments + savings + otherAssets;
-  const ready = quotes != null && entries != null && assets != null && !loadingPortfolios;
+  const ratesLoaded = !foreign || ratesFor === `${foreign}|${currency}`;
+  // A missing rate would count that money as zero, so such a day's reading isn't saved.
+  const allRates = !foreign || foreign.split(",").every((code) => Number(rates[code]) > 0);
+  const ready = quotes != null && entries != null && assets != null && !loadingPortfolios && ratesLoaded;
   const hasAnything = portfolios.length > 0 || Boolean(entries?.length) || Boolean(assets?.length);
 
   // Save today's reading once, when everything has loaded, so the chart grows by a day.
   const saved = useRef(false);
   useEffect(() => {
-    if (!ready || !hasAnything || saved.current) return;
+    if (!ready || !allRates || !hasAnything || saved.current) return;
     saved.current = true;
     const reading = { day: today, investments, savings, other_assets: otherAssets, currency };
     api<NetWorthPoint>("/api/net-worth/today", { method: "PUT", body: JSON.stringify(reading) })
@@ -254,7 +260,7 @@ export function TodayPage({
         // Try again the next time this page opens.
         saved.current = false;
       });
-  }, [ready, hasAnything, today, investments, savings, otherAssets, netWorth, currency]);
+  }, [ready, allRates, hasAnything, today, investments, savings, otherAssets, netWorth, currency]);
 
   const change = changeSinceLast(history, today, netWorth);
   const attention = useMemo(
